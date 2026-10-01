@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CariKostKita</string>
+    <string name="app_tagline">Temukan Kost Nyaman di Bukit Raya, Pekanbaru</string>
+
+    <!-- Navigation Labels -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_search">Cari</string>
+    <string name="nav_favorite">Favorit</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Common Actions -->
+    <string name="action_login">Masuk</string>
+    <string name="action_register">Daftar Akun Baru</string>
+    <string name="action_logout">Keluar</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_apply">Terapkan</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_chat_wa">Chat Pemilik</string>
+    <string name="action_open_maps">Buka di Maps</string>
+    <string name="action_share">Bagikan</string>
+
+    <!-- Labels & Placeholders -->
+    <string name="search_hint">Cari kost, jalan, kelurahan...</string>
+    <string name="filter_title">Filter Pencarian Kost</string>
+    <string name="filter_tipe">Tipe Kost</string>
+    <string name="filter_harga">Rentang Harga</string>
+    <string name="filter_fasilitas">Fasilitas Kost</string>
+
+    <string name="empty_kost_title">Kost Tidak Ditemukan</string>
+    <string name="empty_kost_desc">Coba sesuaikan kata kunci pencarian atau ubah filter Anda.</string>
+    <string name="empty_favorite_title">Belum Ada Favorit</string>
+    <string name="empty_favorite_desc">Simpan kost favorit Anda dengan menekan ikon hati pada kartu properti.</string>
+
+    <!-- Admin -->
+    <string name="admin_dashboard">Dashboard Admin</string>
+    <string name="admin_tambah_kost">Tambah Kost</string>
+    <string name="admin_add_kost">Tambah Kost</string>
+    <string name="admin_kelola_fasilitas">Kelola Fasilitas</string>
+</resources>

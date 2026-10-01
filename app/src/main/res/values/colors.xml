@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Palette: Modern Soft Property UI -->
+    <color name="primary">#A30D18</color>
+    <color name="primary_dark">#7A0C12</color>
+    <color name="primary_soft">#FBEAEC</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- Semantic & Action Colors -->
+    <color name="whatsapp_green">#16834B</color>
+    <color name="whatsapp_green_dark">#0F5B34</color>
+    <color name="whatsapp_green_soft">#EAF7EF</color>
+    <color name="maps_blue">#1A73E8</color>
+
+    <!-- Backgrounds & Surfaces -->
+    <color name="background">#F8F8F6</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F4F5F7</color>
+    <color name="border">#D0D5DD</color>
+    <color name="border_subtle">#E6E8EC</color>
+    <color name="divider">#EAECF0</color>
+    <color name="ripple_soft">#FBEAEC</color>
+
+    <!-- Typography (High Contrast - No Faded Text) -->
+    <color name="text_primary">#18202F</color>
+    <color name="text_secondary">#344054</color>
+    <color name="text_muted">#667085</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Badges & Status Soft Colors -->
+    <color name="badge_putra">#1D4ED8</color>
+    <color name="badge_putra_soft">#EFF6FF</color>
+    <color name="badge_putri">#BE185D</color>
+    <color name="badge_putri_soft">#FDF2F8</color>
+    <color name="badge_campur">#6D28D9</color>
+    <color name="badge_campur_soft">#F5F3FF</color>
+
+    <color name="status_tersedia">#16834B</color>
+    <color name="status_tersedia_soft">#EAF7EF</color>
+    <color name="status_penuh">#C62828</color>
+    <color name="status_penuh_soft">#FDECEC</color>
+    <color name="status_tidak_aktif">#475467</color>
+    <color name="status_tidak_aktif_soft">#F4F5F7</color>
+
+    <!-- Favorite Heart -->
+    <color name="favorite_active">#C62828</color>
+    <color name="favorite_inactive">#667085</color>
+</resources>

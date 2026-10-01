@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_bottom_sheet"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Header Filter & Reset -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/filter_title"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_filter_reset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="@string/action_reset"
+            android:textColor="@color/primary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="12dp"
+        android:background="@color/border" />
+
+    <!-- Tipe Kost Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/filter_tipe"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rg_filter_tipe"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rb_tipe_semua"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Semua" />
+
+        <RadioButton
+            android:id="@+id/rb_tipe_putri"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Putri" />
+
+        <RadioButton
+            android:id="@+id/rb_tipe_putra"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Putra" />
+
+        <RadioButton
+            android:id="@+id/rb_tipe_campur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Campur" />
+    </RadioGroup>
+
+    <!-- Rentang Harga Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/filter_harga"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rg_filter_harga"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_harga_semua"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Semua Rentang Harga" />
+
+        <RadioButton
+            android:id="@+id/rb_harga_dibawah_700"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Di bawah Rp 700.000 / bln" />
+
+        <RadioButton
+            android:id="@+id/rb_harga_700_1jt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rp 700.000 - Rp 1.000.000 / bln" />
+
+        <RadioButton
+            android:id="@+id/rb_harga_diatas_1jt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Di atas Rp 1.000.000 / bln" />
+    </RadioGroup>
+
+    <!-- Fasilitas Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/filter_fasilitas"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical">
+
+        <CheckBox
+            android:id="@+id/cb_fasilitas_wifi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WiFi Cepat" />
+
+        <CheckBox
+            android:id="@+id/cb_fasilitas_ac"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AC" />
+
+        <CheckBox
+            android:id="@+id/cb_fasilitas_km_dalam"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kamar Mandi Dalam" />
+
+        <CheckBox
+            android:id="@+id/cb_fasilitas_parkir"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Parkir Motor / Mobil" />
+    </LinearLayout>
+
+    <!-- Tombol Apply -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_filter_apply"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="@color/primary"
+        android:text="@string/action_apply"
+        android:textColor="@color/on_primary"
+        android:textSize="16sp"
+        app:cornerRadius="12dp" />
+
+</LinearLayout>

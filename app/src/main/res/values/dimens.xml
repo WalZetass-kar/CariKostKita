@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing scale -->
+    <dimen name="spacing_xxs">2dp</dimen>
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_s">8dp</dimen>
+    <dimen name="spacing_m">12dp</dimen>
+    <dimen name="spacing_l">16dp</dimen>
+    <dimen name="spacing_xl">24dp</dimen>
+    <dimen name="spacing_xxl">32dp</dimen>
+
+    <!-- Component dimensions -->
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_elevation">2dp</dimen>
+    <dimen name="button_corner_radius">12dp</dimen>
+    <dimen name="chip_corner_radius">10dp</dimen>
+    <dimen name="touch_target_min">48dp</dimen>
+    <dimen name="bottom_nav_height">64dp</dimen>
+    <dimen name="kost_card_image_height">180dp</dimen>
+    <dimen name="detail_slider_height">260dp</dimen>
+</resources>
