@@ -75,14 +75,14 @@
                 android:textSize="13sp" />
         </LinearLayout>
 
-        <!-- Elevated Floating Register Form Card (Overlapping Hero by -24dp) -->
+        <!-- Elevated Floating Register Form Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
             android:layout_marginTop="-24dp"
             app:cardBackgroundColor="@color/surface"
-            app:cardCornerRadius="24dp"
+            app:cardCornerRadius="22dp"
             app:cardElevation="3dp"
             app:contentPadding="22dp"
             app:strokeColor="@color/border"
@@ -96,7 +96,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pilih Jenis Akun"
+                    android:text="Pilih Jenis Pendaftaran"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -114,7 +114,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:checked="true"
-                        android:text="Pencari Kost (Mencari dan menyewa kamar)"
+                        android:text="Pencari Kost (Langsung aktif)"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp" />
 
@@ -122,11 +122,58 @@
                         android:id="@+id/rb_role_pemilik"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Pemilik Kost (Memasang dan mengelola kost)"
+                        android:layout_marginTop="2dp"
+                        android:text="Pemilik Kost (Butuh verifikasi admin)"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp" />
                 </RadioGroup>
+
+                <!-- Box Penjelasan Verifikasi Pemilik -->
+                <LinearLayout
+                    android:id="@+id/layout_verif_info_box"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="#FEF3C7"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Proses Verifikasi Pemilik Kost:"
+                        android:textColor="#92400E"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Akun Anda akan dibuat sebagai Pencari Kost terlebih dahulu. Akses pengelolaan kost akan diberikan setelah diverifikasi oleh Developer/Admin demi keamanan bersama."
+                        android:textColor="#B45309"
+                        android:textSize="11sp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="Nama &amp; Alamat Kost Anda (Opsional)"
+                        app:boxCornerRadiusBottomEnd="8dp"
+                        app:boxCornerRadiusBottomStart="8dp"
+                        app:boxCornerRadiusTopEnd="8dp"
+                        app:boxCornerRadiusTopStart="8dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_reg_catatan_kost"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapSentences"
+                            android:textSize="12sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
 
                 <!-- Input Nama -->
                 <com.google.android.material.textfield.TextInputLayout
@@ -134,12 +181,12 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="14dp"
                     android:hint="Nama Lengkap"
-                    app:boxCornerRadiusBottomEnd="14dp"
-                    app:boxCornerRadiusBottomStart="14dp"
-                    app:boxCornerRadiusTopEnd="14dp"
-                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/primary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -149,7 +196,7 @@
                         android:inputType="textCapWords"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Input Nomor WhatsApp -->
@@ -158,12 +205,12 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="12dp"
                     android:hint="Nomor WhatsApp (contoh: 081234567890)"
-                    app:boxCornerRadiusBottomEnd="14dp"
-                    app:boxCornerRadiusBottomStart="14dp"
-                    app:boxCornerRadiusTopEnd="14dp"
-                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/primary"
                     app:startIconDrawable="@drawable/ic_phone"
                     app:startIconTint="@color/text_muted">
@@ -175,7 +222,7 @@
                         android:inputType="phone"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Input Email -->
@@ -184,12 +231,12 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="12dp"
                     android:hint="Alamat Email"
-                    app:boxCornerRadiusBottomEnd="14dp"
-                    app:boxCornerRadiusBottomStart="14dp"
-                    app:boxCornerRadiusTopEnd="14dp"
-                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/primary"
                     app:startIconDrawable="@drawable/ic_email"
                     app:startIconTint="@color/text_muted">
@@ -201,7 +248,7 @@
                         android:inputType="textEmailAddress"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Input Password -->
@@ -210,14 +257,15 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:hint="Kata Sandi (min. 6 karakter)"
-                    app:boxCornerRadiusBottomEnd="14dp"
-                    app:boxCornerRadiusBottomStart="14dp"
-                    app:boxCornerRadiusTopEnd="14dp"
-                    app:boxCornerRadiusTopStart="14dp"
+                    android:layout_marginTop="12dp"
+                    android:hint="Kata Sandi (Min. 6 Karakter)"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/primary"
-                    app:endIconMode="password_toggle"
+                    app:passwordToggleEnabled="true"
+                    app:passwordToggleTint="@color/text_secondary"
                     app:startIconDrawable="@drawable/ic_lock"
                     app:startIconTint="@color/text_muted">
 
@@ -228,47 +276,47 @@
                         android:inputType="textPassword"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Loading Bar -->
                 <ProgressBar
                     android:id="@+id/pb_register"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="12dp"
                     android:indeterminateTint="@color/primary"
                     android:visibility="gone" />
 
-                <!-- Tombol Buat Akun -->
+                <!-- Tombol Daftar -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_register"
                     android:layout_width="match_parent"
-                    android:layout_height="52dp"
+                    android:layout_height="50dp"
                     android:layout_marginTop="20dp"
                     android:backgroundTint="@color/primary"
-                    android:text="Daftar Akun Sekarang"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Daftar Sekarang"
                     android:textColor="@color/on_primary"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    app:cornerRadius="14dp" />
+                    app:cornerRadius="12dp" />
 
-                <!-- Navigasi Masuk -->
+                <!-- Switch ke Login -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
                     android:layout_marginTop="16dp"
-                    android:gravity="center_vertical"
+                    android:gravity="center"
                     android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Sudah memiliki akun? "
+                        android:text="Sudah punya akun? "
                         android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <TextView
                         android:id="@+id/btn_goto_login"
@@ -277,9 +325,9 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:padding="6dp"
-                        android:text="Masuk Sekarang"
+                        android:text="Masuk di Sini"
                         android:textColor="@color/primary"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 

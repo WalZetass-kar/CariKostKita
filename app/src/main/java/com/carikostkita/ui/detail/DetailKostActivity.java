@@ -1,11 +1,13 @@
 package com.carikostkita.ui.detail;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,13 +17,22 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Fasilitas;
 import com.carikostkita.data.model.Kost;
+import com.carikostkita.data.model.KostReport;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.data.repository.KostRepository;
+import com.carikostkita.data.repository.ReportRepository;
 import com.carikostkita.ui.adapter.FotoSliderAdapter;
+import com.carikostkita.ui.main.chat.ChatRoomActivity;
+import com.carikostkita.util.AppDialogHelper;
 import com.carikostkita.util.IntentHelper;
 import com.carikostkita.util.SessionManager;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import java.util.Locale;
 
 public class DetailKostActivity extends AppCompatActivity {
 
@@ -32,16 +43,22 @@ public class DetailKostActivity extends AppCompatActivity {
     private TextView tvName;
     private TextView tvPrice;
     private TextView tvAddress;
+    private LinearLayout layoutPatokan;
+    private TextView tvPatokan;
+    private TextView tvCoordinates;
+    private Button btnDetailOpenMap;
     private TextView tvDesc;
     private TextView tvDetailUkuranKamar;
     private TextView tvDetailKamarTersedia;
     private TextView tvDetailKamarTerisi;
     private ViewGroup layoutFacilities;
     private ImageButton btnFavorite;
-    private Button btnActionMaps;
+    private Button btnActionChat;
     private Button btnActionWhatsApp;
+    private MaterialButton btnDetailReport;
 
     private KostRepository kostRepository;
+    private ReportRepository reportRepository;
     private SessionManager sessionManager;
     private Kost currentKost;
     private int idKost;
@@ -52,6 +69,7 @@ public class DetailKostActivity extends AppCompatActivity {
         setContentView(R.layout.activity_detail_kost);
 
         kostRepository = new KostRepository(this);
+        reportRepository = new ReportRepository(this);
         sessionManager = new SessionManager(this);
 
         idKost = getIntent().getIntExtra("kost_id", -1);
@@ -80,10 +98,19 @@ public class DetailKostActivity extends AppCompatActivity {
         tvDetailKamarTersedia = findViewById(R.id.tv_detail_kamar_tersedia);
         tvDetailKamarTerisi = findViewById(R.id.tv_detail_kamar_terisi);
         tvAddress = findViewById(R.id.tv_detail_address);
+        layoutPatokan = findViewById(R.id.layout_detail_patokan);
+        tvPatokan = findViewById(R.id.tv_detail_patokan);
+        tvCoordinates = findViewById(R.id.tv_detail_coordinates);
+        btnDetailOpenMap = findViewById(R.id.btn_detail_open_map);
         tvDesc = findViewById(R.id.tv_detail_desc);
         layoutFacilities = findViewById(R.id.layout_detail_facilities);
-        btnActionMaps = findViewById(R.id.btn_action_maps);
+        btnActionChat = findViewById(R.id.btn_action_chat);
         btnActionWhatsApp = findViewById(R.id.btn_action_whatsapp);
+        btnDetailReport = findViewById(R.id.btn_detail_report);
+
+        if (btnDetailReport != null) {
+            btnDetailReport.setOnClickListener(v -> showReportKostDialog());
+        }
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -132,7 +159,7 @@ public class DetailKostActivity extends AppCompatActivity {
             }
         });
 
-        btnActionMaps.setOnClickListener(v -> {
+        btnDetailOpenMap.setOnClickListener(v -> {
             if (currentKost != null) {
                 IntentHelper.openGoogleMaps(
                         DetailKostActivity.this,
@@ -141,6 +168,21 @@ public class DetailKostActivity extends AppCompatActivity {
                         currentKost.getNamaKost()
                 );
             }
+        });
+
+        btnActionChat.setOnClickListener(v -> {
+            if (currentKost == null) return;
+            if (!sessionManager.isLoggedIn()) {
+                Toast.makeText(DetailKostActivity.this, "Silakan login terlebih dahulu untuk menghubungi pemilik melalui chat", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent intent = new Intent(DetailKostActivity.this, ChatRoomActivity.class);
+            intent.putExtra("kost_id", currentKost.getIdKost());
+            intent.putExtra("id_pemilik", currentKost.getIdPemilik());
+            intent.putExtra("nama_kost", currentKost.getNamaKost());
+            intent.putExtra("foto_kost", currentKost.getFotoUtama());
+            intent.putExtra("harga_kost", currentKost.getHarga());
+            startActivity(intent);
         });
 
         btnActionWhatsApp.setOnClickListener(v -> {
@@ -177,6 +219,18 @@ public class DetailKostActivity extends AppCompatActivity {
         tvName.setText(kost.getNamaKost());
         tvPrice.setText(kost.getFormattedHarga());
         tvAddress.setText(kost.getAlamat() + "\nKel. " + kost.getKelurahan() + ", Kec. " + kost.getKecamatan() + ", Pekanbaru");
+
+        if (kost.getPatokan() != null && !kost.getPatokan().trim().isEmpty()) {
+            layoutPatokan.setVisibility(View.VISIBLE);
+            tvPatokan.setText("Patokan: " + kost.getPatokan().trim());
+        } else {
+            layoutPatokan.setVisibility(View.GONE);
+        }
+
+        double lat = kost.getLatitude() != 0 ? kost.getLatitude() : 0.463280;
+        double lng = kost.getLongitude() != 0 ? kost.getLongitude() : 101.450123;
+        tvCoordinates.setText(String.format(Locale.US, "Koordinat: %.6f, %.6f", lat, lng));
+
         tvDesc.setText(kost.getDeskripsi() != null && !kost.getDeskripsi().isEmpty() ? kost.getDeskripsi() : "Tidak ada deskripsi tambahan.");
 
         // Room specs
@@ -222,7 +276,6 @@ public class DetailKostActivity extends AppCompatActivity {
 
         int totalPhotos = (kost.getListFoto() != null) ? kost.getListFoto().size() : 0;
         if (totalPhotos <= 1) {
-            // Hide "1/1 Foto" badge if only 1 photo exists
             tvPhotoIndicator.setVisibility(View.GONE);
         } else {
             tvPhotoIndicator.setVisibility(View.VISIBLE);
@@ -258,5 +311,87 @@ public class DetailKostActivity extends AppCompatActivity {
         if (btnFavorite != null) {
             btnFavorite.setImageResource(isFavorite ? R.drawable.ic_heart_filled : R.drawable.ic_heart_outline);
         }
+    }
+
+    private void showReportKostDialog() {
+        if (currentKost == null) return;
+        if (!sessionManager.isLoggedIn()) {
+            Toast.makeText(this, "Silakan login terlebih dahulu untuk melaporkan properti", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] categories = new String[]{
+                "Alamat tidak sesuai",
+                "Foto tidak sesuai",
+                "Harga tidak sesuai",
+                "Kost penuh / tidak tersedia",
+                "Informasi fasilitas salah",
+                "Masalah dengan pemilik",
+                "Lainnya"
+        };
+        final int[] selectedCategoryIndex = {0};
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(48, 20, 48, 16);
+
+        TextView tvCategoryPrompt = new TextView(this);
+        tvCategoryPrompt.setText("Pilih Alasan Pelaporan:");
+        tvCategoryPrompt.setTextSize(13);
+        tvCategoryPrompt.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+        tvCategoryPrompt.setTypeface(null, android.graphics.Typeface.BOLD);
+        container.addView(tvCategoryPrompt);
+
+        android.widget.Spinner spCategory = new android.widget.Spinner(this);
+        android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_dropdown_item, categories);
+        spCategory.setAdapter(spinnerAdapter);
+        LinearLayout.LayoutParams spLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        spLp.topMargin = 12;
+        spCategory.setLayoutParams(spLp);
+        container.addView(spCategory);
+
+        TextInputLayout tilDeskripsi = new TextInputLayout(this, null, com.google.android.material.R.attr.textInputOutlinedStyle);
+        tilDeskripsi.setHint("Jelaskan masalah secara detail (opsional)");
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = 20;
+        tilDeskripsi.setLayoutParams(lp);
+
+        TextInputEditText etDeskripsi = new TextInputEditText(this);
+        etDeskripsi.setLines(3);
+        tilDeskripsi.addView(etDeskripsi);
+        container.addView(tilDeskripsi);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Laporkan Kost Bermasalah")
+                .setView(container)
+                .setPositiveButton("Kirim Laporan", (dialog, which) -> {
+                    String selectedCategory = categories[spCategory.getSelectedItemPosition()];
+                    String deskripsi = etDeskripsi.getText() != null ? etDeskripsi.getText().toString().trim() : "";
+
+                    KostReport report = new KostReport(
+                            currentKost.getIdKost(),
+                            sessionManager.getUserId(),
+                            currentKost.getIdPemilik(),
+                            selectedCategory,
+                            deskripsi.isEmpty() ? "Laporan data tidak sesuai kategori " + selectedCategory : deskripsi
+                    );
+
+                    reportRepository.submitReport(report, sessionManager.getUserName(), new DataCallback<Long>() {
+                        @Override
+                        public void onSuccess(Long reportId) {
+                            AppDialogHelper.showSuccessDialog(DetailKostActivity.this,
+                                    "Laporan Terkirim",
+                                    "Terima kasih atas laporan Anda. Tim Developer/Admin CariKostKita akan segera memverifikasi dan menindaklanjuti informasi properti ini.");
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            Toast.makeText(DetailKostActivity.this, message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Batal", null)
+                .show();
     }
 }

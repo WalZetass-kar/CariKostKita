@@ -4,6 +4,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.carikostkita.R;
+import com.carikostkita.ui.main.chat.ChatListFragment;
 import com.carikostkita.ui.main.favorite.FavoriteFragment;
 import com.carikostkita.ui.main.home.HomeFragment;
 import com.carikostkita.ui.main.profile.ProfileFragment;
@@ -20,9 +21,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         bottomNav = findViewById(R.id.modern_bottom_nav);
-        bottomNav.setOnTabSelectedListener(index -> {
-            switchTab(index);
-        });
+        bottomNav.setOnTabSelectedListener(this::switchTab);
 
         // Set default fragment
         if (savedInstanceState == null) {
@@ -34,6 +33,13 @@ public class MainActivity extends AppCompatActivity {
         if (bottomNav != null) {
             bottomNav.selectTab(1, true);
             switchTab(1);
+        }
+    }
+
+    public void navigateToChat() {
+        if (bottomNav != null) {
+            bottomNav.selectTab(3, true);
+            switchTab(3);
         }
     }
 
@@ -50,6 +56,9 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new FavoriteFragment();
                 break;
             case 3:
+                selectedFragment = new ChatListFragment();
+                break;
+            case 4:
                 selectedFragment = new ProfileFragment();
                 break;
             case 0:

@@ -8,6 +8,7 @@ import android.os.Looper;
 import androidx.appcompat.app.AppCompatActivity;
 import com.carikostkita.R;
 import com.carikostkita.ui.admin.AdminMainActivity;
+import com.carikostkita.ui.admin.PemilikMainActivity;
 import com.carikostkita.ui.auth.LoginActivity;
 import com.carikostkita.ui.main.MainActivity;
 import com.carikostkita.util.SessionManager;
@@ -23,8 +24,10 @@ public class SplashActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             SessionManager session = new SessionManager(this);
             if (session.isLoggedIn()) {
-                if (session.isAdmin()) {
+                if (session.isDeveloper()) {
                     startActivity(new Intent(this, AdminMainActivity.class));
+                } else if (session.isPemilikKost()) {
+                    startActivity(new Intent(this, PemilikMainActivity.class));
                 } else {
                     startActivity(new Intent(this, MainActivity.class));
                 }

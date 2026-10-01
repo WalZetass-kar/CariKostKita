@@ -22,9 +22,9 @@ public class ModernBottomNavBar extends FrameLayout {
     }
 
     private View activeIndicator;
-    private View[] tabContainers = new View[4];
-    private ImageView[] tabIcons = new ImageView[4];
-    private TextView[] tabLabels = new TextView[4];
+    private final View[] tabContainers = new View[5];
+    private final ImageView[] tabIcons = new ImageView[5];
+    private final TextView[] tabLabels = new TextView[5];
 
     private int selectedIndex = 0;
     private OnTabSelectedListener listener;
@@ -61,19 +61,22 @@ public class ModernBottomNavBar extends FrameLayout {
         tabContainers[0] = findViewById(R.id.tab_home);
         tabContainers[1] = findViewById(R.id.tab_search);
         tabContainers[2] = findViewById(R.id.tab_favorite);
-        tabContainers[3] = findViewById(R.id.tab_profile);
+        tabContainers[3] = findViewById(R.id.tab_chat);
+        tabContainers[4] = findViewById(R.id.tab_profile);
 
         tabIcons[0] = findViewById(R.id.iv_tab_home);
         tabIcons[1] = findViewById(R.id.iv_tab_search);
         tabIcons[2] = findViewById(R.id.iv_tab_favorite);
-        tabIcons[3] = findViewById(R.id.iv_tab_profile);
+        tabIcons[3] = findViewById(R.id.iv_tab_chat);
+        tabIcons[4] = findViewById(R.id.iv_tab_profile);
 
         tabLabels[0] = findViewById(R.id.tv_tab_home);
         tabLabels[1] = findViewById(R.id.tv_tab_search);
         tabLabels[2] = findViewById(R.id.tv_tab_favorite);
-        tabLabels[3] = findViewById(R.id.tv_tab_profile);
+        tabLabels[3] = findViewById(R.id.tv_tab_chat);
+        tabLabels[4] = findViewById(R.id.tv_tab_profile);
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             final int index = i;
             tabContainers[i].setOnClickListener(v -> {
                 if (index != selectedIndex) {
@@ -104,15 +107,14 @@ public class ModernBottomNavBar extends FrameLayout {
     }
 
     public void selectTab(int index, boolean animate) {
-        if (index < 0 || index >= 4) return;
-        int prevIndex = selectedIndex;
+        if (index < 0 || index >= 5) return;
         selectedIndex = index;
 
         // Position indicator capsule
         positionIndicator(index, animate);
 
-        // Update items styling & animations
-        for (int i = 0; i < 4; i++) {
+        // Update items styling & subtle animations (150-250ms)
+        for (int i = 0; i < 5; i++) {
             ImageView icon = tabIcons[i];
             TextView label = tabLabels[i];
 
@@ -129,12 +131,12 @@ public class ModernBottomNavBar extends FrameLayout {
                     icon.animate()
                             .scaleX(1.08f)
                             .scaleY(1.08f)
-                            .setDuration(110)
+                            .setDuration(100)
                             .setInterpolator(new FastOutSlowInInterpolator())
                             .withEndAction(() -> icon.animate()
                                     .scaleX(1.0f)
                                     .scaleY(1.0f)
-                                    .setDuration(110)
+                                    .setDuration(100)
                                     .setInterpolator(new FastOutSlowInInterpolator())
                                     .start())
                             .start();
@@ -158,10 +160,10 @@ public class ModernBottomNavBar extends FrameLayout {
         int width = getWidth();
         if (width <= 0) return;
 
-        float tabWidth = width / 4.0f;
+        float tabWidth = width / 5.0f;
         int indicatorWidth = activeIndicator.getWidth();
         if (indicatorWidth <= 0) {
-            indicatorWidth = (int) (60 * getResources().getDisplayMetrics().density);
+            indicatorWidth = (int) (52 * getResources().getDisplayMetrics().density);
         }
 
         float targetX = (index + 0.5f) * tabWidth - (indicatorWidth / 2.0f);
@@ -170,7 +172,7 @@ public class ModernBottomNavBar extends FrameLayout {
         if (animate) {
             activeIndicator.animate()
                     .translationX(targetX)
-                    .setDuration(220)
+                    .setDuration(200)
                     .setInterpolator(new FastOutSlowInInterpolator())
                     .start();
         } else {

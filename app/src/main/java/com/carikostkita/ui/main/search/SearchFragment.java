@@ -12,20 +12,25 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.KostFilterCriteria;
+import com.carikostkita.data.model.StatusKost;
+import com.carikostkita.data.model.TipeKost;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.data.repository.KostRepository;
 import com.carikostkita.ui.adapter.KostAdapter;
 import com.carikostkita.ui.detail.DetailKostActivity;
 import com.carikostkita.util.SessionManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.util.List;
 
 public class SearchFragment extends Fragment implements KostAdapter.OnKostClickListener {
@@ -36,10 +41,18 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
     private RecyclerView rvResults;
     private ProgressBar pbLoading;
     private LinearLayout layoutEmpty;
+    private TextView tvResultsCount;
+    private View btnSortSelector;
+    private TextView tvCurrentSort;
+
+    private TextView chipAll, chipPutri, chipPutra, chipCampur, chipUnder1Jt, chipAvailable;
+
     private KostAdapter kostAdapter;
     private KostRepository kostRepository;
     private SessionManager sessionManager;
     private KostFilterCriteria currentCriteria;
+
+    private String activeQuickChip = "ALL";
 
     @Nullable
     @Override
@@ -55,19 +68,56 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         sessionManager = new SessionManager(requireContext());
         currentCriteria = new KostFilterCriteria();
 
+        initViews(view);
+        setupRecyclerView();
+        setupSearchInput();
+        setupQuickChips();
+        setupSortSelector();
+
+        performFilterOrSearch();
+    }
+
+    private void initViews(View view) {
         etSearch = view.findViewById(R.id.et_search_query);
         btnClear = view.findViewById(R.id.btn_search_clear);
         btnFilter = view.findViewById(R.id.btn_open_filter);
         rvResults = view.findViewById(R.id.rv_search_results);
         pbLoading = view.findViewById(R.id.pb_search_loading);
         layoutEmpty = view.findViewById(R.id.layout_search_empty);
-        View btnReset = view.findViewById(R.id.btn_reset_search);
+        tvResultsCount = view.findViewById(R.id.tv_search_results_count);
+        btnSortSelector = view.findViewById(R.id.btn_sort_selector);
+        tvCurrentSort = view.findViewById(R.id.tv_current_sort);
 
+        chipAll = view.findViewById(R.id.chip_search_all);
+        chipPutri = view.findViewById(R.id.chip_search_putri);
+        chipPutra = view.findViewById(R.id.chip_search_putra);
+        chipCampur = view.findViewById(R.id.chip_search_campur);
+        chipUnder1Jt = view.findViewById(R.id.chip_search_under_1jt);
+        chipAvailable = view.findViewById(R.id.chip_search_available);
+
+        View btnReset = view.findViewById(R.id.btn_reset_search);
+        btnReset.setOnClickListener(v -> resetAllFilters());
+
+        btnFilter.setOnClickListener(v -> {
+            FilterBottomSheetFragment bottomSheet = new FilterBottomSheetFragment();
+            bottomSheet.setOnFilterAppliedListener(criteria -> {
+                String query = etSearch.getText().toString().trim();
+                criteria.setKeyword(query.isEmpty() ? null : query);
+                criteria.setSortBy(currentCriteria.getSortBy());
+                currentCriteria = criteria;
+                performFilterOrSearch();
+            });
+            bottomSheet.show(getChildFragmentManager(), "FilterBottomSheet");
+        });
+    }
+
+    private void setupRecyclerView() {
         kostAdapter = new KostAdapter(this);
         rvResults.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvResults.setAdapter(kostAdapter);
+    }
 
-        // Search text watcher
+    private void setupSearchInput() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -96,26 +146,97 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
             }
             return false;
         });
+    }
 
-        // Filter bottom sheet trigger
-        btnFilter.setOnClickListener(v -> {
-            FilterBottomSheetFragment bottomSheet = new FilterBottomSheetFragment();
-            bottomSheet.setOnFilterAppliedListener(criteria -> {
-                // Preserve current text query
-                String query = etSearch.getText().toString().trim();
-                criteria.setKeyword(query.isEmpty() ? null : query);
-                currentCriteria = criteria;
-                performFilterOrSearch();
-            });
-            bottomSheet.show(getChildFragmentManager(), "FilterBottomSheet");
+    private void setupQuickChips() {
+        chipAll.setOnClickListener(v -> applyQuickChip("ALL"));
+        chipPutri.setOnClickListener(v -> applyQuickChip("PUTRI"));
+        chipPutra.setOnClickListener(v -> applyQuickChip("PUTRA"));
+        chipCampur.setOnClickListener(v -> applyQuickChip("CAMPUR"));
+        chipUnder1Jt.setOnClickListener(v -> applyQuickChip("UNDER_1JT"));
+        chipAvailable.setOnClickListener(v -> applyQuickChip("AVAILABLE"));
+    }
+
+    private void applyQuickChip(String type) {
+        activeQuickChip = type;
+        updateQuickChipsVisual();
+
+        // Reset quick criteria overrides
+        currentCriteria.setTipeKost(null);
+        currentCriteria.setMaxHarga(null);
+        currentCriteria.setStatus(null);
+
+        switch (type) {
+            case "PUTRI":
+                currentCriteria.setTipeKost(TipeKost.PUTRI);
+                break;
+            case "PUTRA":
+                currentCriteria.setTipeKost(TipeKost.PUTRA);
+                break;
+            case "CAMPUR":
+                currentCriteria.setTipeKost(TipeKost.CAMPUR);
+                break;
+            case "UNDER_1JT":
+                currentCriteria.setMaxHarga(1000000.0);
+                break;
+            case "AVAILABLE":
+                currentCriteria.setStatus(StatusKost.TERSEDIA);
+                break;
+            case "ALL":
+            default:
+                break;
+        }
+
+        performFilterOrSearch();
+    }
+
+    private void updateQuickChipsVisual() {
+        setChipStyle(chipAll, "ALL".equals(activeQuickChip));
+        setChipStyle(chipPutri, "PUTRI".equals(activeQuickChip));
+        setChipStyle(chipPutra, "PUTRA".equals(activeQuickChip));
+        setChipStyle(chipCampur, "CAMPUR".equals(activeQuickChip));
+        setChipStyle(chipUnder1Jt, "UNDER_1JT".equals(activeQuickChip));
+        setChipStyle(chipAvailable, "AVAILABLE".equals(activeQuickChip));
+    }
+
+    private void setChipStyle(TextView chip, boolean isSelected) {
+        if (isSelected) {
+            chip.setBackgroundResource(R.drawable.bg_badge_kategori_selected);
+            chip.setTextColor(ContextCompat.getColor(requireContext(), R.color.on_primary));
+        } else {
+            chip.setBackgroundResource(R.drawable.bg_badge_kategori_unselected);
+            chip.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
+        }
+    }
+
+    private void setupSortSelector() {
+        btnSortSelector.setOnClickListener(v -> {
+            String[] options = {"Terbaru", "Harga Termurah", "Harga Termahal"};
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Urutkan Berdasarkan")
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) {
+                            currentCriteria.setSortBy("TERBARU");
+                            tvCurrentSort.setText("Urutkan: Terbaru");
+                        } else if (which == 1) {
+                            currentCriteria.setSortBy("TERMURAH");
+                            tvCurrentSort.setText("Urutkan: Termurah");
+                        } else {
+                            currentCriteria.setSortBy("TERMAHAL");
+                            tvCurrentSort.setText("Urutkan: Termahal");
+                        }
+                        performFilterOrSearch();
+                    })
+                    .show();
         });
+    }
 
-        btnReset.setOnClickListener(v -> {
-            etSearch.setText("");
-            currentCriteria = new KostFilterCriteria();
-            performFilterOrSearch();
-        });
-
+    private void resetAllFilters() {
+        etSearch.setText("");
+        currentCriteria = new KostFilterCriteria();
+        activeQuickChip = "ALL";
+        updateQuickChipsVisual();
+        tvCurrentSort.setText("Urutkan: Terbaru");
         performFilterOrSearch();
     }
 
@@ -127,9 +248,14 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         kostRepository.filterKost(currentCriteria, userId, new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> data) {
+                if (!isAdded()) return;
                 pbLoading.setVisibility(View.GONE);
                 kostAdapter.submitList(data);
-                if (data == null || data.isEmpty()) {
+
+                int count = (data != null) ? data.size() : 0;
+                tvResultsCount.setText("Ditemukan " + count + " properti kost");
+
+                if (count == 0) {
                     layoutEmpty.setVisibility(View.VISIBLE);
                     rvResults.setVisibility(View.GONE);
                 } else {
@@ -140,10 +266,9 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
 
             @Override
             public void onError(String message) {
+                if (!isAdded()) return;
                 pbLoading.setVisibility(View.GONE);
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -165,6 +290,7 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         kostRepository.toggleFavorite(sessionManager.getUserId(), kost.getIdKost(), new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
+                if (!isAdded()) return;
                 kost.setFavorite(isFavorite);
                 kostAdapter.notifyItemChanged(position);
                 String msg = isFavorite ? "Ditambahkan ke Favorit" : "Dihapus dari Favorit";
@@ -173,6 +299,7 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
 
             @Override
             public void onError(String message) {
+                if (!isAdded()) return;
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
             }
         });

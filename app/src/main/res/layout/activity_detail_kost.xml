@@ -330,6 +330,109 @@
                         android:textSize="14sp" />
                 </LinearLayout>
 
+                <!-- Patokan Lokasi -->
+                <LinearLayout
+                    android:id="@+id/layout_detail_patokan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_marginTop="2dp"
+                        android:contentDescription="Patokan"
+                        android:src="@drawable/ic_info"
+                        app:tint="@color/primary" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_patokan"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Patokan: Depan Masjid Nurul Huda, pagar hijau"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- Mini Map Preview Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_detail_map_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/border_subtle"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:background="@drawable/bg_fav_circle"
+                                android:padding="5dp"
+                                android:src="@drawable/ic_map"
+                                app:tint="@color/primary" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Peta Lokasi &amp; Titik GPS"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tv_detail_coordinates"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Koordinat: 0.463280, 101.450123"
+                                    android:textColor="@color/text_muted"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_detail_open_map"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="12dp"
+                            android:text="Buka di Google Maps"
+                            android:textColor="@color/primary"
+                            android:textSize="13sp"
+                            app:cornerRadius="10dp"
+                            app:icon="@drawable/ic_map"
+                            app:iconTint="@color/primary"
+                            app:strokeColor="@color/primary"
+                            app:strokeWidth="1dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
@@ -378,6 +481,76 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="18dp"
+                    android:background="@color/border" />
+
+                <!-- Laporkan Kost Bermasalah Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_detail_report"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="#FFF8F6"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#FFD8D0"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_warning"
+                            app:tint="@color/status_penuh" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Temukan Data Tidak Sesuai?"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Laporkan jika harga, foto, atau lokasi berbeda dari kenyataan."
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_detail_report"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:paddingHorizontal="12dp"
+                            android:text="Laporkan"
+                            android:textColor="@color/status_penuh"
+                            android:textSize="12sp"
+                            app:cornerRadius="8dp"
+                            app:strokeColor="@color/status_penuh" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
         </LinearLayout>
@@ -391,37 +564,35 @@
         android:background="@drawable/bg_bottom_nav"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
+        android:paddingHorizontal="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Tombol Google Maps Intent -->
+        <!-- Tombol Chat Pemilik (In-App Chat) -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_action_maps"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:id="@+id/btn_action_chat"
             android:layout_width="0dp"
             android:layout_height="50dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:text="Buka di Maps"
-            android:textColor="@color/primary"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1.2"
+            android:backgroundTint="@color/primary"
+            android:text="Chat Pemilik"
+            android:textColor="@color/on_primary"
             android:textSize="14sp"
             app:cornerRadius="14dp"
-            app:icon="@drawable/ic_map"
-            app:iconTint="@color/primary"
-            app:strokeColor="@color/primary"
-            app:strokeWidth="1.5dp" />
+            app:icon="@drawable/ic_nav_chat"
+            app:iconTint="@color/on_primary" />
 
         <!-- Tombol WhatsApp Intent -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_action_whatsapp"
             android:layout_width="0dp"
             android:layout_height="50dp"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1.2"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
             android:backgroundTint="@color/whatsapp_green"
-            android:text="Chat Pemilik"
+            android:text="WhatsApp"
             android:textColor="@color/on_primary"
             android:textSize="14sp"
             app:cornerRadius="14dp"

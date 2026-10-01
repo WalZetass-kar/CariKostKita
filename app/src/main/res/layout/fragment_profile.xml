@@ -11,13 +11,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="48dp">
+        android:paddingBottom="96dp">
 
-        <!-- Modern Header Section -->
+        <!-- Header Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/surface"
+            android:elevation="1dp"
             android:orientation="vertical"
             android:paddingHorizontal="20dp"
             android:paddingTop="24dp"
@@ -28,45 +29,40 @@
                 android:layout_height="wrap_content"
                 android:text="Profil Pengguna"
                 android:textColor="@color/text_primary"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Kelola informasi akun, kontak, dan pengaturan"
+                android:layout_marginTop="3dp"
+                android:text="Kelola akun, status peran, keamanan, dan preferensi aplikasi"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
         </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/border" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
+            android:paddingHorizontal="16dp"
             android:paddingTop="16dp">
 
-            <!-- Profile Info Card with Interactive Avatar -->
+            <!-- Profile Info Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="18dp"
-                app:cardElevation="1dp"
+                app:cardElevation="0.5dp"
                 app:contentPadding="20dp"
-                app:strokeColor="@color/border"
+                app:strokeColor="@color/border_subtle"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
+                    android:gravity="center_horizontal"
                     android:orientation="vertical">
 
                     <!-- Avatar with Camera Badge -->
@@ -108,7 +104,7 @@
                         android:layout_marginTop="12dp"
                         android:text="Pengguna CariKostKita"
                         android:textColor="@color/text_primary"
-                        android:textSize="19sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
                     <!-- Email -->
@@ -119,7 +115,7 @@
                         android:layout_marginTop="2dp"
                         android:text="user@carikostkita.com"
                         android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <!-- Phone Number -->
                     <TextView
@@ -127,9 +123,21 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Nomor WhatsApp: Belum diatur"
+                        android:text="No. WhatsApp: Belum diatur"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
+
+                    <!-- Bio -->
+                    <TextView
+                        android:id="@+id/tv_profile_bio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center"
+                        android:text="Belum ada bio singkat."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
 
                     <!-- Role Badge -->
                     <TextView
@@ -150,9 +158,9 @@
                         android:id="@+id/btn_edit_profile"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="match_parent"
-                        android:layout_height="46dp"
+                        android:layout_height="44dp"
                         android:layout_marginTop="16dp"
-                        android:text="Ubah Nama &amp; Kontak"
+                        android:text="Ubah Data Profil &amp; Bio"
                         android:textColor="@color/primary"
                         android:textSize="13sp"
                         app:cornerRadius="12dp"
@@ -165,18 +173,86 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Management Panel Shortcut (Visible for PEMILIK_KOST or DEVELOPER) -->
+            <!-- Owner Verification Card (For Pencari Kost) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_owner_verification"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/primary_soft"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:contentPadding="16dp"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/iv_verification_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_info"
+                            app:tint="@color/primary" />
+
+                        <TextView
+                            android:id="@+id/tv_verification_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:text="Ingin Mengiklankan Kost?"
+                            android:textColor="@color/primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_verification_desc"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Ajukan akun Anda untuk diverifikasi sebagai pemilik kost agar dapat memasang dan mengelola properti di Bukit Raya."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_apply_owner"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="10dp"
+                        android:backgroundTint="@color/primary"
+                        android:text="Ajukan Verifikasi Pemilik Kost"
+                        android:textColor="@color/on_primary"
+                        android:textSize="13sp"
+                        app:cornerRadius="10dp" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Management Panel Shortcut (Dedicated for Pemilik or Admin) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_admin_shortcut"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/primary_soft"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:contentPadding="18dp"
-                app:strokeColor="@color/primary"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0.5dp"
+                app:contentPadding="16dp"
+                app:strokeColor="@color/border_subtle"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -189,8 +265,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Panel Pemilik Kost"
-                        android:textColor="@color/primary"
-                        android:textSize="16sp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -198,6 +274,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
+                        android:lineSpacingExtra="2dp"
                         android:text="Kelola katalog properti kost, status ketersediaan kamar, dan statistik."
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
@@ -205,24 +282,25 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_goto_admin"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="46dp"
                         android:layout_marginTop="12dp"
                         android:backgroundTint="@color/primary"
-                        android:text="Buka Dashboard Pengelola"
+                        android:text="Buka Dashboard Pemilik"
                         android:textColor="@color/on_primary"
-                        app:cornerRadius="12dp" />
+                        android:textSize="13sp"
+                        app:cornerRadius="10dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Account Security Card -->
+            <!-- Account Security & Settings Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="1dp"
-                app:strokeColor="@color/border"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0.5dp"
+                app:strokeColor="@color/border_subtle"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -234,7 +312,7 @@
                     <LinearLayout
                         android:id="@+id/item_change_password"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="52dp"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
@@ -254,10 +332,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="14dp"
                             android:layout_weight="1"
-                            android:text="Ganti Kata Sandi"
+                            android:text="Keamanan &amp; Ganti Kata Sandi"
                             android:textColor="@color/text_primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <ImageView
                             android:layout_width="16dp"
@@ -270,7 +347,50 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="@color/border" />
+                        android:background="@color/divider" />
+
+                    <!-- Notifikasi Item -->
+                    <LinearLayout
+                        android:id="@+id/item_notification_settings"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="Notifikasi"
+                            android:src="@drawable/ic_info"
+                            app:tint="@color/text_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="Notifikasi Chat &amp; Aktivitas"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tv_notification_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Aktif"
+                            android:textColor="@color/status_tersedia"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider" />
 
                     <!-- Tentang Aplikasi Item -->
                     <LinearLayout
@@ -301,22 +421,22 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Tombol Logout with Confirmation Dialog -->
+            <!-- Tombol Logout -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_logout"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="24dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="20dp"
                 android:text="Keluar dari Akun"
                 android:textColor="@color/status_penuh"
-                android:textSize="15sp"
-                app:cornerRadius="14dp"
+                android:textSize="14sp"
+                app:cornerRadius="12dp"
                 app:icon="@drawable/ic_logout"
                 app:iconGravity="textStart"
                 app:iconTint="@color/status_penuh"
                 app:strokeColor="@color/status_penuh"
-                app:strokeWidth="1.5dp" />
+                app:strokeWidth="1.2dp" />
 
         </LinearLayout>
     </LinearLayout>

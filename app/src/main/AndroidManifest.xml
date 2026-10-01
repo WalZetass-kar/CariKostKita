@@ -3,6 +3,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -61,9 +63,18 @@
             android:name=".ui.detail.DetailKostActivity"
             android:exported="false" />
 
-        <!-- Admin Activities -->
+        <!-- Chat Room -->
+        <activity
+            android:name=".ui.main.chat.ChatRoomActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Admin & Pemilik Activities -->
         <activity
             android:name=".ui.admin.AdminMainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.admin.PemilikMainActivity"
             android:exported="false" />
         <activity
             android:name=".ui.admin.AdminKostFormActivity"

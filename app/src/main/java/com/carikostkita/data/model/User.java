@@ -10,10 +10,19 @@ public class User implements Serializable {
     private Role role;
     private String noHp;
     private String avatarUrl;
+    private String bio;
+    private VerificationStatus verificationStatus;
+    private String pengajuanCatatan;
+    private String catatanRevisi;
+    private boolean isActive;
+    private String authProvider; // "LOCAL" or "GOOGLE"
     private String createdAt;
 
     public User() {
         this.role = Role.USER;
+        this.verificationStatus = VerificationStatus.NONE;
+        this.isActive = true;
+        this.authProvider = "LOCAL";
     }
 
     public User(int idUser, String nama, String email, String password, Role role, String createdAt) {
@@ -22,6 +31,9 @@ public class User implements Serializable {
         this.email = email;
         this.password = password;
         this.role = role != null ? role : Role.USER;
+        this.verificationStatus = (role == Role.PEMILIK_KOST) ? VerificationStatus.APPROVED : VerificationStatus.NONE;
+        this.isActive = true;
+        this.authProvider = "LOCAL";
         this.createdAt = createdAt;
     }
 
@@ -81,12 +93,64 @@ public class User implements Serializable {
         this.avatarUrl = avatarUrl;
     }
 
+    public String getBio() {
+        return bio != null ? bio : "";
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public VerificationStatus getVerificationStatus() {
+        return verificationStatus != null ? verificationStatus : VerificationStatus.NONE;
+    }
+
+    public void setVerificationStatus(VerificationStatus verificationStatus) {
+        this.verificationStatus = verificationStatus;
+    }
+
+    public String getPengajuanCatatan() {
+        return pengajuanCatatan != null ? pengajuanCatatan : "";
+    }
+
+    public void setPengajuanCatatan(String pengajuanCatatan) {
+        this.pengajuanCatatan = pengajuanCatatan;
+    }
+
+    public String getAuthProvider() {
+        return authProvider != null ? authProvider : "LOCAL";
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
+    }
+
+    public boolean isGoogleAccount() {
+        return "GOOGLE".equalsIgnoreCase(this.authProvider);
+    }
+
     public String getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getCatatanRevisi() {
+        return catatanRevisi != null ? catatanRevisi : "";
+    }
+
+    public void setCatatanRevisi(String catatanRevisi) {
+        this.catatanRevisi = catatanRevisi;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
     }
 
     public boolean isPemilikKost() {

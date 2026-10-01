@@ -11,21 +11,21 @@
     <!-- Sliding Active Capsule Indicator (Behind the active icon) -->
     <View
         android:id="@+id/nav_active_indicator"
-        android:layout_width="60dp"
+        android:layout_width="52dp"
         android:layout_height="36dp"
         android:layout_marginTop="8dp"
         android:background="@drawable/bg_nav_capsule"
         android:visibility="invisible" />
 
-    <!-- 4 Navigation Items -->
+    <!-- 5 Navigation Items -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:baselineAligned="false"
         android:orientation="horizontal"
-        android:weightSum="4">
+        android:weightSum="5">
 
-        <!-- Tab: Beranda -->
+        <!-- Tab 0: Beranda -->
         <LinearLayout
             android:id="@+id/tab_home"
             android:layout_width="0dp"
@@ -40,13 +40,13 @@
             android:paddingBottom="6dp">
 
             <FrameLayout
-                android:layout_width="60dp"
+                android:layout_width="52dp"
                 android:layout_height="36dp">
 
                 <ImageView
                     android:id="@+id/iv_tab_home"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:layout_gravity="center"
                     android:contentDescription="@string/nav_home"
                     android:src="@drawable/ic_nav_home"
@@ -60,11 +60,11 @@
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_home"
                 android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Tab: Cari -->
+        <!-- Tab 1: Cari -->
         <LinearLayout
             android:id="@+id/tab_search"
             android:layout_width="0dp"
@@ -79,13 +79,13 @@
             android:paddingBottom="6dp">
 
             <FrameLayout
-                android:layout_width="60dp"
+                android:layout_width="52dp"
                 android:layout_height="36dp">
 
                 <ImageView
                     android:id="@+id/iv_tab_search"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:layout_gravity="center"
                     android:contentDescription="@string/nav_search"
                     android:src="@drawable/ic_nav_search"
@@ -99,10 +99,10 @@
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_search"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Tab: Favorit -->
+        <!-- Tab 2: Favorit -->
         <LinearLayout
             android:id="@+id/tab_favorite"
             android:layout_width="0dp"
@@ -117,13 +117,13 @@
             android:paddingBottom="6dp">
 
             <FrameLayout
-                android:layout_width="60dp"
+                android:layout_width="52dp"
                 android:layout_height="36dp">
 
                 <ImageView
                     android:id="@+id/iv_tab_favorite"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:layout_gravity="center"
                     android:contentDescription="@string/nav_favorite"
                     android:src="@drawable/ic_nav_favorite"
@@ -137,10 +137,48 @@
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_favorite"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Tab: Profil -->
+        <!-- Tab 3: Chat -->
+        <LinearLayout
+            android:id="@+id/tab_chat"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="6dp">
+
+            <FrameLayout
+                android:layout_width="52dp"
+                android:layout_height="36dp">
+
+                <ImageView
+                    android:id="@+id/iv_tab_chat"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/nav_chat"
+                    android:src="@drawable/ic_nav_chat"
+                    app:tint="@color/text_muted" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tv_tab_chat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/nav_chat"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Tab 4: Profil -->
         <LinearLayout
             android:id="@+id/tab_profile"
             android:layout_width="0dp"
@@ -155,13 +193,13 @@
             android:paddingBottom="6dp">
 
             <FrameLayout
-                android:layout_width="60dp"
+                android:layout_width="52dp"
                 android:layout_height="36dp">
 
                 <ImageView
                     android:id="@+id/iv_tab_profile"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:layout_gravity="center"
                     android:contentDescription="@string/nav_profile"
                     android:src="@drawable/ic_nav_profile"
@@ -175,7 +213,7 @@
                 android:layout_marginTop="2dp"
                 android:text="@string/nav_profile"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
     </LinearLayout>

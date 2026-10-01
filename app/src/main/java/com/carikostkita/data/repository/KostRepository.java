@@ -4,13 +4,16 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import com.carikostkita.data.local.DatabaseHelper;
+import com.carikostkita.data.local.dao.ActivityLogDAO;
 import com.carikostkita.data.local.dao.FasilitasDAO;
 import com.carikostkita.data.local.dao.FavoritDAO;
 import com.carikostkita.data.local.dao.KostDAO;
 import com.carikostkita.data.local.dao.WilayahDAO;
 import com.carikostkita.data.model.Fasilitas;
+import com.carikostkita.data.model.FotoKost;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.KostFilterCriteria;
+import com.carikostkita.data.model.KostVerificationStatus;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.Wilayah;
 import java.util.List;
@@ -22,6 +25,7 @@ public class KostRepository {
     private final FavoritDAO favoritDAO;
     private final FasilitasDAO fasilitasDAO;
     private final WilayahDAO wilayahDAO;
+    private final ActivityLogDAO activityLogDAO;
     private final ExecutorService executor;
     private final Handler mainHandler;
 
@@ -29,13 +33,33 @@ public class KostRepository {
         public int totalKost;
         public int totalTersedia;
         public int totalPenuh;
+        public int totalPending;
         public int totalFasilitas;
 
-        public AdminStats(int totalKost, int totalTersedia, int totalPenuh, int totalFasilitas) {
+        public AdminStats(int totalKost, int totalTersedia, int totalPenuh, int totalPending, int totalFasilitas) {
             this.totalKost = totalKost;
             this.totalTersedia = totalTersedia;
             this.totalPenuh = totalPenuh;
+            this.totalPending = totalPending;
             this.totalFasilitas = totalFasilitas;
+        }
+    }
+
+    public static class PemilikStats {
+        public int totalKost;
+        public int totalAktif;
+        public int totalPending;
+        public int totalRevisi;
+        public int totalTersedia;
+        public int totalTerisi;
+
+        public PemilikStats(int totalKost, int totalAktif, int totalPending, int totalRevisi, int totalTersedia, int totalTerisi) {
+            this.totalKost = totalKost;
+            this.totalAktif = totalAktif;
+            this.totalPending = totalPending;
+            this.totalRevisi = totalRevisi;
+            this.totalTersedia = totalTersedia;
+            this.totalTerisi = totalTerisi;
         }
     }
 
@@ -45,6 +69,7 @@ public class KostRepository {
         this.favoritDAO = new FavoritDAO(dbHelper, kostDAO);
         this.fasilitasDAO = new FasilitasDAO(dbHelper);
         this.wilayahDAO = new WilayahDAO(dbHelper);
+        this.activityLogDAO = new ActivityLogDAO(dbHelper);
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
     }
@@ -152,13 +177,31 @@ public class KostRepository {
         });
     }
 
+    public void getKostByPemilik(int idPemilik, DataCallback<List<Kost>> callback) {
+        executor.execute(() -> {
+            try {
+                List<Kost> list = kostDAO.findByPemilik(idPemilik);
+                mainHandler.post(() -> callback.onSuccess(list));
+            } catch (Exception e) {
+                postError(callback, "Gagal memuat kost milik Anda: " + e.getMessage());
+            }
+        });
+    }
+
     public void saveKost(Kost kost, List<Integer> fasilitasIds, DataCallback<Long> callback) {
+        saveKostWithFotos(kost, fasilitasIds, null, callback);
+    }
+
+    public void saveKostWithFotos(Kost kost, List<Integer> fasilitasIds, List<FotoKost> fotos, DataCallback<Long> callback) {
         executor.execute(() -> {
             try {
                 long id = kostDAO.insert(kost, fasilitasIds);
                 if (id == -1) {
                     postError(callback, "Gagal menyimpan data kost.");
                 } else {
+                    if (fotos != null && !fotos.isEmpty()) {
+                        kostDAO.replaceKostFotos((int) id, fotos);
+                    }
                     mainHandler.post(() -> callback.onSuccess(id));
                 }
             } catch (Exception e) {
@@ -168,9 +211,16 @@ public class KostRepository {
     }
 
     public void updateKost(Kost kost, List<Integer> fasilitasIds, DataCallback<Boolean> callback) {
+        updateKostWithFotos(kost, fasilitasIds, null, callback);
+    }
+
+    public void updateKostWithFotos(Kost kost, List<Integer> fasilitasIds, List<FotoKost> fotos, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
                 boolean ok = kostDAO.update(kost, fasilitasIds);
+                if (ok && fotos != null) {
+                    kostDAO.replaceKostFotos(kost.getIdKost(), fotos);
+                }
                 mainHandler.post(() -> callback.onSuccess(ok));
             } catch (Exception e) {
                 postError(callback, "Kesalahan update kost: " + e.getMessage());
@@ -211,17 +261,83 @@ public class KostRepository {
         });
     }
 
+    public void getPendingKosts(DataCallback<List<Kost>> callback) {
+        executor.execute(() -> {
+            try {
+                List<Kost> list = kostDAO.findPendingKosts();
+                mainHandler.post(() -> callback.onSuccess(list));
+            } catch (Exception e) {
+                postError(callback, "Gagal memuat antrean verifikasi kost: " + e.getMessage());
+            }
+        });
+    }
+
+    public void updateKostVerification(int idKost, KostVerificationStatus status, String catatanRevisi, int adminId, String adminName, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                boolean ok = kostDAO.updateVerificationStatus(idKost, status, catatanRevisi);
+                if (ok) {
+                    activityLogDAO.logAction(
+                            adminId,
+                            adminName != null ? adminName : "Admin",
+                            "VERIFIKASI_KOST",
+                            "Kost #" + idKost + " diubah status verifikasi menjadi " + status.getDisplayName() + (catatanRevisi != null && !catatanRevisi.isEmpty() ? " (" + catatanRevisi + ")" : ""),
+                            "KOST",
+                            idKost
+                    );
+                }
+                mainHandler.post(() -> callback.onSuccess(ok));
+            } catch (Exception e) {
+                postError(callback, "Gagal memperbarui verifikasi kost: " + e.getMessage());
+            }
+        });
+    }
+
+    public void updateVerificationStatus(int idKost, KostVerificationStatus status, String catatanRevisi, DataCallback<Boolean> callback) {
+        updateKostVerification(idKost, status, catatanRevisi, 0, "Admin", callback);
+    }
+
     public void getAdminStats(DataCallback<AdminStats> callback) {
         executor.execute(() -> {
             try {
                 int total = kostDAO.countTotal();
                 int tersedia = kostDAO.countByStatus(StatusKost.TERSEDIA);
                 int penuh = kostDAO.countByStatus(StatusKost.PENUH);
+                int pending = kostDAO.countPendingVerification();
                 int totalFasilitas = fasilitasDAO.findAll().size();
-                AdminStats stats = new AdminStats(total, tersedia, penuh, totalFasilitas);
+                AdminStats stats = new AdminStats(total, tersedia, penuh, pending, totalFasilitas);
                 mainHandler.post(() -> callback.onSuccess(stats));
             } catch (Exception e) {
                 postError(callback, "Gagal memuat statistik admin: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getPemilikStats(int idPemilik, DataCallback<PemilikStats> callback) {
+        executor.execute(() -> {
+            try {
+                List<Kost> myKosts = kostDAO.findByPemilik(idPemilik);
+                int total = myKosts.size();
+                int aktif = 0;
+                int pending = 0;
+                int revisi = 0;
+                int tersedia = 0;
+                int terisi = 0;
+                for (Kost k : myKosts) {
+                    if (k.getVerificationStatus() == KostVerificationStatus.APPROVED) {
+                        if (k.getStatus() == StatusKost.TERSEDIA) aktif++;
+                    } else if (k.getVerificationStatus() == KostVerificationStatus.PENDING) {
+                        pending++;
+                    } else if (k.getVerificationStatus() == KostVerificationStatus.REVISION_REQUIRED) {
+                        revisi++;
+                    }
+                    tersedia += k.getKamarTersedia();
+                    terisi += k.getKamarTerisi();
+                }
+                PemilikStats stats = new PemilikStats(total, aktif, pending, revisi, tersedia, terisi);
+                mainHandler.post(() -> callback.onSuccess(stats));
+            } catch (Exception e) {
+                postError(callback, "Gagal memuat statistik pemilik: " + e.getMessage());
             }
         });
     }

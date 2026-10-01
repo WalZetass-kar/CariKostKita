@@ -18,6 +18,11 @@ public class Kost implements Serializable {
     private double latitude;
     private double longitude;
     private StatusKost status;
+    private KostVerificationStatus verificationStatus;
+    private String catatanRevisi;
+    private String locationVerification;
+    private int idPemilik;
+    private String patokan;
     private String createdAt;
     private String updatedAt;
 
@@ -39,6 +44,11 @@ public class Kost implements Serializable {
     public Kost() {
         this.tipeKost = TipeKost.CAMPUR;
         this.status = StatusKost.TERSEDIA;
+        this.verificationStatus = KostVerificationStatus.APPROVED;
+        this.catatanRevisi = "";
+        this.locationVerification = "VALID";
+        this.idPemilik = 2; // Default to seeded owner
+        this.patokan = "";
         this.provinsi = "Riau";
         this.kota = "Pekanbaru";
         this.ukuranKamar = "3x4 m";
@@ -136,6 +146,46 @@ public class Kost implements Serializable {
         this.status = status;
     }
 
+    public KostVerificationStatus getVerificationStatus() {
+        return verificationStatus != null ? verificationStatus : KostVerificationStatus.PENDING;
+    }
+
+    public void setVerificationStatus(KostVerificationStatus verificationStatus) {
+        this.verificationStatus = verificationStatus;
+    }
+
+    public String getCatatanRevisi() {
+        return catatanRevisi != null ? catatanRevisi : "";
+    }
+
+    public void setCatatanRevisi(String catatanRevisi) {
+        this.catatanRevisi = catatanRevisi;
+    }
+
+    public String getLocationVerification() {
+        return locationVerification != null ? locationVerification : "VALID";
+    }
+
+    public void setLocationVerification(String locationVerification) {
+        this.locationVerification = locationVerification;
+    }
+
+    public int getIdPemilik() {
+        return idPemilik > 0 ? idPemilik : 2;
+    }
+
+    public void setIdPemilik(int idPemilik) {
+        this.idPemilik = idPemilik;
+    }
+
+    public String getPatokan() {
+        return patokan != null ? patokan : "";
+    }
+
+    public void setPatokan(String patokan) {
+        this.patokan = patokan;
+    }
+
     public String getCreatedAt() {
         return createdAt;
     }
@@ -218,6 +268,14 @@ public class Kost implements Serializable {
 
     public void setThumbnailPath(String thumbnailPath) {
         this.thumbnailPath = thumbnailPath;
+    }
+
+    public String getFotoUtama() {
+        return getThumbnailPath();
+    }
+
+    public void setFotoUtama(String fotoUtama) {
+        setThumbnailPath(fotoUtama);
     }
 
     public List<Fasilitas> getListFasilitas() {

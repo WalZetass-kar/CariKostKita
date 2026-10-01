@@ -12,9 +12,11 @@ public class KostFilterCriteria implements Serializable {
     private StatusKost status;
     private Integer idWilayah;
     private List<Integer> fasilitasIds;
+    private String sortBy; // "TERBARU", "TERMURAH", "TERMAHAL"
 
     public KostFilterCriteria() {
         this.fasilitasIds = new ArrayList<>();
+        this.sortBy = "TERBARU";
     }
 
     public String getKeyword() {
@@ -73,6 +75,14 @@ public class KostFilterCriteria implements Serializable {
         this.fasilitasIds = (fasilitasIds != null) ? new ArrayList<>(fasilitasIds) : new ArrayList<>();
     }
 
+    public String getSortBy() {
+        return sortBy != null ? sortBy : "TERBARU";
+    }
+
+    public void setSortBy(String sortBy) {
+        this.sortBy = sortBy;
+    }
+
     public void reset() {
         this.keyword = null;
         this.maxHarga = null;
@@ -81,5 +91,6 @@ public class KostFilterCriteria implements Serializable {
         this.status = null;
         this.idWilayah = null;
         this.fasilitasIds = new ArrayList<>();
+        this.sortBy = "TERBARU";
     }
 }

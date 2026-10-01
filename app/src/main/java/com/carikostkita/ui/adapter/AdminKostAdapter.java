@@ -59,6 +59,8 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
         private final TextView tvLocation;
         private final TextView tvPrice;
         private final TextView tvStatus;
+        private final TextView tvVerifStatus;
+        private final TextView tvRevisiNote;
         private final Button btnToggleStatus;
         private final Button btnEdit;
 
@@ -68,6 +70,8 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
             tvLocation = itemView.findViewById(R.id.tv_admin_kost_location);
             tvPrice = itemView.findViewById(R.id.tv_admin_kost_price);
             tvStatus = itemView.findViewById(R.id.tv_admin_kost_status);
+            tvVerifStatus = itemView.findViewById(R.id.tv_admin_kost_verif_status);
+            tvRevisiNote = itemView.findViewById(R.id.tv_admin_kost_revisi_note);
             btnToggleStatus = itemView.findViewById(R.id.btn_admin_toggle_status);
             btnEdit = itemView.findViewById(R.id.btn_admin_edit_kost);
         }
@@ -77,6 +81,7 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
             tvLocation.setText(kost.getFullLocation());
             tvPrice.setText(kost.getFormattedHarga());
 
+            // Ketersediaan Kamar Badge
             if (kost.getStatus() == StatusKost.TERSEDIA) {
                 tvStatus.setText("Tersedia");
                 tvStatus.setBackgroundResource(R.drawable.bg_badge_tersedia);
@@ -89,6 +94,39 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
                 tvStatus.setText("Tidak Aktif");
                 tvStatus.setBackgroundResource(R.drawable.bg_badge_penuh);
                 tvStatus.setTextColor(itemView.getContext().getColor(R.color.text_muted));
+            }
+
+            // Status Verifikasi Properti Badge
+            if (tvVerifStatus != null) {
+                if (kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.APPROVED) {
+                    tvVerifStatus.setText("Disetujui");
+                    tvVerifStatus.setBackgroundResource(R.drawable.bg_badge_tersedia);
+                    tvVerifStatus.setTextColor(itemView.getContext().getColor(R.color.status_tersedia));
+                    if (tvRevisiNote != null) tvRevisiNote.setVisibility(View.GONE);
+                } else if (kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REVISION_REQUIRED) {
+                    tvVerifStatus.setText("Perlu Revisi");
+                    tvVerifStatus.setBackgroundResource(R.drawable.bg_badge_campur);
+                    tvVerifStatus.setTextColor(itemView.getContext().getColor(R.color.badge_campur));
+                    if (tvRevisiNote != null) {
+                        String note = kost.getCatatanRevisi();
+                        if (note != null && !note.trim().isEmpty()) {
+                            tvRevisiNote.setVisibility(View.VISIBLE);
+                            tvRevisiNote.setText("Catatan Perbaikan: " + note.trim());
+                        } else {
+                            tvRevisiNote.setVisibility(View.GONE);
+                        }
+                    }
+                } else if (kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REJECTED) {
+                    tvVerifStatus.setText("Ditolak");
+                    tvVerifStatus.setBackgroundResource(R.drawable.bg_badge_penuh);
+                    tvVerifStatus.setTextColor(itemView.getContext().getColor(R.color.status_penuh));
+                    if (tvRevisiNote != null) tvRevisiNote.setVisibility(View.GONE);
+                } else {
+                    tvVerifStatus.setText("Menunggu Verifikasi");
+                    tvVerifStatus.setBackgroundResource(R.drawable.bg_badge_putra);
+                    tvVerifStatus.setTextColor(itemView.getContext().getColor(R.color.badge_putra));
+                    if (tvRevisiNote != null) tvRevisiNote.setVisibility(View.GONE);
+                }
             }
 
             btnEdit.setOnClickListener(v -> {
