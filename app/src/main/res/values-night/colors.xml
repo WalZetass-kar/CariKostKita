@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand Palette: CariKostKita SKY BLUE Visual Identity (Night Mode) -->
+    <color name="primary">#38BDF8</color>
+    <color name="primary_dark">#0284C7</color>
+    <color name="primary_soft">#0C4A6E</color>
+    <color name="primary_light">#7DD3FC</color>
+    <color name="primary_pill_start">#38BDF8</color>
+    <color name="primary_pill_end">#0284C7</color>
+    <color name="soft_blue">#0C4A6E</color>
+    <color name="soft_red">#0C4A6E</color>
+    <color name="badge_info_bg">#0C4A6E</color>
+    <color name="badge_info_border">#0369A1</color>
+    <color name="badge_info_text">#7DD3FC</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Sky Blue Header Gradients -->
+    <color name="header_primary_start">#38BDF8</color>
+    <color name="header_primary_end">#0284C7</color>
+    <color name="header_pastel_start">#38BDF8</color>
+    <color name="header_pastel_mid">#0EA5E9</color>
+    <color name="header_pastel_end">#0284C7</color>
+
+    <!-- Semantic & Action Colors -->
+    <color name="whatsapp_green">#16803C</color>
+    <color name="action_whatsapp">#16803C</color>
+    <color name="whatsapp_green_dark">#0E5031</color>
+    <color name="whatsapp_green_soft">#064E3B</color>
+    <color name="maps_blue">#38BDF8</color>
+
+    <!-- Backgrounds & Surfaces (Night) -->
+    <color name="background">#0F172A</color>
+    <color name="surface">#1E293B</color>
+    <color name="surface_variant">#334155</color>
+    <color name="border">#334155</color>
+    <color name="border_subtle">#1E293B</color>
+    <color name="divider">#334155</color>
+    <color name="ripple_soft">#0C4A6E</color>
+
+    <!-- Typography -->
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="text_muted">#64748B</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Category Badges -->
+    <color name="badge_putra">#38BDF8</color>
+    <color name="badge_putra_soft">#0C4A6E</color>
+    <color name="badge_putri">#F472B6</color>
+    <color name="badge_putri_soft">#831843</color>
+    <color name="badge_campur">#A78BFA</color>
+    <color name="badge_campur_soft">#4C1D95</color>
+
+    <!-- Category Filter Chips -->
+    <color name="chip_active_bg">#38BDF8</color>
+    <color name="chip_active_text">#0F172A</color>
+
+    <!-- Photo Placeholder Treatment -->
+    <color name="placeholder_bg">#0C4A6E</color>
+    <color name="placeholder_icon">#38BDF8</color>
+    <color name="placeholder_text">#7DD3FC</color>
+
+    <!-- Status Badges -->
+    <color name="status_tersedia">#10B981</color>
+    <color name="status_tersedia_soft">#064E3B</color>
+    <color name="status_penuh">#F87171</color>
+    <color name="status_penuh_soft">#7F1D1D</color>
+    <color name="status_tidak_aktif">#94A3B8</color>
+    <color name="status_tidak_aktif_soft">#334155</color>
+
+    <!-- Role Chip Netral -->
+    <color name="role_neutral_bg">#0C4A6E</color>
+    <color name="role_neutral_text">#7DD3FC</color>
+
+    <!-- Favorite Heart -->
+    <color name="favorite_active">#38BDF8</color>
+    <color name="favorite_inactive">#64748B</color>
+
+    <!-- Logout & Danger Actions -->
+    <color name="logout_red">#F87171</color>
+    <color name="logout_red_soft">#450A0A</color>
+    <color name="logout_red_border">#7F1D1D</color>
+    <color name="danger">#F87171</color>
+    <color name="danger_dark">#EF4444</color>
+    <color name="danger_soft">#450A0A</color>
+    <color name="danger_border">#7F1D1D</color>
+
+    <!-- Chat & Banner Colors -->
+    <color name="chat_incoming_bg">#334155</color>
+    <color name="chat_outgoing_bg">#38BDF8</color>
+</resources>

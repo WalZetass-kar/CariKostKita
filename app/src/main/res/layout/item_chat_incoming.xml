@@ -12,16 +12,18 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="64dp"
         android:background="@drawable/bg_chat_incoming"
-        android:elevation="0.5dp"
+        android:elevation="1dp"
         android:orientation="vertical"
         android:paddingHorizontal="14dp"
-        android:paddingVertical="10dp">
+        android:paddingTop="10dp"
+        android:paddingBottom="8dp">
 
         <TextView
             android:id="@+id/tv_chat_incoming_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:lineSpacingExtra="2dp"
+            android:fontFamily="sans-serif"
+            android:lineSpacingExtra="3sp"
             android:text="Pesan masuk dari counterparty"
             android:textColor="@color/text_primary"
             android:textSize="14sp" />
@@ -32,6 +34,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif"
             android:text="14:30"
             android:textColor="@color/text_muted"
             android:textSize="10sp" />

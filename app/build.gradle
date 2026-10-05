@@ -2,6 +2,15 @@ plugins {
     id 'com.android.application'
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
+String supabaseUrl = localProperties.getProperty('SUPABASE_URL') ?: (project.findProperty('SUPABASE_URL') ?: 'https://placeholder.supabase.co')
+String supabaseAnonKey = localProperties.getProperty('SUPABASE_ANON_KEY') ?: (project.findProperty('SUPABASE_ANON_KEY') ?: 'placeholder-anon-key')
+
 android {
     namespace 'com.carikostkita'
     compileSdk 34
@@ -14,10 +23,27 @@ android {
         versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Supabase configuration
+        buildConfigField "String", "SUPABASE_URL", "\"${supabaseUrl}\""
+        buildConfigField "String", "SUPABASE_ANON_KEY", "\"${supabaseAnonKey}\""
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -30,6 +56,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
@@ -45,13 +72,22 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 
-    // Networking & API
+    // Networking — digunakan untuk Supabase REST API (PostgREST, GoTrue, Storage)
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
 
-    // Security & BCrypt
-    implementation 'org.mindrot:jbcrypt:0.4'
+    // Google Sign-In & Browser OAuth untuk Supabase Auth
+    implementation 'com.google.android.gms:play-services-auth:21.0.0'
+    implementation 'com.google.android.gms:play-services-location:21.2.0'
+    implementation 'androidx.browser:browser:1.8.0'
+
+    // Interactive OpenStreetMap (Free, reliable native maps)
+    implementation 'org.osmdroid:osmdroid-android:6.1.18'
+
+    // Secure storage untuk Supabase JWT token
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

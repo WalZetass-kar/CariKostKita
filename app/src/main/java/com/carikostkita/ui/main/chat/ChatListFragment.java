@@ -7,16 +7,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.carikostkita.R;
 import com.carikostkita.data.model.ChatConversation;
+import com.carikostkita.data.remote.SupabaseRealtimeClient;
 import com.carikostkita.data.repository.ChatRepository;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.ui.adapter.ChatConversationAdapter;
@@ -33,6 +34,9 @@ public class ChatListFragment extends Fragment {
     private ChatRepository chatRepository;
     private SessionManager sessionManager;
     private ChatConversationAdapter adapter;
+    private SupabaseRealtimeClient realtimeClient;
+
+    private View layoutSkeleton;
 
     @Nullable
     @Override
@@ -50,17 +54,70 @@ public class ChatListFragment extends Fragment {
         swipeRefresh = view.findViewById(R.id.swipe_chat_list);
         rvConversations = view.findViewById(R.id.rv_chat_conversations);
         pbLoading = view.findViewById(R.id.pb_chat_list);
+        layoutSkeleton = view.findViewById(R.id.skeleton_chat_list);
         layoutEmpty = view.findViewById(R.id.layout_chat_list_empty);
 
+        TextView tvEmptyTitle = view.findViewById(R.id.tv_chat_empty_title);
+        TextView tvEmptyDesc = view.findViewById(R.id.tv_chat_empty_desc);
+        View btnCariKost = view.findViewById(R.id.btn_chat_empty_cari_kost);
+
+        boolean isOwner = sessionManager.isPemilikKost();
+        if (isOwner) {
+            if (tvEmptyTitle != null) tvEmptyTitle.setText("Kotak Masuk Kosong");
+            if (tvEmptyDesc != null) tvEmptyDesc.setText("Pesan dari calon penyewa akan muncul di sini.");
+            if (btnCariKost != null) btnCariKost.setVisibility(View.GONE);
+        } else {
+            if (tvEmptyTitle != null) tvEmptyTitle.setText("Belum Ada Percakapan");
+            if (tvEmptyDesc != null) tvEmptyDesc.setText("Temukan kost impianmu dan hubungi pemilik langsung dari halaman kost!");
+            if (btnCariKost != null) {
+                btnCariKost.setVisibility(View.VISIBLE);
+                btnCariKost.setOnClickListener(v -> {
+                    if (getActivity() instanceof com.carikostkita.ui.main.MainActivity) {
+                        ((com.carikostkita.ui.main.MainActivity) getActivity()).navigateToSearch();
+                    }
+                });
+            }
+        }
+
         setupRecyclerView();
+        setupRealtime();
 
         swipeRefresh.setOnRefreshListener(this::loadConversations);
+    }
+
+    private void setupRealtime() {
+        realtimeClient = new SupabaseRealtimeClient();
+        realtimeClient.setChatUpdateListener(this::loadConversations);
+        realtimeClient.setListener(msg -> {
+            if (isAdded()) {
+                loadConversations();
+            }
+        });
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        if (realtimeClient != null) {
+            realtimeClient.connect(null);
+        }
         loadConversations();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (realtimeClient != null) {
+            realtimeClient.disconnect();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (realtimeClient != null) {
+            realtimeClient.disconnect();
+        }
     }
 
     private void setupRecyclerView() {
@@ -82,45 +139,53 @@ public class ChatListFragment extends Fragment {
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         rvConversations.setLayoutManager(layoutManager);
-        rvConversations.addItemDecoration(new DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL));
         rvConversations.setAdapter(adapter);
     }
 
     private void loadConversations() {
-        int userId = sessionManager.getUserId();
-        if (userId <= 0) {
+        String userUid = sessionManager.getUserUid();
+        if (userUid == null || userUid.isEmpty()) {
             swipeRefresh.setRefreshing(false);
             layoutEmpty.setVisibility(View.VISIBLE);
             return;
         }
 
+        long startTime = com.carikostkita.util.SkeletonHelper.markStart();
         if (!swipeRefresh.isRefreshing()) {
-            pbLoading.setVisibility(View.VISIBLE);
+            if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);
+            if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+            rvConversations.setVisibility(View.GONE);
         }
 
-        chatRepository.getConversationsForUser(userId, new DataCallback<List<ChatConversation>>() {
+        chatRepository.getConversationsForUser(userUid, new DataCallback<List<ChatConversation>>() {
             @Override
             public void onSuccess(List<ChatConversation> data) {
-                if (!isAdded()) return;
-                pbLoading.setVisibility(View.GONE);
-                swipeRefresh.setRefreshing(false);
-                adapter.setConversations(data);
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (!isAdded()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+                    swipeRefresh.setRefreshing(false);
+                    adapter.setConversations(data);
 
-                if (data.isEmpty()) {
-                    layoutEmpty.setVisibility(View.VISIBLE);
-                    rvConversations.setVisibility(View.GONE);
-                } else {
-                    layoutEmpty.setVisibility(View.GONE);
-                    rvConversations.setVisibility(View.VISIBLE);
-                }
+                    if (data.isEmpty()) {
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        rvConversations.setVisibility(View.GONE);
+                    } else {
+                        layoutEmpty.setVisibility(View.GONE);
+                        rvConversations.setVisibility(View.VISIBLE);
+                    }
+                });
             }
 
             @Override
             public void onError(String message) {
-                if (!isAdded()) return;
-                pbLoading.setVisibility(View.GONE);
-                swipeRefresh.setRefreshing(false);
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (!isAdded()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+                    swipeRefresh.setRefreshing(false);
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }

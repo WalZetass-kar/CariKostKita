@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Header Skeleton -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_header_curved"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="28dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_skeleton_circle" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <View
+                    android:layout_width="100dp"
+                    android:layout_height="14dp"
+                    android:background="@drawable/bg_skeleton_pill" />
+
+                <View
+                    android:layout_width="160dp"
+                    android:layout_height="18dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_skeleton_pill" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_skeleton_circle" />
+        </LinearLayout>
+
+        <!-- Search Bar Skeleton -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_skeleton_pill" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="16dp">
+
+        <!-- Category Filter Chips Skeleton -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="80dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_skeleton_pill" />
+
+            <View
+                android:layout_width="74dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_skeleton_pill" />
+
+            <View
+                android:layout_width="74dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_skeleton_pill" />
+
+            <View
+                android:layout_width="84dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_skeleton_pill" />
+        </LinearLayout>
+
+        <!-- Info Banner Skeleton -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_skeleton_item" />
+
+        <!-- Carousel Title -->
+        <View
+            android:layout_width="140dp"
+            android:layout_height="18dp"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_skeleton_item" />
+
+        <!-- Horizontal Carousel Cards Skeleton -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="220dp"
+                android:layout_height="230dp"
+                android:layout_marginEnd="14dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/border"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="115dp"
+                        android:background="@color/skeleton_base" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <View
+                            android:layout_width="120dp"
+                            android:layout_height="14dp"
+                            android:background="@drawable/bg_skeleton_item" />
+
+                        <View
+                            android:layout_width="90dp"
+                            android:layout_height="12dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/bg_skeleton_item" />
+
+                        <View
+                            android:layout_width="100dp"
+                            android:layout_height="16dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_skeleton_item" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="220dp"
+                android:layout_height="230dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/border"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="115dp"
+                        android:background="@color/skeleton_base" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <View
+                            android:layout_width="120dp"
+                            android:layout_height="14dp"
+                            android:background="@drawable/bg_skeleton_item" />
+
+                        <View
+                            android:layout_width="90dp"
+                            android:layout_height="12dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/bg_skeleton_item" />
+
+                        <View
+                            android:layout_width="100dp"
+                            android:layout_height="16dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_skeleton_item" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- Vertical List Title -->
+        <View
+            android:layout_width="150dp"
+            android:layout_height="18dp"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_skeleton_item" />
+
+        <!-- Vertical Cards Skeleton -->
+        <include layout="@layout/layout_skeleton_cards_list" />
+    </LinearLayout>
+</LinearLayout>

@@ -29,14 +29,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Komunikasi langsung dengan pemilik seputar kost &amp; ketersediaan"
-            android:textColor="@color/text_muted"
+            android:text="Ngobrol langsung dengan pemilik kost"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
+        <!-- Skeleton Loading Container -->
+        <include
+            android:id="@+id/skeleton_chat_list"
+            layout="@layout/layout_skeleton_chat"
+            android:visibility="gone" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_chat_list"
@@ -61,7 +67,7 @@
             android:indeterminateTint="@color/primary"
             android:visibility="gone" />
 
-        <!-- Empty State -->
+        <!-- Clean Empty State from Design Reference -->
         <LinearLayout
             android:id="@+id/layout_chat_list_empty"
             android:layout_width="wrap_content"
@@ -72,31 +78,52 @@
             android:padding="32dp"
             android:visibility="gone">
 
-            <ImageView
+            <FrameLayout
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:src="@drawable/ic_nav_chat"
-                app:tint="@color/border" />
+                android:background="@drawable/bg_fav_circle">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Empty Chat"
+                    android:src="@drawable/ic_nav_chat"
+                    app:tint="@color/primary" />
+            </FrameLayout>
 
             <TextView
+                android:id="@+id/tv_chat_empty_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Belum Ada Percakapan"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tv_chat_empty_desc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center"
-                android:text="Temukan kost yang Anda sukai dan klik tombol 'Chat Pemilik' untuk memulai tanya jawab."
-                android:textColor="@color/text_muted"
+                android:text="Temukan kost yang kamu suka, lalu ketuk 'Chat Pemilik' untuk mulai tanya jawab."
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_chat_empty_cari_kost"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="20dp"
+                android:backgroundTint="@color/primary"
+                android:text="Cari kost sekarang"
+                android:textColor="@color/on_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="14dp" />
         </LinearLayout>
 
     </FrameLayout>
-
 </LinearLayout>

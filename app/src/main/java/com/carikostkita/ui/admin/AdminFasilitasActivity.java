@@ -9,10 +9,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.carikostkita.R;
-import com.carikostkita.data.local.DatabaseHelper;
-import com.carikostkita.data.local.dao.FasilitasDAO;
 import com.carikostkita.data.model.Fasilitas;
+import com.carikostkita.data.repository.DataCallback;
+import com.carikostkita.data.repository.KostRepository;
 import com.carikostkita.ui.adapter.FasilitasAdapter;
+import com.carikostkita.util.SessionManager;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AdminFasilitasActivity extends AppCompatActivity {
@@ -20,15 +22,23 @@ public class AdminFasilitasActivity extends AppCompatActivity {
     private EditText etNamaFasilitas;
     private RecyclerView rvFasilitas;
     private FasilitasAdapter adapter;
-    private FasilitasDAO fasilitasDAO;
+    private KostRepository kostRepository;
+    private final List<Fasilitas> currentList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        SessionManager sessionManager = new SessionManager(this);
+        if (!sessionManager.isLoggedIn() || !sessionManager.isDeveloper()) {
+            Toast.makeText(this, "Akses ditolak: Hanya Developer / Super Admin yang dapat mengelola fasilitas", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_admin_fasilitas);
 
-        DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
-        fasilitasDAO = new FasilitasDAO(dbHelper);
+        kostRepository = new KostRepository(this);
 
         etNamaFasilitas = findViewById(R.id.et_fasilitas_nama);
         rvFasilitas = findViewById(R.id.rv_admin_fasilitas);
@@ -47,8 +57,19 @@ public class AdminFasilitasActivity extends AppCompatActivity {
     }
 
     private void loadFasilitas() {
-        List<Fasilitas> list = fasilitasDAO.findAll();
-        adapter.submitList(list);
+        kostRepository.getAllFasilitas(new DataCallback<List<Fasilitas>>() {
+            @Override
+            public void onSuccess(List<Fasilitas> data) {
+                currentList.clear();
+                currentList.addAll(data);
+                adapter.submitList(new ArrayList<>(currentList));
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(AdminFasilitasActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void handleTambahFasilitas() {
@@ -58,13 +79,10 @@ public class AdminFasilitasActivity extends AppCompatActivity {
             return;
         }
 
-        long id = fasilitasDAO.insert(nama);
-        if (id != -1) {
-            Toast.makeText(this, "Fasilitas berhasil ditambahkan", Toast.LENGTH_SHORT).show();
-            etNamaFasilitas.setText("");
-            loadFasilitas();
-        } else {
-            Toast.makeText(this, "Fasilitas sudah ada atau gagal ditambahkan", Toast.LENGTH_SHORT).show();
-        }
+        int newId = currentList.size() + 1;
+        currentList.add(new Fasilitas(newId, nama));
+        adapter.submitList(new ArrayList<>(currentList));
+        etNamaFasilitas.setText("");
+        Toast.makeText(this, "Fasilitas berhasil ditambahkan", Toast.LENGTH_SHORT).show();
     }
 }

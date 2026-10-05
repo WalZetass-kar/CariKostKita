@@ -1,11 +1,30 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
-    android:fillViewport="true"
-    android:overScrollMode="never">
+    android:background="@color/background">
+
+    <!-- Background Image Visual (Jembatan Siak Pekanbaru) -->
+    <ImageView
+        android:id="@+id/iv_login_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0.88"
+        android:src="@drawable/bg_login_pekanbaru"
+        android:importantForAccessibility="no" />
+
+    <!-- Subtle Scrim Overlay for Maximum Contrast & Readability -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_login_scrim" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,16 +32,16 @@
         android:orientation="vertical"
         android:paddingBottom="40dp">
 
-        <!-- Top Curved Hero Branding Section -->
+        <!-- Top Header Hero Section (Transparent to showcase bridge background) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_login_hero"
+            android:background="@android:color/transparent"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingHorizontal="24dp"
             android:paddingTop="36dp"
-            android:paddingBottom="44dp">
+            android:paddingBottom="16dp">
 
             <!-- Circular Logo Container -->
             <FrameLayout
@@ -32,36 +51,23 @@
 
                 <ImageView
                     android:id="@+id/iv_login_logo"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
                     android:layout_gravity="center"
                     android:contentDescription="Logo CariKostKita"
                     android:src="@mipmap/ic_launcher" />
             </FrameLayout>
 
-            <!-- Pill Badge -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_badge_putri"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp"
-                android:text="CARIKOSTKITA • BUKIT RAYA"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <!-- Title & Subtitle -->
+            <!-- Title & Subtitle without redundant badge -->
             <TextView
                 android:id="@+id/tv_login_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:text="Selamat Datang!"
-                android:textColor="@color/text_primary"
-                android:textSize="24sp"
+                android:text="Selamat Datang Kembali"
+                android:textColor="@color/white"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -70,8 +76,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="Masuk untuk mencari kost idamanmu"
-                android:textColor="@color/text_secondary"
+                android:text="Masuk untuk melanjutkan pencarian kost kamu."
+                android:textColor="#E0FFFFFF"
                 android:textSize="13sp" />
         </LinearLayout>
 
@@ -80,10 +86,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="-24dp"
+            android:layout_marginTop="8dp"
             app:cardBackgroundColor="@color/surface"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="3dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
             app:contentPadding="22dp"
             app:strokeColor="@color/border"
             app:strokeWidth="1dp">
@@ -108,12 +114,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:hint="Alamat Email"
+                    android:hint="Masukkan email"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/primary"
+                    app:errorEnabled="true"
                     app:startIconDrawable="@drawable/ic_email"
                     app:startIconTint="@color/text_muted">
 
@@ -133,13 +140,14 @@
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:hint="Kata Sandi"
+                    android:layout_marginTop="2dp"
+                    android:hint="Masukkan password"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/primary"
+                    app:errorEnabled="true"
                     app:passwordToggleEnabled="true"
                     app:passwordToggleTint="@color/text_secondary"
                     app:startIconDrawable="@drawable/ic_lock"
@@ -155,12 +163,28 @@
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Lupa Password Link -->
+                <TextView
+                    android:id="@+id/tv_forgot_password"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="2dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingVertical="4dp"
+                    android:paddingStart="8dp"
+                    android:text="Lupa password?"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
                 <ProgressBar
                     android:id="@+id/pb_login"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="8dp"
                     android:indeterminateTint="@color/primary"
                     android:visibility="gone" />
 
@@ -169,11 +193,11 @@
                     android:id="@+id/btn_login"
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="16dp"
                     android:backgroundTint="@color/primary"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text="Masuk ke Akun"
+                    android:text="Masuk"
                     android:textColor="@color/on_primary"
                     android:textSize="15sp"
                     android:textStyle="bold"
@@ -183,7 +207,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -196,7 +220,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="10dp"
+                        android:layout_marginHorizontal="12dp"
                         android:text="atau masuk dengan"
                         android:textColor="@color/text_muted"
                         android:textSize="12sp" />
@@ -217,7 +241,7 @@
                     android:layout_marginTop="14dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text="Masuk dengan Google"
+                    android:text="Lanjutkan dengan Google"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -233,7 +257,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:gravity="center"
                     android:orientation="horizontal">
 
@@ -251,7 +275,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:padding="6dp"
-                        android:text="Daftar Sekarang"
+                        android:text="Daftar"
                         android:textColor="@color/primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -260,88 +284,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Quick Demo Autofill Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/surface"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="1dp"
-            app:contentPadding="14dp"
-            app:strokeColor="@color/border"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Autofill Cepat Akun Demo (3 Role Berbeda):"
-                    android:textColor="@color/text_primary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_demo_admin"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_marginEnd="3dp"
-                        android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:text="Admin"
-                        android:textColor="@color/primary"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        app:cornerRadius="10dp"
-                        app:strokeColor="@color/primary" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_demo_pemilik"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_marginHorizontal="3dp"
-                        android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:text="Pemilik"
-                        android:textColor="#7C3AED"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        app:cornerRadius="10dp"
-                        app:strokeColor="#7C3AED" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_demo_user"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="3dp"
-                        android:layout_weight="1"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:text="Pencari"
-                        android:textColor="@color/text_primary"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        app:cornerRadius="10dp"
-                        app:strokeColor="@color/border" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</FrameLayout>

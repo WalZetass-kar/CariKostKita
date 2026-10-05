@@ -7,10 +7,33 @@ public enum Role {
 
     public static Role fromString(String roleStr) {
         if (roleStr == null) return USER;
-        try {
-            return Role.valueOf(roleStr.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return USER;
+        String normalized = roleStr.trim().toLowerCase();
+        switch (normalized) {
+            case "owner":
+            case "pemilik_kost":
+                return PEMILIK_KOST;
+            case "developer":
+            case "admin":
+                return ADMIN;
+            case "user":
+            default:
+                try {
+                    return Role.valueOf(roleStr.trim().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    return USER;
+                }
+        }
+    }
+
+    public String toSupabaseRole() {
+        switch (this) {
+            case PEMILIK_KOST:
+                return "owner";
+            case ADMIN:
+                return "developer";
+            case USER:
+            default:
+                return "user";
         }
     }
 

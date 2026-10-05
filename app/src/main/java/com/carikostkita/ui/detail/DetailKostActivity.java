@@ -56,12 +56,14 @@ public class DetailKostActivity extends AppCompatActivity {
     private Button btnActionChat;
     private Button btnActionWhatsApp;
     private MaterialButton btnDetailReport;
+    private View layoutSkeleton;
+    private View scrollContent;
 
     private KostRepository kostRepository;
     private ReportRepository reportRepository;
     private SessionManager sessionManager;
     private Kost currentKost;
-    private int idKost;
+    private String idKost;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,8 +74,15 @@ public class DetailKostActivity extends AppCompatActivity {
         reportRepository = new ReportRepository(this);
         sessionManager = new SessionManager(this);
 
-        idKost = getIntent().getIntExtra("kost_id", -1);
-        if (idKost == -1) {
+        String extraStr = getIntent().getStringExtra("kost_id");
+        if (extraStr != null && !extraStr.isEmpty()) {
+            idKost = extraStr;
+        } else {
+            int legacy = getIntent().getIntExtra("kost_id", -1);
+            if (legacy != -1) idKost = String.valueOf(legacy);
+        }
+
+        if (idKost == null || idKost.isEmpty() || "-1".equals(idKost)) {
             Toast.makeText(this, "Data kost tidak valid", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -107,6 +116,8 @@ public class DetailKostActivity extends AppCompatActivity {
         btnActionChat = findViewById(R.id.btn_action_chat);
         btnActionWhatsApp = findViewById(R.id.btn_action_whatsapp);
         btnDetailReport = findViewById(R.id.btn_detail_report);
+        layoutSkeleton = findViewById(R.id.skeleton_detail_kost);
+        scrollContent = findViewById(R.id.scroll_detail_content);
 
         if (btnDetailReport != null) {
             btnDetailReport.setOnClickListener(v -> showReportKostDialog());
@@ -142,7 +153,7 @@ public class DetailKostActivity extends AppCompatActivity {
                                 .start())
                         .start();
 
-                kostRepository.toggleFavorite(sessionManager.getUserId(), currentKost.getIdKost(), new DataCallback<Boolean>() {
+                kostRepository.toggleFavorite(sessionManager.getUserUid(), currentKost.getId(), new DataCallback<Boolean>() {
                     @Override
                     public void onSuccess(Boolean isFavorite) {
                         currentKost.setFavorite(isFavorite);
@@ -177,11 +188,16 @@ public class DetailKostActivity extends AppCompatActivity {
                 return;
             }
             Intent intent = new Intent(DetailKostActivity.this, ChatRoomActivity.class);
-            intent.putExtra("kost_id", currentKost.getIdKost());
-            intent.putExtra("id_pemilik", currentKost.getIdPemilik());
+            intent.putExtra("kost_id", currentKost.getId());
+            intent.putExtra("id_pemilik", currentKost.getOwnerId());
             intent.putExtra("nama_kost", currentKost.getNamaKost());
             intent.putExtra("foto_kost", currentKost.getFotoUtama());
             intent.putExtra("harga_kost", currentKost.getHarga());
+            String lokasi = currentKost.getKecamatan() != null && !currentKost.getKecamatan().isEmpty()
+                    ? (currentKost.getKecamatan() + ", " + currentKost.getKota())
+                    : currentKost.getKota();
+            intent.putExtra("lokasi_kost", lokasi);
+            intent.putExtra("status_kost", currentKost.getStatus() != null ? currentKost.getStatus().name() : "TERSEDIA");
             startActivity(intent);
         });
 
@@ -199,18 +215,31 @@ public class DetailKostActivity extends AppCompatActivity {
     }
 
     private void loadKostDetail() {
-        int userId = sessionManager.getUserId();
+        long startTime = com.carikostkita.util.SkeletonHelper.markStart();
+        if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);
+        if (scrollContent != null) scrollContent.setVisibility(View.GONE);
+
+        String userId = sessionManager.getUserUid();
         kostRepository.getKostDetail(idKost, userId, new DataCallback<Kost>() {
             @Override
             public void onSuccess(Kost kost) {
-                currentKost = kost;
-                renderKostData(kost);
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (scrollContent != null) scrollContent.setVisibility(View.VISIBLE);
+                    currentKost = kost;
+                    renderKostData(kost);
+                });
             }
 
             @Override
             public void onError(String message) {
-                Toast.makeText(DetailKostActivity.this, message, Toast.LENGTH_LONG).show();
-                finish();
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    Toast.makeText(DetailKostActivity.this, message, Toast.LENGTH_LONG).show();
+                    finish();
+                });
             }
         });
     }
@@ -305,6 +334,19 @@ public class DetailKostActivity extends AppCompatActivity {
             tvEmpty.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
             layoutFacilities.addView(tvEmpty);
         }
+
+        // Role-Based Contextual Adaptations:
+        if (sessionManager.isDeveloper()) {
+            // Mode Moderasi Developer: sembunyikan aksi pencari
+            if (btnFavorite != null) btnFavorite.setVisibility(View.GONE);
+            if (btnActionChat != null) btnActionChat.setVisibility(View.GONE);
+            if (btnDetailReport != null) btnDetailReport.setVisibility(View.GONE);
+        } else if (sessionManager.isPemilikKost() && (kost.getOwnerId() != null && kost.getOwnerId().equals(sessionManager.getUserUid()))) {
+            // Mode Pratinjau Pemilik: pemilik meninjau properti kost miliknya sendiri
+            if (btnFavorite != null) btnFavorite.setVisibility(View.GONE);
+            if (btnActionChat != null) btnActionChat.setVisibility(View.GONE);
+            if (btnDetailReport != null) btnDetailReport.setVisibility(View.GONE);
+        }
     }
 
     private void updateFavoriteIcon(boolean isFavorite) {
@@ -370,9 +412,9 @@ public class DetailKostActivity extends AppCompatActivity {
                     String deskripsi = etDeskripsi.getText() != null ? etDeskripsi.getText().toString().trim() : "";
 
                     KostReport report = new KostReport(
-                            currentKost.getIdKost(),
-                            sessionManager.getUserId(),
-                            currentKost.getIdPemilik(),
+                            currentKost.getId(),
+                            sessionManager.getUserUid(),
+                            currentKost.getOwnerId(),
                             selectedCategory,
                             deskripsi.isEmpty() ? "Laporan data tidak sesuai kategori " + selectedCategory : deskripsi
                     );

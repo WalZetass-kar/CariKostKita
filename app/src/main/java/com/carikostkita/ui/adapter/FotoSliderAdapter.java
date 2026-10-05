@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import com.carikostkita.R;
 import com.carikostkita.data.model.FotoKost;
 import java.util.ArrayList;
@@ -36,13 +37,21 @@ public class FotoSliderAdapter extends RecyclerView.Adapter<FotoSliderAdapter.Sl
 
     @Override
     public void onBindViewHolder(@NonNull SliderViewHolder holder, int position) {
-        // Safe check: do not throw IndexOutOfBoundsException if fotoList is empty
         if (!fotoList.isEmpty() && position < fotoList.size()) {
             FotoKost foto = fotoList.get(position);
-            // Default placeholder image
-            holder.ivImage.setImageResource(R.mipmap.ic_launcher);
+            String path = foto != null ? foto.getPathFile() : null;
+            if (path != null && !path.trim().isEmpty()) {
+                Glide.with(holder.itemView.getContext())
+                        .load(path.trim())
+                        .centerCrop()
+                        .placeholder(R.drawable.bg_thumb_placeholder)
+                        .error(R.drawable.bg_thumb_placeholder)
+                        .into(holder.ivImage);
+            } else {
+                holder.ivImage.setImageResource(R.drawable.bg_thumb_placeholder);
+            }
         } else {
-            holder.ivImage.setImageResource(R.mipmap.ic_launcher);
+            holder.ivImage.setImageResource(R.drawable.bg_thumb_placeholder);
         }
     }
 

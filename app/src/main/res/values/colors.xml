@@ -1,50 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand Palette: Modern Soft Property UI -->
-    <color name="primary">#A30D18</color>
-    <color name="primary_dark">#7A0C12</color>
-    <color name="primary_soft">#FBEAEC</color>
+    <!-- Brand Palette: CariKostKita SKY BLUE Visual Identity -->
+    <color name="primary">#38BDF8</color>
+    <color name="primary_dark">#0284C7</color>
+    <color name="primary_soft">#E0F2FE</color>
+    <color name="primary_light">#7DD3FC</color>
+    <color name="primary_pill_start">#38BDF8</color>
+    <color name="primary_pill_end">#0284C7</color>
+    <color name="soft_blue">#E0F2FE</color>
+    <color name="soft_red">#E0F2FE</color>
+    <color name="badge_info_bg">#E0F2FE</color>
+    <color name="badge_info_border">#BAE6FD</color>
+    <color name="badge_info_text">#0284C7</color>
     <color name="on_primary">#FFFFFF</color>
     <color name="white">#FFFFFF</color>
 
+    <!-- Sky Blue Header Gradients -->
+    <color name="header_primary_start">#38BDF8</color>
+    <color name="header_primary_end">#0284C7</color>
+    <color name="header_pastel_start">#38BDF8</color>
+    <color name="header_pastel_mid">#0EA5E9</color>
+    <color name="header_pastel_end">#0284C7</color>
+
     <!-- Semantic & Action Colors -->
-    <color name="whatsapp_green">#16834B</color>
-    <color name="action_whatsapp">#16834B</color>
-    <color name="whatsapp_green_dark">#0F5B34</color>
-    <color name="whatsapp_green_soft">#EAF7EF</color>
-    <color name="maps_blue">#1A73E8</color>
+    <color name="whatsapp_green">#16803C</color>
+    <color name="action_whatsapp">#16803C</color>
+    <color name="whatsapp_green_dark">#0E5031</color>
+    <color name="whatsapp_green_soft">#E3F4EA</color>
+    <color name="maps_blue">#0284C7</color>
 
-    <!-- Backgrounds & Surfaces -->
-    <color name="background">#F8F8F6</color>
+    <!-- Backgrounds & Surfaces (Off-white soft sky #F0F9FF, Pure White Cards) -->
+    <color name="background">#F0F9FF</color>
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F4F5F7</color>
-    <color name="border">#D0D5DD</color>
-    <color name="border_subtle">#E6E8EC</color>
-    <color name="divider">#EAECF0</color>
-    <color name="ripple_soft">#FBEAEC</color>
+    <color name="surface_variant">#F8FAFC</color>
+    <color name="border">#E2E8F0</color>
+    <color name="border_subtle">#BAE6FD</color>
+    <color name="divider">#E2E8F0</color>
+    <color name="ripple_soft">#E0F2FE</color>
 
-    <!-- Typography (High Contrast - No Faded Text) -->
-    <color name="text_primary">#18202F</color>
-    <color name="text_secondary">#344054</color>
-    <color name="text_muted">#667085</color>
+    <!-- Typography (Slate Theme: Primary #172033, Secondary #667085) -->
+    <color name="text_primary">#172033</color>
+    <color name="text_secondary">#667085</color>
+    <color name="text_muted">#94A3B8</color>
     <color name="text_white">#FFFFFF</color>
 
-    <!-- Badges & Status Soft Colors -->
-    <color name="badge_putra">#1D4ED8</color>
-    <color name="badge_putra_soft">#EFF6FF</color>
+    <!-- Category Badges (WCAG AAA Contrast) -->
+    <color name="badge_putra">#0284C7</color>
+    <color name="badge_putra_soft">#E0F2FE</color>
     <color name="badge_putri">#BE185D</color>
-    <color name="badge_putri_soft">#FDF2F8</color>
+    <color name="badge_putri_soft">#FCE7F3</color>
     <color name="badge_campur">#6D28D9</color>
-    <color name="badge_campur_soft">#F5F3FF</color>
+    <color name="badge_campur_soft">#EDE9FE</color>
 
-    <color name="status_tersedia">#16834B</color>
-    <color name="status_tersedia_soft">#EAF7EF</color>
-    <color name="status_penuh">#C62828</color>
-    <color name="status_penuh_soft">#FDECEC</color>
-    <color name="status_tidak_aktif">#475467</color>
-    <color name="status_tidak_aktif_soft">#F4F5F7</color>
+    <!-- Category Filter Chips (Active: Sky Blue #38BDF8, Text #FFFFFF) -->
+    <color name="chip_active_bg">#38BDF8</color>
+    <color name="chip_active_text">#FFFFFF</color>
+
+    <!-- Photo Placeholder Treatment (Sky Blue Tinted #E0F2FE / #0284C7) -->
+    <color name="placeholder_bg">#E0F2FE</color>
+    <color name="placeholder_icon">#38BDF8</color>
+    <color name="placeholder_text">#0284C7</color>
+
+    <!-- Status Badges -->
+    <color name="status_tersedia">#16803C</color>
+    <color name="status_tersedia_soft">#E3F4EA</color>
+    <color name="status_penuh">#EF4444</color>
+    <color name="status_penuh_soft">#FEE2E2</color>
+    <color name="status_tidak_aktif">#64748B</color>
+    <color name="status_tidak_aktif_soft">#F1F5F9</color>
+    <color name="status_ditolak">#EF4444</color>
+    <color name="status_ditolak_soft">#FEE2E2</color>
+    <color name="status_pending">#F59E0B</color>
+    <color name="status_pending_soft">#FEF3C7</color>
+    <color name="status_verified">#0284C7</color>
+    <color name="status_verified_soft">#E0F2FE</color>
+
+    <!-- Role Chip Netral -->
+    <color name="role_neutral_bg">#E0F2FE</color>
+    <color name="role_neutral_text">#0284C7</color>
 
     <!-- Favorite Heart -->
-    <color name="favorite_active">#C62828</color>
-    <color name="favorite_inactive">#667085</color>
+    <color name="favorite_active">#38BDF8</color>
+    <color name="favorite_inactive">#94A3B8</color>
+
+    <!-- Logout & Danger Actions (Semantic Red / Rose) -->
+    <color name="logout_red">#EF4444</color>
+    <color name="logout_red_soft">#FEE2E2</color>
+    <color name="logout_red_border">#FECACA</color>
+    <color name="danger">#EF4444</color>
+    <color name="danger_dark">#DC2626</color>
+    <color name="danger_soft">#FEE2E2</color>
+    <color name="danger_border">#FECACA</color>
+
+    <!-- Chat & Banner Colors -->
+    <color name="chat_incoming_bg">#F1F5F9</color>
+    <color name="chat_outgoing_bg">#38BDF8</color>
+
+    <!-- Skeleton Loading Colors (Soft & Subtle) -->
+    <color name="skeleton_base">#E5F3FA</color>
+    <color name="skeleton_highlight">#F5FBFE</color>
 </resources>

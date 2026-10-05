@@ -3,18 +3,18 @@ package com.carikostkita.data.model;
 import java.io.Serializable;
 
 public class SystemActivityLog implements Serializable {
-    private int idLog;
-    private int idUser;
+    private String idLog;
+    private String idUser;
     private String actorName;
     private String actionType;
     private String description;
     private String targetType;
-    private int targetId;
+    private String targetId;
     private String createdAt;
 
     public SystemActivityLog() {}
 
-    public SystemActivityLog(int idUser, String actorName, String actionType, String description, String targetType, int targetId) {
+    public SystemActivityLog(String idUser, String actorName, String actionType, String description, String targetType, String targetId) {
         this.idUser = idUser;
         this.actorName = actorName;
         this.actionType = actionType;
@@ -23,19 +23,19 @@ public class SystemActivityLog implements Serializable {
         this.targetId = targetId;
     }
 
-    public int getIdLog() {
-        return idLog;
+    public String getIdLog() {
+        return idLog != null ? idLog : "";
     }
 
-    public void setIdLog(int idLog) {
+    public void setIdLog(String idLog) {
         this.idLog = idLog;
     }
 
-    public int getIdUser() {
-        return idUser;
+    public String getIdUser() {
+        return idUser != null ? idUser : "";
     }
 
-    public void setIdUser(int idUser) {
+    public void setIdUser(String idUser) {
         this.idUser = idUser;
     }
 
@@ -75,11 +75,11 @@ public class SystemActivityLog implements Serializable {
         this.targetType = targetType;
     }
 
-    public int getTargetId() {
-        return targetId;
+    public String getTargetId() {
+        return targetId != null ? targetId : "";
     }
 
-    public void setTargetId(int targetId) {
+    public void setTargetId(String targetId) {
         this.targetId = targetId;
     }
 

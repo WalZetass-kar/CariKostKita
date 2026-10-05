@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_compact_root"
+    android:layout_width="220dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="14dp"
+    android:layout_marginVertical="4dp"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/border_subtle"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top Thumbnail 16:9 Container (220dp x 124dp) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="124dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/iv_compact_thumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="124dp"
+                android:contentDescription="Foto Kost"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.CariKostKita.ThumbRadius14" />
+
+            <!-- Placeholder Gradient Layout (when no image) -->
+            <LinearLayout
+                android:id="@+id/layout_compact_placeholder"
+                android:layout_width="match_parent"
+                android:layout_height="124dp"
+                android:background="@drawable/bg_thumb_placeholder"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:contentDescription="Placeholder"
+                    android:src="@drawable/ic_nav_home"
+                    app:tint="@color/placeholder_icon" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Foto belum tersedia"
+                    android:textColor="@color/placeholder_text"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Category Badge Top-Left -->
+            <TextView
+                android:id="@+id/tv_compact_badge_tipe"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_badge_putri"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:text="PUTRI"
+                android:textColor="@color/badge_putri"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <!-- Floating Favorite Heart Button Top-Right -->
+            <FrameLayout
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_fav_circle">
+
+                <ImageButton
+                    android:id="@+id/btn_compact_favorite_toggle"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Simpan Favorit"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_heart_outline" />
+            </FrameLayout>
+
+        </FrameLayout>
+
+        <!-- Information Container -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="12dp">
+
+            <!-- Title -->
+            <TextView
+                android:id="@+id/tv_compact_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Kost Melati Bukit Raya"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <!-- Location with Pin -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:contentDescription="Lokasi"
+                    android:src="@drawable/ic_location_pin"
+                    app:tint="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/tv_compact_location"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Simpang Tiga, Bukit Raya"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Facilities Info -->
+            <TextView
+                android:id="@+id/tv_compact_facilities"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="AC • WiFi • K. Mandi"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp" />
+
+            <!-- Price & Availability Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tv_compact_price"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Rp500.000 /bulan"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <!-- Single Availability Pill -->
+                <TextView
+                    android:id="@+id/tv_compact_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_pill_tersedia"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="2 kamar"
+                    android:textColor="@color/status_tersedia"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

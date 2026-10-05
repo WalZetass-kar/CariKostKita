@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header Skeleton -->
+    <View
+        android:layout_width="160dp"
+        android:layout_height="22dp"
+        android:background="@drawable/bg_skeleton_item" />
+
+    <View
+        android:layout_width="220dp"
+        android:layout_height="14dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_skeleton_item" />
+
+    <!-- Chat Item 1 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_skeleton_circle" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <View
+                android:layout_width="140dp"
+                android:layout_height="16dp"
+                android:background="@drawable/bg_skeleton_item" />
+
+            <View
+                android:layout_width="180dp"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_skeleton_item" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_skeleton_item" />
+    </LinearLayout>
+
+    <!-- Chat Item 2 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_skeleton_circle" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <View
+                android:layout_width="130dp"
+                android:layout_height="16dp"
+                android:background="@drawable/bg_skeleton_item" />
+
+            <View
+                android:layout_width="160dp"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_skeleton_item" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_skeleton_item" />
+    </LinearLayout>
+
+    <!-- Chat Item 3 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_skeleton_circle" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <View
+                android:layout_width="150dp"
+                android:layout_height="16dp"
+                android:background="@drawable/bg_skeleton_item" />
+
+            <View
+                android:layout_width="140dp"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_skeleton_item" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="12dp"
+            android:background="@drawable/bg_skeleton_item" />
+    </LinearLayout>
+</LinearLayout>

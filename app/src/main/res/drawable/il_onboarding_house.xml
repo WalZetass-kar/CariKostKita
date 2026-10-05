@@ -1,0 +1,53 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <!-- Soft circular backdrop in soft blue -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M80,80m-70,0a70,70 0,1 1,140 0a70,70 0,1 1,-140 0" />
+    <path
+        android:fillColor="#BAE6FD"
+        android:pathData="M80,80m-52,0a52,52 0,1 1,104 0a52,52 0,1 1,-104 0" />
+
+    <!-- Minimal Modern House Base -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,78h60v44a6,6 0,0 1,-6 6h-48a6,6 0,0 1,-6 -6z" />
+
+    <!-- Sleek Triangular Roof in Primary Sky Blue -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M80,44L42,75h76z" />
+
+    <!-- Modern Chimney -->
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M96,50h8v16h-8z" />
+
+    <!-- Door in Primary Sky Blue -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M72,100h16v28h-16z" />
+
+    <!-- Window 1 (Left) -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M58,86h10v10h-10z" />
+
+    <!-- Window 2 (Right) -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M92,86h10v10h-10z" />
+
+    <!-- Clean checkmark badge in Primary Dark -->
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M106,106m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0" />
+    
+    <!-- White checkmark -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M102,106l3,3l8,-8l2,2l-10,10l-5,-5z" />
+</vector>

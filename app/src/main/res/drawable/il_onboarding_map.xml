@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <!-- Soft circular backdrop -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M80,80m-70,0a70,70 0,1 1,140 0a70,70 0,1 1,-140 0" />
+    <path
+        android:fillColor="#BAE6FD"
+        android:pathData="M80,80m-52,0a52,52 0,1 1,104 0a52,52 0,1 1,-104 0" />
+
+    <!-- Stylized Folded Map in White and Soft Sky -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,60 L65,48 L95,60 L125,48 L125,115 L95,127 L65,115 L35,127 Z" />
+    <path
+        android:fillColor="#F0F9FF"
+        android:pathData="M65,48 L95,60 L95,127 L65,115 Z" />
+
+    <!-- Map Grid Lines -->
+    <path
+        android:strokeColor="#BAE6FD"
+        android:strokeWidth="2"
+        android:pathData="M45,75 Q70,90 115,70" />
+    <path
+        android:strokeColor="#BAE6FD"
+        android:strokeWidth="2"
+        android:pathData="M40,105 Q85,100 120,95" />
+
+    <!-- Prominent Sky Blue Location Pin -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M80,36 C67.85,36 58,45.85 58,58 C58,74.5 80,98 80,98 C80,98 102,74.5 102,58 C102,45.85 92.15,36 80,36 Z" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M80,48 A10,10 0 1,0 80,68 A10,10 0 1,0 80,48 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,53 A5,5 0 1,0 80,63 A5,5 0 1,0 80,53 Z" />
+</vector>

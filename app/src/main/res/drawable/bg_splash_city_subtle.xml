@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="200dp"
+    android:viewportWidth="360"
+    android:viewportHeight="200">
+    <!-- Subtle City Skyline Silhouette in soft translucent white/sky -->
+    <path
+        android:fillColor="#15FFFFFF"
+        android:pathData="M0,200 L0,140 L25,140 L25,110 L45,110 L45,150 L70,150 L70,95 L95,95 L95,160 L120,160 L120,80 L145,80 L145,155 L175,155 L175,70 L200,70 L200,165 L230,165 L230,105 L255,105 L255,145 L285,145 L285,90 L310,90 L310,150 L335,150 L335,120 L360,120 L360,200 Z" />
+    <path
+        android:fillColor="#10FFFFFF"
+        android:pathData="M15,200 L15,125 L35,125 L35,160 L60,160 L60,85 L85,85 L85,140 L110,140 L110,65 L135,65 L135,145 L160,145 L160,115 L185,115 L185,55 L215,55 L215,135 L245,135 L245,75 L270,75 L270,150 L295,150 L295,100 L320,100 L320,160 L345,160 L345,130 L360,130 L360,200 Z" />
+</vector>

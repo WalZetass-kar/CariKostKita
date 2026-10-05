@@ -30,11 +30,11 @@
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
             android:layout_margin="6dp"
-            android:background="@drawable/bg_badge_putri"
+            android:background="@drawable/bg_badge_putra"
             android:paddingHorizontal="6dp"
             android:paddingVertical="2dp"
             android:text="Utama"
-            android:textColor="@color/primary"
+            android:textColor="@color/badge_putra"
             android:textSize="9sp"
             android:textStyle="bold"
             android:visibility="gone" />
@@ -51,7 +51,7 @@
             android:padding="5dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_close"
-            app:tint="#DC2626" />
+            app:tint="@color/primary_dark" />
 
         <!-- Button Set as Main (at bottom) -->
         <TextView

@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class Kost implements Serializable {
-    private int idKost;
-    private int idWilayah;
+    private String id;
+    private String ownerId;
     private String namaKost;
     private String alamat;
     private double harga;
@@ -21,7 +21,6 @@ public class Kost implements Serializable {
     private KostVerificationStatus verificationStatus;
     private String catatanRevisi;
     private String locationVerification;
-    private int idPemilik;
     private String patokan;
     private String createdAt;
     private String updatedAt;
@@ -29,14 +28,25 @@ public class Kost implements Serializable {
     // Lokasi Lengkap & Kamar Details
     private String provinsi;
     private String kota;
+    private String kecamatan;
+    private String kelurahan;
     private String ukuranKamar;
     private int totalKamar;
     private int kamarTersedia;
+    private int idWilayah = 1;
 
-    // Relasi & Tampilan
-    private String kelurahan;
-    private String kecamatan;
-    private String thumbnailPath;
+    public int getIdWilayah() {
+        return idWilayah;
+    }
+
+    public void setIdWilayah(int idWilayah) {
+        this.idWilayah = idWilayah;
+    }
+
+    // Media & Fasilitas
+    private String thumbnailUrl;
+    private List<String> imageUrls;
+    private List<String> fasilitas;
     private List<Fasilitas> listFasilitas;
     private List<FotoKost> listFoto;
     private boolean isFavorite;
@@ -47,35 +57,52 @@ public class Kost implements Serializable {
         this.verificationStatus = KostVerificationStatus.APPROVED;
         this.catatanRevisi = "";
         this.locationVerification = "VALID";
-        this.idPemilik = 2; // Default to seeded owner
         this.patokan = "";
         this.provinsi = "Riau";
         this.kota = "Pekanbaru";
         this.ukuranKamar = "3x4 m";
         this.totalKamar = 10;
         this.kamarTersedia = 3;
+        this.imageUrls = new ArrayList<>();
+        this.fasilitas = new ArrayList<>();
         this.listFasilitas = new ArrayList<>();
         this.listFoto = new ArrayList<>();
     }
 
-    public int getIdKost() {
-        return idKost;
+    public String getId() {
+        return id != null ? id : "";
     }
 
-    public void setIdKost(int idKost) {
-        this.idKost = idKost;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public int getIdWilayah() {
-        return idWilayah;
+    public String getIdKost() {
+        return getId();
     }
 
-    public void setIdWilayah(int idWilayah) {
-        this.idWilayah = idWilayah;
+    public void setIdKost(String id) {
+        setId(id);
+    }
+
+    public String getOwnerId() {
+        return ownerId != null ? ownerId : "";
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getIdPemilik() {
+        return getOwnerId();
+    }
+
+    public void setIdPemilik(String ownerId) {
+        setOwnerId(ownerId);
     }
 
     public String getNamaKost() {
-        return namaKost;
+        return namaKost != null ? namaKost : "";
     }
 
     public void setNamaKost(String namaKost) {
@@ -83,7 +110,7 @@ public class Kost implements Serializable {
     }
 
     public String getAlamat() {
-        return alamat;
+        return alamat != null ? alamat : "";
     }
 
     public void setAlamat(String alamat) {
@@ -99,7 +126,7 @@ public class Kost implements Serializable {
     }
 
     public TipeKost getTipeKost() {
-        return tipeKost;
+        return tipeKost != null ? tipeKost : TipeKost.CAMPUR;
     }
 
     public void setTipeKost(TipeKost tipeKost) {
@@ -107,7 +134,7 @@ public class Kost implements Serializable {
     }
 
     public String getDeskripsi() {
-        return deskripsi;
+        return deskripsi != null ? deskripsi : "";
     }
 
     public void setDeskripsi(String deskripsi) {
@@ -115,7 +142,7 @@ public class Kost implements Serializable {
     }
 
     public String getNoWhatsapp() {
-        return noWhatsapp;
+        return noWhatsapp != null ? noWhatsapp : "";
     }
 
     public void setNoWhatsapp(String noWhatsapp) {
@@ -139,7 +166,7 @@ public class Kost implements Serializable {
     }
 
     public StatusKost getStatus() {
-        return status;
+        return status != null ? status : StatusKost.TERSEDIA;
     }
 
     public void setStatus(StatusKost status) {
@@ -170,14 +197,6 @@ public class Kost implements Serializable {
         this.locationVerification = locationVerification;
     }
 
-    public int getIdPemilik() {
-        return idPemilik > 0 ? idPemilik : 2;
-    }
-
-    public void setIdPemilik(int idPemilik) {
-        this.idPemilik = idPemilik;
-    }
-
     public String getPatokan() {
         return patokan != null ? patokan : "";
     }
@@ -187,7 +206,7 @@ public class Kost implements Serializable {
     }
 
     public String getCreatedAt() {
-        return createdAt;
+        return createdAt != null ? createdAt : "";
     }
 
     public void setCreatedAt(String createdAt) {
@@ -195,7 +214,7 @@ public class Kost implements Serializable {
     }
 
     public String getUpdatedAt() {
-        return updatedAt;
+        return updatedAt != null ? updatedAt : "";
     }
 
     public void setUpdatedAt(String updatedAt) {
@@ -247,7 +266,7 @@ public class Kost implements Serializable {
     }
 
     public String getKelurahan() {
-        return kelurahan;
+        return kelurahan != null ? kelurahan : "";
     }
 
     public void setKelurahan(String kelurahan) {
@@ -255,43 +274,109 @@ public class Kost implements Serializable {
     }
 
     public String getKecamatan() {
-        return kecamatan;
+        return kecamatan != null ? kecamatan : "";
     }
 
     public void setKecamatan(String kecamatan) {
         this.kecamatan = kecamatan;
     }
 
+    public String getThumbnailUrl() {
+        return thumbnailUrl != null ? thumbnailUrl : "";
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
     public String getThumbnailPath() {
-        return thumbnailPath;
+        return getThumbnailUrl();
     }
 
     public void setThumbnailPath(String thumbnailPath) {
-        this.thumbnailPath = thumbnailPath;
+        setThumbnailUrl(thumbnailPath);
     }
 
     public String getFotoUtama() {
-        return getThumbnailPath();
+        return getThumbnailUrl();
     }
 
     public void setFotoUtama(String fotoUtama) {
-        setThumbnailPath(fotoUtama);
+        setThumbnailUrl(fotoUtama);
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls != null ? imageUrls : new ArrayList<>();
+    }
+
+    public void setImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+
+    public List<String> getFasilitas() {
+        return fasilitas != null ? fasilitas : new ArrayList<>();
+    }
+
+    public List<String> getFasilitasNames() {
+        return getFasilitas();
+    }
+
+    public void setFasilitas(List<String> fasilitas) {
+        this.fasilitas = fasilitas;
     }
 
     public List<Fasilitas> getListFasilitas() {
-        return listFasilitas != null ? listFasilitas : new ArrayList<>();
+        if (listFasilitas == null || listFasilitas.isEmpty()) {
+            listFasilitas = new ArrayList<>();
+            if (fasilitas != null) {
+                int idCounter = 1;
+                for (String fName : fasilitas) {
+                    listFasilitas.add(new Fasilitas(idCounter++, fName));
+                }
+            }
+        }
+        return listFasilitas;
     }
 
     public void setListFasilitas(List<Fasilitas> listFasilitas) {
         this.listFasilitas = listFasilitas;
+        if (listFasilitas != null) {
+            this.fasilitas = new ArrayList<>();
+            for (Fasilitas f : listFasilitas) {
+                this.fasilitas.add(f.getNamaFasilitas());
+            }
+        }
     }
 
     public List<FotoKost> getListFoto() {
-        return listFoto != null ? listFoto : new ArrayList<>();
+        if (listFoto == null || listFoto.isEmpty()) {
+            listFoto = new ArrayList<>();
+            if (imageUrls != null && !imageUrls.isEmpty()) {
+                int idCounter = 1;
+                for (String url : imageUrls) {
+                    listFoto.add(new FotoKost(idCounter++, 0, "foto", url, idCounter == 2));
+                }
+            } else if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
+                listFoto.add(new FotoKost(1, 0, "cover", thumbnailUrl, true));
+            }
+        }
+        return listFoto;
     }
 
     public void setListFoto(List<FotoKost> listFoto) {
         this.listFoto = listFoto;
+        if (listFoto != null) {
+            this.imageUrls = new ArrayList<>();
+            for (FotoKost f : listFoto) {
+                this.imageUrls.add(f.getPathFile());
+                if (f.isThumbnail()) {
+                    this.thumbnailUrl = f.getPathFile();
+                }
+            }
+            if ((this.thumbnailUrl == null || this.thumbnailUrl.isEmpty()) && !imageUrls.isEmpty()) {
+                this.thumbnailUrl = imageUrls.get(0);
+            }
+        }
     }
 
     public boolean isFavorite() {
@@ -306,7 +391,7 @@ public class Kost implements Serializable {
         Locale localeID = new Locale("in", "ID");
         NumberFormat formatRupiah = NumberFormat.getCurrencyInstance(localeID);
         formatRupiah.setMaximumFractionDigits(0);
-        return formatRupiah.format(this.harga) + " / bln";
+        return formatRupiah.format(this.harga) + " /bulan";
     }
 
     public String getFullLocation() {

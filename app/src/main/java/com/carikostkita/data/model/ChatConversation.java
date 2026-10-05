@@ -3,34 +3,53 @@ package com.carikostkita.data.model;
 import java.io.Serializable;
 
 public class ChatConversation implements Serializable {
-    private int idConversation;
-    private int idKost;
+    private String id;
+    private String kostId;
     private String namaKost;
     private String thumbnailKost;
-    private int idPencari;
+    private String pencariId;
     private String namaPencari;
-    private int idPemilik;
+    private String ownerId;
     private String namaPemilik;
     private String lastMessage;
     private String lastMessageTime;
+    private String lastMessageSenderId;
+    private String avatarLawan;
+    private String roleLawan;
     private int unreadCount;
 
     public ChatConversation() {}
 
-    public int getIdConversation() {
-        return idConversation;
+    public String getId() {
+        return id != null ? id : "";
     }
 
-    public void setIdConversation(int idConversation) {
-        this.idConversation = idConversation;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public int getIdKost() {
-        return idKost;
+    public String getIdConversation() {
+        return getId();
     }
 
-    public void setIdKost(int idKost) {
-        this.idKost = idKost;
+    public void setIdConversation(String id) {
+        setId(id);
+    }
+
+    public String getKostId() {
+        return kostId != null ? kostId : "";
+    }
+
+    public void setKostId(String kostId) {
+        this.kostId = kostId;
+    }
+
+    public String getIdKost() {
+        return getKostId();
+    }
+
+    public void setIdKost(String kostId) {
+        setKostId(kostId);
     }
 
     public String getNamaKost() {
@@ -42,7 +61,7 @@ public class ChatConversation implements Serializable {
     }
 
     public String getThumbnailKost() {
-        return thumbnailKost;
+        return thumbnailKost != null ? thumbnailKost : "";
     }
 
     public void setThumbnailKost(String thumbnailKost) {
@@ -57,12 +76,20 @@ public class ChatConversation implements Serializable {
         setThumbnailKost(fotoKost);
     }
 
-    public int getIdPencari() {
-        return idPencari;
+    public String getPencariId() {
+        return pencariId != null ? pencariId : "";
     }
 
-    public void setIdPencari(int idPencari) {
-        this.idPencari = idPencari;
+    public void setPencariId(String pencariId) {
+        this.pencariId = pencariId;
+    }
+
+    public String getIdPencari() {
+        return getPencariId();
+    }
+
+    public void setIdPencari(String idPencari) {
+        setPencariId(idPencari);
     }
 
     public String getNamaPencari() {
@@ -73,12 +100,20 @@ public class ChatConversation implements Serializable {
         this.namaPencari = namaPencari;
     }
 
-    public int getIdPemilik() {
-        return idPemilik;
+    public String getOwnerId() {
+        return ownerId != null ? ownerId : "";
     }
 
-    public void setIdPemilik(int idPemilik) {
-        this.idPemilik = idPemilik;
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getIdPemilik() {
+        return getOwnerId();
+    }
+
+    public void setIdPemilik(String ownerId) {
+        setOwnerId(ownerId);
     }
 
     public String getNamaPemilik() {
@@ -129,8 +164,32 @@ public class ChatConversation implements Serializable {
         this.unreadCount = count;
     }
 
-    public String getTargetName(int currentUserId) {
-        if (currentUserId == idPencari) {
+    public String getLastMessageSenderId() {
+        return lastMessageSenderId != null ? lastMessageSenderId : "";
+    }
+
+    public void setLastMessageSenderId(String senderId) {
+        this.lastMessageSenderId = senderId;
+    }
+
+    public String getAvatarLawan() {
+        return avatarLawan != null ? avatarLawan : "";
+    }
+
+    public void setAvatarLawan(String avatarLawan) {
+        this.avatarLawan = avatarLawan;
+    }
+
+    public String getRoleLawan() {
+        return roleLawan != null ? roleLawan : "";
+    }
+
+    public void setRoleLawan(String roleLawan) {
+        this.roleLawan = roleLawan;
+    }
+
+    public String getTargetName(String currentUserId) {
+        if (currentUserId != null && currentUserId.equals(pencariId)) {
             return getNamaPemilik();
         } else {
             return getNamaPencari();

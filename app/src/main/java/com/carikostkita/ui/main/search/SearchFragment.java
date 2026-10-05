@@ -35,11 +35,15 @@ import java.util.List;
 
 public class SearchFragment extends Fragment implements KostAdapter.OnKostClickListener {
 
+    private static final String ARG_CATEGORY = "initial_category";
+
     private EditText etSearch;
     private ImageButton btnClear;
     private View btnFilter;
+    private TextView tvFilterBadgeCount;
     private RecyclerView rvResults;
     private ProgressBar pbLoading;
+    private View layoutSkeleton;
     private LinearLayout layoutEmpty;
     private TextView tvResultsCount;
     private View btnSortSelector;
@@ -53,6 +57,16 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
     private KostFilterCriteria currentCriteria;
 
     private String activeQuickChip = "ALL";
+
+    public static SearchFragment newInstance(String category) {
+        SearchFragment fragment = new SearchFragment();
+        if (category != null) {
+            Bundle args = new Bundle();
+            args.putString(ARG_CATEGORY, category);
+            fragment.setArguments(args);
+        }
+        return fragment;
+    }
 
     @Nullable
     @Override
@@ -74,6 +88,15 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         setupQuickChips();
         setupSortSelector();
 
+        // Check if opened with initial category argument
+        if (getArguments() != null && getArguments().containsKey(ARG_CATEGORY)) {
+            String initialCat = getArguments().getString(ARG_CATEGORY);
+            if (initialCat != null) {
+                applyQuickChip(initialCat);
+                return;
+            }
+        }
+
         performFilterOrSearch();
     }
 
@@ -81,8 +104,10 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         etSearch = view.findViewById(R.id.et_search_query);
         btnClear = view.findViewById(R.id.btn_search_clear);
         btnFilter = view.findViewById(R.id.btn_open_filter);
+        tvFilterBadgeCount = view.findViewById(R.id.tv_filter_badge_count);
         rvResults = view.findViewById(R.id.rv_search_results);
         pbLoading = view.findViewById(R.id.pb_search_loading);
+        layoutSkeleton = view.findViewById(R.id.layout_search_skeleton);
         layoutEmpty = view.findViewById(R.id.layout_search_empty);
         tvResultsCount = view.findViewById(R.id.tv_search_results_count);
         btnSortSelector = view.findViewById(R.id.btn_sort_selector);
@@ -105,10 +130,18 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
                 criteria.setKeyword(query.isEmpty() ? null : query);
                 criteria.setSortBy(currentCriteria.getSortBy());
                 currentCriteria = criteria;
+                updateFilterBadge();
                 performFilterOrSearch();
             });
             bottomSheet.show(getChildFragmentManager(), "FilterBottomSheet");
         });
+
+        View btnOpenMap = view.findViewById(R.id.btn_search_open_map);
+        if (btnOpenMap != null) {
+            btnOpenMap.setOnClickListener(v -> {
+                startActivity(new Intent(requireContext(), com.carikostkita.ui.map.MapSearchActivity.class));
+            });
+        }
     }
 
     private void setupRecyclerView() {
@@ -157,6 +190,14 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         chipAvailable.setOnClickListener(v -> applyQuickChip("AVAILABLE"));
     }
 
+    public void applyCategoryFilter(TipeKost tipe) {
+        if (tipe == null) {
+            applyQuickChip("ALL");
+        } else {
+            applyQuickChip(tipe.name());
+        }
+    }
+
     private void applyQuickChip(String type) {
         activeQuickChip = type;
         updateQuickChipsVisual();
@@ -187,6 +228,7 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
                 break;
         }
 
+        updateFilterBadge();
         performFilterOrSearch();
     }
 
@@ -200,12 +242,29 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
     }
 
     private void setChipStyle(TextView chip, boolean isSelected) {
+        if (!isAdded()) return;
         if (isSelected) {
             chip.setBackgroundResource(R.drawable.bg_badge_kategori_selected);
             chip.setTextColor(ContextCompat.getColor(requireContext(), R.color.on_primary));
         } else {
             chip.setBackgroundResource(R.drawable.bg_badge_kategori_unselected);
             chip.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary));
+        }
+    }
+
+    private void updateFilterBadge() {
+        if (tvFilterBadgeCount == null) return;
+        int activeCount = 0;
+        if (!"ALL".equals(activeQuickChip)) activeCount++;
+        if (currentCriteria.getMinHarga() != null && currentCriteria.getMinHarga() > 0) activeCount++;
+        if (currentCriteria.getMaxHarga() != null && currentCriteria.getMaxHarga() < Double.MAX_VALUE && !"UNDER_1JT".equals(activeQuickChip)) activeCount++;
+        if (currentCriteria.getFasilitasIds() != null && !currentCriteria.getFasilitasIds().isEmpty()) activeCount++;
+
+        if (activeCount > 0) {
+            tvFilterBadgeCount.setText(String.valueOf(activeCount));
+            tvFilterBadgeCount.setVisibility(View.VISIBLE);
+        } else {
+            tvFilterBadgeCount.setVisibility(View.GONE);
         }
     }
 
@@ -236,39 +295,54 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
         currentCriteria = new KostFilterCriteria();
         activeQuickChip = "ALL";
         updateQuickChipsVisual();
+        updateFilterBadge();
         tvCurrentSort.setText("Urutkan: Terbaru");
         performFilterOrSearch();
     }
 
     private void performFilterOrSearch() {
-        pbLoading.setVisibility(View.VISIBLE);
+        long startTime = com.carikostkita.util.SkeletonHelper.markStart();
+
+        if (layoutSkeleton != null) {
+            layoutSkeleton.setVisibility(View.VISIBLE);
+        }
+        if (pbLoading != null) {
+            pbLoading.setVisibility(View.GONE);
+        }
         layoutEmpty.setVisibility(View.GONE);
+        rvResults.setVisibility(View.GONE);
 
         int userId = sessionManager.getUserId();
         kostRepository.filterKost(currentCriteria, userId, new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> data) {
-                if (!isAdded()) return;
-                pbLoading.setVisibility(View.GONE);
-                kostAdapter.submitList(data);
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (!isAdded()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+                    kostAdapter.submitList(data);
 
-                int count = (data != null) ? data.size() : 0;
-                tvResultsCount.setText("Ditemukan " + count + " properti kost");
+                    int count = (data != null) ? data.size() : 0;
+                    tvResultsCount.setText(count + " properti ditemukan");
 
-                if (count == 0) {
-                    layoutEmpty.setVisibility(View.VISIBLE);
-                    rvResults.setVisibility(View.GONE);
-                } else {
-                    layoutEmpty.setVisibility(View.GONE);
-                    rvResults.setVisibility(View.VISIBLE);
-                }
+                    if (count == 0) {
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        rvResults.setVisibility(View.GONE);
+                    } else {
+                        layoutEmpty.setVisibility(View.GONE);
+                        rvResults.setVisibility(View.VISIBLE);
+                    }
+                });
             }
 
             @Override
             public void onError(String message) {
-                if (!isAdded()) return;
-                pbLoading.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (!isAdded()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
@@ -287,14 +361,12 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
             return;
         }
 
-        kostRepository.toggleFavorite(sessionManager.getUserId(), kost.getIdKost(), new DataCallback<Boolean>() {
+        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
                 if (!isAdded()) return;
                 kost.setFavorite(isFavorite);
                 kostAdapter.notifyItemChanged(position);
-                String msg = isFavorite ? "Ditambahkan ke Favorit" : "Dihapus dari Favorit";
-                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
             }
 
             @Override

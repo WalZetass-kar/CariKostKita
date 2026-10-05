@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Title Skeleton -->
+    <View
+        android:layout_width="160dp"
+        android:layout_height="14dp"
+        android:background="@drawable/bg_skeleton_item" />
+
+    <View
+        android:layout_width="220dp"
+        android:layout_height="22dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_skeleton_item" />
+
+    <!-- 4 Stat Grid (2x2) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="76dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_skeleton_item" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="76dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_skeleton_item" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="76dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_skeleton_item" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="76dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_skeleton_item" />
+    </LinearLayout>
+
+    <!-- Section Title -->
+    <View
+        android:layout_width="150dp"
+        android:layout_height="18dp"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/bg_skeleton_item" />
+
+    <include layout="@layout/layout_skeleton_cards_list" />
+</LinearLayout>

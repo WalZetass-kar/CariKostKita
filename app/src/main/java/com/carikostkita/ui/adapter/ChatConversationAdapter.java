@@ -8,9 +8,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide;
 import com.carikostkita.R;
 import com.carikostkita.data.model.ChatConversation;
+import com.carikostkita.util.SessionManager;
+import com.carikostkita.util.UserAvatarHelper;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,6 +26,7 @@ public class ChatConversationAdapter extends RecyclerView.Adapter<ChatConversati
 
     private final Context context;
     private final boolean isOwner;
+    private final String currentUserId;
     private final OnConversationClickListener listener;
     private final List<ChatConversation> conversationList = new ArrayList<>();
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
@@ -33,6 +35,7 @@ public class ChatConversationAdapter extends RecyclerView.Adapter<ChatConversati
     public ChatConversationAdapter(Context context, boolean isOwner, OnConversationClickListener listener) {
         this.context = context;
         this.isOwner = isOwner;
+        this.currentUserId = new SessionManager(context).getUserUid();
         this.listener = listener;
     }
 
@@ -56,37 +59,62 @@ public class ChatConversationAdapter extends RecyclerView.Adapter<ChatConversati
         ChatConversation item = conversationList.get(position);
 
         String title;
+        String roleTag;
         if (isOwner) {
-            String pencari = (item.getNamaPencari() != null && !item.getNamaPencari().isEmpty()) ? item.getNamaPencari() : "Pencari Kost";
-            title = pencari + " (" + item.getNamaKost() + ")";
+            String pencari = (item.getNamaPencari() != null && !item.getNamaPencari().isEmpty())
+                    ? item.getNamaPencari() : "Calon Penyewa";
+            title = pencari;
+            roleTag = "Calon Penyewa";
         } else {
-            String pemilik = (item.getNamaPemilik() != null && !item.getNamaPemilik().isEmpty()) ? item.getNamaPemilik() : "Pemilik";
-            title = item.getNamaKost() + " (" + pemilik + ")";
+            String pemilik = (item.getNamaPemilik() != null && !item.getNamaPemilik().isEmpty())
+                    ? item.getNamaPemilik() : "Pemilik Kost";
+            title = pemilik;
+            roleTag = "Pemilik Kost";
         }
         holder.tvTitle.setText(title);
+        holder.tvRoleTag.setText(roleTag);
 
+        // Property Context
+        String namaKost = item.getNamaKost();
+        if (namaKost == null || namaKost.isEmpty()) namaKost = "Informasi Kost";
+        holder.tvKostName.setText(namaKost);
+
+        // Last Message & Sender Prefix
         String lastMsg = item.getLastMessage();
         if (lastMsg == null || lastMsg.isEmpty()) {
             lastMsg = "Belum ada pesan";
+            holder.ivCheck.setVisibility(View.GONE);
+            holder.tvLastMessage.setText(lastMsg);
+        } else {
+            boolean isMine = item.getLastMessageSenderId() != null && item.getLastMessageSenderId().equals(currentUserId);
+            if (isMine) {
+                holder.ivCheck.setVisibility(View.VISIBLE);
+                holder.tvLastMessage.setText("Kamu: " + lastMsg);
+            } else {
+                holder.ivCheck.setVisibility(View.GONE);
+                holder.tvLastMessage.setText(lastMsg);
+            }
         }
-        holder.tvLastMessage.setText(lastMsg);
 
-        String formattedTime = formatTime(item.getLastMessageTime());
+        // Relative Human-Friendly Time
+        String formattedTime = formatHumanTime(item.getLastMessageTime());
         holder.tvTime.setText(formattedTime);
 
-        int unread = isOwner ? item.getUnreadCountPemilik() : item.getUnreadCountPencari();
+        // Unread Badge
+        int unread = item.getUnreadCount();
         if (unread > 0) {
             holder.tvBadge.setVisibility(View.VISIBLE);
-            holder.tvBadge.setText(String.valueOf(unread));
+            holder.tvBadge.setText(unread > 99 ? "99+" : String.valueOf(unread));
         } else {
             holder.tvBadge.setVisibility(View.GONE);
         }
 
-        String foto = item.getFotoKost();
-        if (foto != null && !foto.isEmpty()) {
-            Glide.with(context).load(foto).placeholder(R.drawable.ic_bed).into(holder.ivAvatar);
+        // Dynamic Avatar Counterpart
+        String avatarUrl = item.getAvatarLawan();
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            UserAvatarHelper.loadAvatar(holder.ivAvatar, avatarUrl);
         } else {
-            holder.ivAvatar.setImageResource(R.drawable.ic_bed);
+            holder.ivAvatar.setImageResource(R.drawable.ic_nav_profile);
         }
 
         holder.itemView.setOnClickListener(v -> {
@@ -96,12 +124,32 @@ public class ChatConversationAdapter extends RecyclerView.Adapter<ChatConversati
         });
     }
 
-    private String formatTime(String rawTime) {
+    private String formatHumanTime(String rawTime) {
         if (rawTime == null || rawTime.isEmpty()) return "";
         try {
-            Date date = parseFormat.parse(rawTime);
+            Date date = null;
+            if (rawTime.contains("T")) {
+                SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+                String cleanIso = rawTime.length() >= 19 ? rawTime.substring(0, 19) : rawTime;
+                date = isoFormat.parse(cleanIso);
+            } else {
+                date = parseFormat.parse(rawTime);
+            }
             if (date != null) {
-                return timeFormat.format(date);
+                long now = System.currentTimeMillis();
+                long diff = now - date.getTime();
+                if (diff < 60 * 1000) {
+                    return "Baru saja";
+                } else if (diff < 60 * 60 * 1000) {
+                    long minutes = diff / (60 * 1000);
+                    return minutes + " mnt lalu";
+                } else if (diff < 24 * 60 * 60 * 1000) {
+                    return timeFormat.format(date);
+                } else if (diff < 48 * 60 * 60 * 1000) {
+                    return "Kemarin";
+                } else {
+                    return new SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(date);
+                }
             }
         } catch (Exception ignored) {
             if (rawTime.length() >= 16) {
@@ -119,6 +167,9 @@ public class ChatConversationAdapter extends RecyclerView.Adapter<ChatConversati
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivAvatar;
         TextView tvTitle;
+        TextView tvRoleTag;
+        TextView tvKostName;
+        ImageView ivCheck;
         TextView tvLastMessage;
         TextView tvTime;
         TextView tvBadge;
@@ -127,6 +178,9 @@ public class ChatConversationAdapter extends RecyclerView.Adapter<ChatConversati
             super(itemView);
             ivAvatar = itemView.findViewById(R.id.iv_chat_conv_avatar);
             tvTitle = itemView.findViewById(R.id.tv_chat_conv_title);
+            tvRoleTag = itemView.findViewById(R.id.tv_chat_conv_role_tag);
+            tvKostName = itemView.findViewById(R.id.tv_chat_conv_kost_name);
+            ivCheck = itemView.findViewById(R.id.iv_chat_conv_check);
             tvLastMessage = itemView.findViewById(R.id.tv_chat_conv_last_message);
             tvTime = itemView.findViewById(R.id.tv_chat_conv_time);
             tvBadge = itemView.findViewById(R.id.tv_chat_conv_badge);

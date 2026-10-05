@@ -3,10 +3,10 @@ package com.carikostkita.data.model;
 import java.io.Serializable;
 
 public class KostReport implements Serializable {
-    private int idReport;
-    private int idKost;
-    private int idReporter;
-    private int idPemilik;
+    private String id;
+    private String kostId;
+    private String reporterId;
+    private String ownerId;
     private String kategoriLaporan;
     private String deskripsi;
     private ReportStatus status;
@@ -14,7 +14,7 @@ public class KostReport implements Serializable {
     private String createdAt;
     private String updatedAt;
 
-    // Display fields populated from JOINs
+    // Display fields
     private String namaKost;
     private String namaReporter;
     private String namaPemilik;
@@ -23,45 +23,77 @@ public class KostReport implements Serializable {
         this.status = ReportStatus.BARU;
     }
 
-    public KostReport(int idKost, int idReporter, int idPemilik, String kategoriLaporan, String deskripsi) {
-        this.idKost = idKost;
-        this.idReporter = idReporter;
-        this.idPemilik = idPemilik;
+    public KostReport(String kostId, String reporterId, String ownerId, String kategoriLaporan, String deskripsi) {
+        this.kostId = kostId;
+        this.reporterId = reporterId;
+        this.ownerId = ownerId;
         this.kategoriLaporan = kategoriLaporan;
         this.deskripsi = deskripsi;
         this.status = ReportStatus.BARU;
     }
 
-    public int getIdReport() {
-        return idReport;
+    public String getId() {
+        return id != null ? id : "";
     }
 
-    public void setIdReport(int idReport) {
-        this.idReport = idReport;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public int getIdKost() {
-        return idKost;
+    public String getIdReport() {
+        return getId();
     }
 
-    public void setIdKost(int idKost) {
-        this.idKost = idKost;
+    public void setIdReport(String id) {
+        setId(id);
     }
 
-    public int getIdReporter() {
-        return idReporter;
+    public String getKostId() {
+        return kostId != null ? kostId : "";
     }
 
-    public void setIdReporter(int idReporter) {
-        this.idReporter = idReporter;
+    public void setKostId(String kostId) {
+        this.kostId = kostId;
     }
 
-    public int getIdPemilik() {
-        return idPemilik;
+    public String getIdKost() {
+        return getKostId();
     }
 
-    public void setIdPemilik(int idPemilik) {
-        this.idPemilik = idPemilik;
+    public void setIdKost(String kostId) {
+        setKostId(kostId);
+    }
+
+    public String getReporterId() {
+        return reporterId != null ? reporterId : "";
+    }
+
+    public void setReporterId(String reporterId) {
+        this.reporterId = reporterId;
+    }
+
+    public String getIdReporter() {
+        return getReporterId();
+    }
+
+    public void setIdReporter(String reporterId) {
+        setReporterId(reporterId);
+    }
+
+    public String getOwnerId() {
+        return ownerId != null ? ownerId : "";
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getIdPemilik() {
+        return getOwnerId();
+    }
+
+    public void setIdPemilik(String ownerId) {
+        setOwnerId(ownerId);
     }
 
     public String getKategoriLaporan() {
@@ -113,7 +145,7 @@ public class KostReport implements Serializable {
     }
 
     public String getNamaKost() {
-        return namaKost != null ? namaKost : "Kost #" + idKost;
+        return namaKost != null ? namaKost : "Kost";
     }
 
     public void setNamaKost(String namaKost) {
@@ -121,7 +153,7 @@ public class KostReport implements Serializable {
     }
 
     public String getNamaReporter() {
-        return namaReporter != null ? namaReporter : "Pengguna #" + idReporter;
+        return namaReporter != null ? namaReporter : "Pengguna";
     }
 
     public void setNamaReporter(String namaReporter) {
@@ -129,7 +161,7 @@ public class KostReport implements Serializable {
     }
 
     public String getNamaPemilik() {
-        return namaPemilik != null ? namaPemilik : "Pemilik #" + idPemilik;
+        return namaPemilik != null ? namaPemilik : "Pemilik";
     }
 
     public void setNamaPemilik(String namaPemilik) {

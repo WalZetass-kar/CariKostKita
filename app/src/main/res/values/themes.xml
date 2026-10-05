@@ -29,15 +29,17 @@
         <item name="android:navigationBarColor">@color/primary_dark</item>
     </style>
 
-    <!-- Modern Soft Chip Style -->
-    <style name="Widget.CariKostKita.Chip.Choice" parent="Widget.MaterialComponents.Chip.Choice">
-        <item name="chipBackgroundColor">@color/chip_background_selector</item>
-        <item name="android:textColor">@color/chip_text_selector</item>
-        <item name="chipStrokeColor">@color/chip_stroke_selector</item>
-        <item name="chipStrokeWidth">1dp</item>
-        <item name="chipCornerRadius">20dp</item>
-        <item name="chipMinHeight">38dp</item>
-        <item name="rippleColor">@color/ripple_soft</item>
-        <item name="checkedIconVisible">false</item>
+    <!-- Thumbnail Rounded Corner ShapeAppearances -->
+    <style name="ShapeAppearance.CariKostKita.ThumbRadius14" parent="">
+        <item name="cornerSize">14dp</item>
+    </style>
+
+    <style name="ShapeAppearance.CariKostKita.ThumbRadius16" parent="">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <!-- Circle ShapeAppearance for Avatars -->
+    <style name="CircleImageOverlay" parent="">
+        <item name="cornerSize">50%</item>
     </style>
 </resources>

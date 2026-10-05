@@ -43,11 +43,27 @@
             </intent-filter>
         </activity>
 
+        <!-- Onboarding Activity -->
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- Auth Activities -->
         <activity
             android:name=".ui.auth.LoginActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="carikostkita"
+                    android:host="login-callback" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".ui.auth.RegisterActivity"
             android:exported="false"
@@ -83,6 +99,31 @@
         <activity
             android:name=".ui.admin.AdminFasilitasActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.admin.OwnerKatalogPublikActivity"
+            android:exported="false" />
+
+        <!-- Profile & Account Settings Activities -->
+        <activity
+            android:name=".ui.profile.EditProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.profile.ChangePasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Map Search Activity -->
+        <activity
+            android:name=".ui.map.MapSearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <!-- Map Pin Picker Activity -->
+        <activity
+            android:name=".ui.map.MapPinPickerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
     </application>
 

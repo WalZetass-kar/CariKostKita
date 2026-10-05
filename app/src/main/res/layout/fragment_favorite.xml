@@ -47,6 +47,22 @@
             android:background="@color/border"
             app:layout_constraintTop_toBottomOf="@+id/header_fav" />
 
+        <!-- Skeleton Loading Container -->
+        <LinearLayout
+            android:id="@+id/skeleton_favorite"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/divider_fav">
+            <include layout="@layout/layout_skeleton_cards_list" />
+        </LinearLayout>
+
         <ProgressBar
             android:id="@+id/pb_fav_loading"
             android:layout_width="wrap_content"
@@ -72,12 +88,19 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/divider_fav">
 
-            <ImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:contentDescription="Empty Favorite"
-                android:src="@drawable/ic_nav_favorite"
-                app:tint="@color/text_muted" />
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_fav_circle">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Empty Favorite"
+                    android:src="@drawable/ic_nav_favorite"
+                    app:tint="@color/primary" />
+            </FrameLayout>
 
             <TextView
                 android:layout_width="wrap_content"

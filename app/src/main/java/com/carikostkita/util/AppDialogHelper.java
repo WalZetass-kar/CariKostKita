@@ -216,10 +216,10 @@ public class AppDialogHelper {
                 positiveBtnColor = Color.parseColor("#DC2626");
                 break;
             case LOGOUT:
-                badgeBgColor = Color.parseColor("#FDE8EA");
-                iconColor = ContextCompat.getColor(context, R.color.primary);
+                badgeBgColor = Color.parseColor("#FEE2E2");
+                iconColor = Color.parseColor("#DC2626");
                 iconRes = R.drawable.ic_logout;
-                positiveBtnColor = ContextCompat.getColor(context, R.color.primary);
+                positiveBtnColor = Color.parseColor("#DC2626");
                 break;
             case CONFIRM:
                 badgeBgColor = Color.parseColor("#FFFBEB");
@@ -229,7 +229,7 @@ public class AppDialogHelper {
                 break;
             case INFO:
             default:
-                badgeBgColor = Color.parseColor("#FDE8EA");
+                badgeBgColor = Color.parseColor("#E0F2FE");
                 iconColor = ContextCompat.getColor(context, R.color.primary);
                 iconRes = R.drawable.ic_info;
                 positiveBtnColor = ContextCompat.getColor(context, R.color.primary);

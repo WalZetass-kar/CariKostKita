@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class FotoKost implements Serializable {
     private int idFoto;
-    private int idKost;
+    private String idKostStr;
     private String namaFile;
     private String pathFile;
     private boolean isThumbnail;
@@ -14,7 +14,15 @@ public class FotoKost implements Serializable {
 
     public FotoKost(int idFoto, int idKost, String namaFile, String pathFile, boolean isThumbnail) {
         this.idFoto = idFoto;
-        this.idKost = idKost;
+        this.idKostStr = String.valueOf(idKost);
+        this.namaFile = namaFile;
+        this.pathFile = pathFile;
+        this.isThumbnail = isThumbnail;
+    }
+
+    public FotoKost(int idFoto, String idKost, String namaFile, String pathFile, boolean isThumbnail) {
+        this.idFoto = idFoto;
+        this.idKostStr = idKost;
         this.namaFile = namaFile;
         this.pathFile = pathFile;
         this.isThumbnail = isThumbnail;
@@ -29,11 +37,23 @@ public class FotoKost implements Serializable {
     }
 
     public int getIdKost() {
-        return idKost;
+        try {
+            return Integer.parseInt(idKostStr);
+        } catch (Exception e) {
+            return idKostStr != null ? Math.abs(idKostStr.hashCode()) : 0;
+        }
+    }
+
+    public String getIdKostString() {
+        return idKostStr;
     }
 
     public void setIdKost(int idKost) {
-        this.idKost = idKost;
+        this.idKostStr = String.valueOf(idKost);
+    }
+
+    public void setIdKost(String idKost) {
+        this.idKostStr = idKost;
     }
 
     public String getNamaFile() {

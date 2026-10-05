@@ -59,7 +59,7 @@ public class DomainModelTest {
         k.setUkuranKamar("3x4 m");
         k.setTotalKamar(10);
         k.setKamarTersedia(3);
-        k.setIdPemilik(5);
+        k.setIdPemilik("5");
         k.setPatokan("Dekat Gerbang Kampus UIR");
 
         assertEquals("Kost Mawar", k.getNamaKost());
@@ -68,7 +68,7 @@ public class DomainModelTest {
         assertEquals(10, k.getTotalKamar());
         assertEquals(3, k.getKamarTersedia());
         assertEquals(7, k.getKamarTerisi());
-        assertEquals(5, k.getIdPemilik());
+        assertEquals("5", k.getIdPemilik());
         assertEquals("Dekat Gerbang Kampus UIR", k.getPatokan());
         assertTrue(k.getFormattedHarga().contains("850.000") || k.getFormattedHarga().contains("850,000"));
     }
@@ -95,22 +95,22 @@ public class DomainModelTest {
     @Test
     public void testChatEntities() {
         ChatConversation conv = new ChatConversation();
-        conv.setIdConversation(1);
-        conv.setIdKost(10);
-        conv.setIdPencari(2);
-        conv.setIdPemilik(3);
+        conv.setIdConversation("1");
+        conv.setIdKost("10");
+        conv.setIdPencari("2");
+        conv.setIdPemilik("3");
         conv.setNamaKost("Kost Putri Melati");
         conv.setLastMessage("Apakah kamar masih ada?");
 
-        assertEquals(1, conv.getIdConversation());
-        assertEquals(10, conv.getIdKost());
+        assertEquals("1", conv.getIdConversation());
+        assertEquals("10", conv.getIdKost());
         assertEquals("Kost Putri Melati", conv.getNamaKost());
         assertEquals("Apakah kamar masih ada?", conv.getLastMessage());
 
-        ChatMessage msg = new ChatMessage(100, 1, 2, "Boleh survei besok siang?", "2026-10-01 10:00:00", false);
-        assertEquals(100, msg.getIdMessage());
-        assertEquals(1, msg.getIdConversation());
-        assertEquals(2, msg.getIdSender());
+        ChatMessage msg = new ChatMessage("100", "1", "2", "Boleh survei besok siang?", "2026-10-01 10:00:00", false);
+        assertEquals("100", msg.getIdMessage());
+        assertEquals("1", msg.getIdConversation());
+        assertEquals("2", msg.getIdSender());
         assertEquals("Boleh survei besok siang?", msg.getMessageText());
         assertFalse(msg.isRead());
     }
@@ -162,19 +162,19 @@ public class DomainModelTest {
         assertEquals("Perjelas patokan", k.getCatatanRevisi());
 
         // KostReport
-        com.carikostkita.data.model.KostReport report = new com.carikostkita.data.model.KostReport(1, 2, 3, "ALAMAT_TIDAK_SESUAI", "Alamat palsu");
-        report.setIdReport(10);
+        com.carikostkita.data.model.KostReport report = new com.carikostkita.data.model.KostReport("1", "2", "3", "ALAMAT_TIDAK_SESUAI", "Alamat palsu");
+        report.setIdReport("10");
         report.setNamaKost("Kost Melati");
         report.setNamaReporter("Budi");
         report.setNamaPemilik("H. Rahmat");
-        assertEquals(10, report.getIdReport());
+        assertEquals("10", report.getIdReport());
         assertEquals("ALAMAT_TIDAK_SESUAI", report.getKategoriLaporan());
         assertEquals("ALAMAT_TIDAK_SESUAI", report.getAlasan());
         assertEquals("Budi", report.getNamaPelapor());
 
         // SystemActivityLog
-        com.carikostkita.data.model.SystemActivityLog log = new com.carikostkita.data.model.SystemActivityLog(1, "Admin", "APPROVE_OWNER", "Setujui H. Rahmat", "USER", 5);
-        assertEquals(1, log.getIdUser());
+        com.carikostkita.data.model.SystemActivityLog log = new com.carikostkita.data.model.SystemActivityLog("1", "Admin", "APPROVE_OWNER", "Setujui H. Rahmat", "USER", "5");
+        assertEquals("1", log.getIdUser());
         assertEquals("Admin", log.getActorName());
         assertEquals("Admin", log.getUserName());
         assertEquals("APPROVE_OWNER", log.getActionType());

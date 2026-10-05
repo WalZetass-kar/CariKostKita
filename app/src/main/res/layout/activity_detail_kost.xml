@@ -57,8 +57,24 @@
             android:src="@drawable/ic_heart_outline" />
     </LinearLayout>
 
+    <!-- Skeleton Detail Kost -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/skeleton_detail_kost"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar_detail">
+        <include layout="@layout/layout_skeleton_detail_kost" />
+    </androidx.core.widget.NestedScrollView>
+
     <!-- Scrollable Content -->
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll_detail_content"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
@@ -166,18 +182,10 @@
                         android:id="@+id/tv_detail_price"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Rp 1.200.000"
+                        android:text="Rp 1.200.000 /bulan"
                         android:textColor="@color/primary"
                         android:textSize="22sp"
                         android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="/bulan"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <!-- Spesifikasi & Ketersediaan Kamar Card -->

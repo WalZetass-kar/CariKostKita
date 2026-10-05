@@ -42,7 +42,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="user@example.com"
+                    android:text="-"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
@@ -51,7 +51,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
-                    android:text="08123456789"
+                    android:text="-"
                     android:textColor="@color/primary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -102,6 +102,21 @@
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_admin_delete_user"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Hapus Akun"
+                android:textColor="#DC2626"
+                android:textSize="11sp"
+                app:icon="@drawable/ic_delete"
+                app:iconSize="14dp"
+                app:iconTint="#DC2626" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_admin_toggle_user_status"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
@@ -109,10 +124,10 @@
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:text="Tangguhkan"
-                android:textColor="#DC2626"
+                android:textColor="@color/primary_dark"
                 android:textSize="11sp"
                 app:cornerRadius="8dp"
-                app:strokeColor="#FCA5A5" />
+                app:strokeColor="@color/border" />
         </LinearLayout>
 
     </LinearLayout>

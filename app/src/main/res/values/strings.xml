@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CariKostKita</string>
-    <string name="app_tagline">Temukan Kost Nyaman di Bukit Raya, Pekanbaru</string>
+    <string name="app_tagline">Temukan Kost Nyaman di Sekitar Anda</string>
 
     <!-- Navigation Labels -->
     <string name="nav_home">Beranda</string>
@@ -30,9 +30,13 @@
     <string name="filter_fasilitas">Fasilitas Kost</string>
 
     <string name="empty_kost_title">Kost Tidak Ditemukan</string>
-    <string name="empty_kost_desc">Coba sesuaikan kata kunci pencarian atau ubah filter Anda.</string>
-    <string name="empty_favorite_title">Belum Ada Favorit</string>
-    <string name="empty_favorite_desc">Simpan kost favorit Anda dengan menekan ikon hati pada kartu properti.</string>
+    <string name="empty_kost_desc">Coba sesuaikan kata kunci pencarian atau ubah kriteria filter Anda.</string>
+    <string name="empty_favorite_title">Belum Ada Kost Favorit</string>
+    <string name="empty_favorite_desc">Simpan kost yang Anda minati dengan menekan ikon hati pada kartu properti.</string>
+    <string name="empty_chat_title">Belum Ada Percakapan</string>
+    <string name="empty_chat_desc">Percakapan dengan pemilik kost akan muncul di sini setelah Anda memulai pesan.</string>
+    <string name="empty_map_title">Tidak Ada Kost di Area Ini</string>
+    <string name="empty_map_desc">Perluas area pencarian atau geser peta untuk mencari lokasi lain.</string>
 
     <!-- Admin -->
     <string name="admin_dashboard">Dashboard Admin</string>

@@ -23,7 +23,9 @@ public class SplashActivity extends AppCompatActivity {
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             SessionManager session = new SessionManager(this);
-            if (session.isLoggedIn()) {
+            if (!session.isOnboardingCompleted()) {
+                startActivity(new Intent(this, com.carikostkita.ui.onboarding.OnboardingActivity.class));
+            } else if (session.isLoggedIn()) {
                 if (session.isDeveloper()) {
                     startActivity(new Intent(this, AdminMainActivity.class));
                 } else if (session.isPemilikKost()) {
@@ -32,7 +34,8 @@ public class SplashActivity extends AppCompatActivity {
                     startActivity(new Intent(this, MainActivity.class));
                 }
             } else {
-                startActivity(new Intent(this, LoginActivity.class));
+                // Onboarding complete, direct to Beranda (guest mode)
+                startActivity(new Intent(this, MainActivity.class));
             }
             finish();
         }, 1200);

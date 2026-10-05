@@ -18,6 +18,7 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.View
 
     public interface OnUserActionListener {
         void onToggleStatus(User user, int position);
+        void onDeleteUser(User user, int position);
     }
 
     private final List<User> userList = new ArrayList<>();
@@ -81,13 +82,18 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.View
             holder.btnToggleStatus.setStrokeColorResource(R.color.primary);
         }
 
-        // Prevent suspending developer accounts
+        // Prevent suspending/deleting developer accounts
         if (user.getRole() == Role.ADMIN) {
             holder.btnToggleStatus.setVisibility(View.GONE);
+            holder.btnDeleteUser.setVisibility(View.GONE);
         } else {
             holder.btnToggleStatus.setVisibility(View.VISIBLE);
+            holder.btnDeleteUser.setVisibility(View.VISIBLE);
             holder.btnToggleStatus.setOnClickListener(v -> {
                 if (listener != null) listener.onToggleStatus(user, position);
+            });
+            holder.btnDeleteUser.setOnClickListener(v -> {
+                if (listener != null) listener.onDeleteUser(user, position);
             });
         }
     }
@@ -104,6 +110,7 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.View
         TextView tvRole;
         TextView tvStatus;
         MaterialButton btnToggleStatus;
+        MaterialButton btnDeleteUser;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -113,6 +120,7 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.View
             tvRole = itemView.findViewById(R.id.tv_admin_user_role);
             tvStatus = itemView.findViewById(R.id.tv_admin_user_status);
             btnToggleStatus = itemView.findViewById(R.id.btn_admin_toggle_user_status);
+            btnDeleteUser = itemView.findViewById(R.id.btn_admin_delete_user);
         }
     }
 }

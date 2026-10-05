@@ -29,6 +29,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
     private SwipeRefreshLayout swipeRefresh;
     private RecyclerView rvFavorites;
     private ProgressBar pbLoading;
+    private View layoutSkeleton;
     private LinearLayout layoutEmpty;
     private KostAdapter kostAdapter;
     private KostRepository kostRepository;
@@ -50,6 +51,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
         swipeRefresh = view.findViewById(R.id.swipe_refresh_fav);
         rvFavorites = view.findViewById(R.id.rv_favorite_kost);
         pbLoading = view.findViewById(R.id.pb_fav_loading);
+        layoutSkeleton = view.findViewById(R.id.skeleton_favorite);
         layoutEmpty = view.findViewById(R.id.layout_fav_empty);
         View btnExplore = view.findViewById(R.id.btn_fav_explore);
 
@@ -75,40 +77,52 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
     }
 
     private void loadFavorites() {
-        if (!sessionManager.isLoggedIn()) {
+        String uid = sessionManager.getUserUid();
+        if (uid == null || uid.isEmpty()) {
             layoutEmpty.setVisibility(View.VISIBLE);
             rvFavorites.setVisibility(View.GONE);
             swipeRefresh.setRefreshing(false);
             return;
         }
 
+        long startTime = com.carikostkita.util.SkeletonHelper.markStart();
         if (!swipeRefresh.isRefreshing()) {
-            pbLoading.setVisibility(View.VISIBLE);
+            if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);
+            if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+            rvFavorites.setVisibility(View.GONE);
         }
         layoutEmpty.setVisibility(View.GONE);
 
-        kostRepository.getFavorites(sessionManager.getUserId(), new DataCallback<List<Kost>>() {
+        kostRepository.getFavorites(uid, new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> data) {
-                pbLoading.setVisibility(View.GONE);
-                swipeRefresh.setRefreshing(false);
-                kostAdapter.submitList(data);
-                if (data == null || data.isEmpty()) {
-                    layoutEmpty.setVisibility(View.VISIBLE);
-                    rvFavorites.setVisibility(View.GONE);
-                } else {
-                    layoutEmpty.setVisibility(View.GONE);
-                    rvFavorites.setVisibility(View.VISIBLE);
-                }
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (!isAdded()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+                    swipeRefresh.setRefreshing(false);
+                    kostAdapter.submitList(data);
+                    if (data == null || data.isEmpty()) {
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        rvFavorites.setVisibility(View.GONE);
+                    } else {
+                        layoutEmpty.setVisibility(View.GONE);
+                        rvFavorites.setVisibility(View.VISIBLE);
+                    }
+                });
             }
 
             @Override
             public void onError(String message) {
-                pbLoading.setVisibility(View.GONE);
-                swipeRefresh.setRefreshing(false);
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
-                }
+                com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
+                    if (!isAdded()) return;
+                    if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+                    if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+                    swipeRefresh.setRefreshing(false);
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
     }
@@ -122,7 +136,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
 
     @Override
     public void onFavoriteToggle(Kost kost, int position) {
-        kostRepository.toggleFavorite(sessionManager.getUserId(), kost.getIdKost(), new DataCallback<Boolean>() {
+        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
                 loadFavorites();

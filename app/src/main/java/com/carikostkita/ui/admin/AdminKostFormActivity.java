@@ -1,92 +1,151 @@
 package com.carikostkita.ui.admin;
 
-import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
+import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import com.carikostkita.R;
+import com.carikostkita.data.location.IndonesiaLocationData;
+import com.carikostkita.data.location.WilayahIndonesiaService;
 import com.carikostkita.data.model.Fasilitas;
 import com.carikostkita.data.model.FotoKost;
 import com.carikostkita.data.model.Kost;
+import com.carikostkita.data.model.KostVerificationStatus;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
 import com.carikostkita.data.model.Wilayah;
+import com.carikostkita.data.repository.ActivityLogRepository;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.data.repository.KostRepository;
 import com.carikostkita.ui.adapter.FormFotoAdapter;
+import com.carikostkita.ui.map.MapPinPickerActivity;
 import com.carikostkita.util.AppDialogHelper;
+import com.carikostkita.util.FormatUtil;
 import com.carikostkita.util.SessionManager;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class AdminKostFormActivity extends AppCompatActivity {
 
+    private int currentStep = 1;
+
+    // Wizard Headers
     private TextView tvTitle;
-    private EditText etNama;
+    private TextView tvStepTitle;
+    private TextView stepIndicator1, stepIndicator2, stepIndicator3, stepIndicator4, stepIndicator5;
+    private View stepLine1, stepLine2, stepLine3, stepLine4;
+
+    // Step Containers
+    private LinearLayout stepContainer1, stepContainer2, stepContainer3, stepContainer4, stepContainer5;
+
+    // Step 1: Info Views
+    private TextInputEditText etNama;
     private RadioGroup rgTipe;
     private RadioButton rbPutra, rbPutri, rbCampur;
-    private EditText etHarga;
-    private EditText etProvinsi, etKota;
-    private Spinner spWilayah;
-    private EditText etAlamat, etPatokan;
+    private TextInputEditText etDeskripsi;
+    private TextInputEditText etTotalKamar, etKamarTersedia;
+    private TextInputEditText etWhatsapp;
 
-    private RecyclerView rvFormFotos;
-    private Button btnAddFoto;
+    // Step 2: Harga & Lokasi Views
+    private TextInputEditText etHarga;
+    private AutoCompleteTextView actProvinsi, actKota, actKecamatan, actKelurahan, actJalan;
+    private TextInputEditText etAlamat;
+    private MaterialButton btnOpenMap;
+    private MaterialCardView cardLocationSummary;
+    private TextView tvCoords, tvMapAddress;
+
+    // Step 3: Fasilitas CheckBoxes
+    private CheckBox cbKamarMandi, cbAc, cbWifi, cbLemari, cbKasur, cbMeja;
+    private CheckBox cbDapur, cbParkirMotor, cbParkirMobil, cbAkses24, cbListrik, cbAir;
+    private final List<CheckBox> allCheckBoxes = new ArrayList<>();
+
+    // Step 4: Foto Views
+    private MaterialButton btnAddFoto;
     private TextView tvFotoCounter;
-    private TextView tvFotoEmpty;
+    private RecyclerView rvFotos;
     private FormFotoAdapter formFotoAdapter;
 
-    private EditText etUkuranKamar, etTotalKamar, etKamarTersedia;
-    private TextView tvKamarTerisiInfo;
-    private EditText etWhatsapp;
-    private EditText etLat, etLng;
-    private Button btnCurrentLocation, btnTestMaps;
-    private TextView tvLocationPreviewDesc;
+    // Step 5: Preview Views
+    private ImageView ivPreviewCover;
+    private TextView tvPreviewTipeBadge, tvPreviewKamarBadge, tvPreviewNama, tvPreviewAlamat, tvPreviewHarga, tvPreviewFasilitas;
 
-    private EditText etDeskripsi;
-    private RadioGroup rgStatus;
-    private RadioButton rbTersedia, rbPenuh, rbTidakAktif;
-    private LinearLayout layoutFasilitasChecks;
-    private Button btnSave;
+    // Bottom Navigation
+    private MaterialButton btnPrev, btnNext;
+    private ProgressBar pbSaving;
 
-    private com.google.android.material.card.MaterialCardView cardRevisiAlert;
-    private TextView tvRevisiNote;
-    private SessionManager sessionManager;
-    private com.carikostkita.data.repository.ActivityLogRepository activityLogRepository;
-
+    // Repositories & State
     private KostRepository kostRepository;
-    private List<Wilayah> wilayahList = new ArrayList<>();
-    private List<Fasilitas> masterFasilitas = new ArrayList<>();
-    private List<CheckBox> fasilitasCheckBoxes = new ArrayList<>();
-
-    private int editKostId = -1;
+    private ActivityLogRepository activityLogRepository;
+    private SessionManager sessionManager;
+    private WilayahIndonesiaService wilayahService;
+    private String editKostId = null;
     private Kost existingKost;
+    private List<Wilayah> wilayahList = new ArrayList<>();
 
+    private double selectedLat = 0.5071;
+    private double selectedLng = 101.4478;
+
+    // Map Pin Launcher
+    private final ActivityResultLauncher<Intent> mapPinLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Intent data = result.getData();
+                    selectedLat = data.getDoubleExtra(MapPinPickerActivity.EXTRA_LAT, 0.5071);
+                    selectedLng = data.getDoubleExtra(MapPinPickerActivity.EXTRA_LNG, 101.4478);
+                    String alamat = data.getStringExtra(MapPinPickerActivity.EXTRA_ALAMAT);
+                    String kota = data.getStringExtra(MapPinPickerActivity.EXTRA_KOTA);
+                    String kec = data.getStringExtra(MapPinPickerActivity.EXTRA_KECAMATAN);
+                    String kel = data.getStringExtra(MapPinPickerActivity.EXTRA_KELURAHAN);
+                    String prov = data.getStringExtra(MapPinPickerActivity.EXTRA_PROVINSI);
+
+                    if (alamat != null && !alamat.isEmpty()) {
+                        actJalan.setText(alamat, false);
+                    }
+                    if (prov != null && !prov.isEmpty()) {
+                        actProvinsi.setText(prov, false);
+                        setupKotaDropdown(prov);
+                    }
+                    if (kota != null && !kota.isEmpty()) {
+                        actKota.setText(kota, false);
+                        setupKecamatanDropdown(kota);
+                    }
+                    if (kec != null && !kec.isEmpty()) {
+                        actKecamatan.setText(kec, false);
+                        setupKelurahanDropdown(kec);
+                    }
+                    if (kel != null && !kel.isEmpty()) {
+                        actKelurahan.setText(kel, false);
+                    }
+
+                    updateLocationSummaryUI(alamat, kota, prov);
+                }
+            });
+
+    // Image Picker Launcher
     private final ActivityResultLauncher<String> pickMultipleImagesLauncher =
             registerForActivityResult(new ActivityResultContracts.GetMultipleContents(), uris -> {
                 if (uris != null && !uris.isEmpty()) {
@@ -95,7 +154,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
                             Toast.makeText(this, "Maksimal 6 foto kost", Toast.LENGTH_SHORT).show();
                             break;
                         }
-                        FotoKost foto = new FotoKost(0, editKostId != -1 ? editKostId : 0,
+                        FotoKost foto = new FotoKost(0, 0,
                                 "foto_" + System.currentTimeMillis() + ".jpg", uri.toString(), false);
                         formFotoAdapter.addFoto(foto);
                     }
@@ -103,130 +162,332 @@ public class AdminKostFormActivity extends AppCompatActivity {
                 }
             });
 
-    private final ActivityResultLauncher<String[]> locationPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
-                Boolean fine = result.get(Manifest.permission.ACCESS_FINE_LOCATION);
-                Boolean coarse = result.get(Manifest.permission.ACCESS_COARSE_LOCATION);
-                if ((fine != null && fine) || (coarse != null && coarse)) {
-                    fetchCurrentLocation();
-                } else {
-                    AppDialogHelper.showInfoDialog(this, "Izin Lokasi Diperlukan",
-                            "Izinkan akses lokasi agar aplikasi dapat mengisi koordinat GPS lokasi kost secara akurat.");
-                }
-            });
-
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_kost_form);
 
-        sessionManager = new SessionManager(this);
         kostRepository = new KostRepository(this);
-        activityLogRepository = new com.carikostkita.data.repository.ActivityLogRepository(this);
-        editKostId = getIntent().getIntExtra("kost_id", -1);
+        activityLogRepository = new ActivityLogRepository(this);
+        sessionManager = new SessionManager(this);
+        wilayahService = WilayahIndonesiaService.getInstance();
+
+        editKostId = getIntent().getStringExtra("kost_id");
 
         initViews();
-        setupPhotoGallery();
-        setupLocationControls();
-        loadWilayahAndFasilitas();
+        initCoordinatesFromGps();
+        setupStep1();
+        setupStep2();
+        setupStep3();
+        setupStep4();
+        setupBottomActions();
+        loadWilayahData();
+
+        updateStepUI();
+    }
+
+    private void initCoordinatesFromGps() {
+        if (editKostId != null) return;
+
+        double savedLat = sessionManager.getUserSelectedLat();
+        double savedLng = sessionManager.getUserSelectedLng();
+        if (savedLat != 0.0 && savedLng != 0.0) {
+            selectedLat = savedLat;
+            selectedLng = savedLng;
+        }
+
+        com.carikostkita.data.location.UserLocationManager locManager =
+                com.carikostkita.data.location.UserLocationManager.getInstance(this);
+        if (locManager.hasLocationPermission()) {
+            android.location.LocationManager lm = (android.location.LocationManager) getSystemService(android.content.Context.LOCATION_SERVICE);
+            if (lm != null) {
+                try {
+                    android.location.Location loc = lm.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER);
+                    if (loc == null) loc = lm.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER);
+                    if (loc != null) {
+                        selectedLat = loc.getLatitude();
+                        selectedLng = loc.getLongitude();
+                    }
+                } catch (SecurityException ignored) {}
+            }
+        }
     }
 
     private void initViews() {
+        ImageButton btnBack = findViewById(R.id.btn_form_back);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> handleBackNavigation());
+        }
+
         tvTitle = findViewById(R.id.tv_form_title);
+        tvStepTitle = findViewById(R.id.tv_form_step_title);
+
+        stepIndicator1 = findViewById(R.id.step_indicator_1);
+        stepIndicator2 = findViewById(R.id.step_indicator_2);
+        stepIndicator3 = findViewById(R.id.step_indicator_3);
+        stepIndicator4 = findViewById(R.id.step_indicator_4);
+        stepIndicator5 = findViewById(R.id.step_indicator_5);
+
+        stepLine1 = findViewById(R.id.step_line_1);
+        stepLine2 = findViewById(R.id.step_line_2);
+        stepLine3 = findViewById(R.id.step_line_3);
+        stepLine4 = findViewById(R.id.step_line_4);
+
+        stepContainer1 = findViewById(R.id.step_container_1);
+        stepContainer2 = findViewById(R.id.step_container_2);
+        stepContainer3 = findViewById(R.id.step_container_3);
+        stepContainer4 = findViewById(R.id.step_container_4);
+        stepContainer5 = findViewById(R.id.step_container_5);
+
+        btnPrev = findViewById(R.id.btn_form_prev);
+        btnNext = findViewById(R.id.btn_form_next);
+        pbSaving = findViewById(R.id.pb_form_saving);
+
+        if (editKostId != null) {
+            tvTitle.setText("Edit Properti Kost");
+        } else {
+            tvTitle.setText("Tambah Kost Baru");
+        }
+    }
+
+    private void setupStep1() {
         etNama = findViewById(R.id.et_form_nama);
         rgTipe = findViewById(R.id.rg_form_tipe);
         rbPutra = findViewById(R.id.rb_form_putra);
         rbPutri = findViewById(R.id.rb_form_putri);
         rbCampur = findViewById(R.id.rb_form_campur);
-        etHarga = findViewById(R.id.et_form_harga);
-        etProvinsi = findViewById(R.id.et_form_provinsi);
-        etKota = findViewById(R.id.et_form_kota);
-        spWilayah = findViewById(R.id.sp_form_wilayah);
-        etAlamat = findViewById(R.id.et_form_alamat);
-        etPatokan = findViewById(R.id.et_form_patokan);
-
-        rvFormFotos = findViewById(R.id.rv_form_fotos);
-        btnAddFoto = findViewById(R.id.btn_form_add_foto);
-        tvFotoCounter = findViewById(R.id.tv_form_foto_count);
-        tvFotoEmpty = findViewById(R.id.tv_form_foto_empty);
-
-        etUkuranKamar = findViewById(R.id.et_form_ukuran_kamar);
+        etDeskripsi = findViewById(R.id.et_form_deskripsi);
         etTotalKamar = findViewById(R.id.et_form_total_kamar);
         etKamarTersedia = findViewById(R.id.et_form_kamar_tersedia);
-        tvKamarTerisiInfo = findViewById(R.id.tv_form_kamar_terisi_info);
         etWhatsapp = findViewById(R.id.et_form_whatsapp);
-        etLat = findViewById(R.id.et_form_lat);
-        etLng = findViewById(R.id.et_form_lng);
-        btnCurrentLocation = findViewById(R.id.btn_form_current_location);
-        btnTestMaps = findViewById(R.id.btn_form_test_maps);
-        tvLocationPreviewDesc = findViewById(R.id.tv_form_coord_preview);
+    }
 
-        etDeskripsi = findViewById(R.id.et_form_deskripsi);
-        rgStatus = findViewById(R.id.rg_form_status);
-        rbTersedia = findViewById(R.id.rb_status_tersedia);
-        rbPenuh = findViewById(R.id.rb_status_penuh);
-        rbTidakAktif = findViewById(R.id.rb_status_tidak_aktif);
-        layoutFasilitasChecks = findViewById(R.id.layout_form_fasilitas_checks);
-        btnSave = findViewById(R.id.btn_form_save);
+    private void setupStep2() {
+        etHarga = findViewById(R.id.et_form_harga);
+        actProvinsi = findViewById(R.id.act_form_provinsi);
+        actKota = findViewById(R.id.act_form_kota);
+        actKecamatan = findViewById(R.id.act_form_kecamatan);
+        actKelurahan = findViewById(R.id.act_form_kelurahan);
+        actJalan = findViewById(R.id.act_form_jalan);
+        etAlamat = findViewById(R.id.et_form_alamat);
 
-        cardRevisiAlert = findViewById(R.id.card_form_revisi_alert);
-        tvRevisiNote = findViewById(R.id.tv_form_revisi_note);
+        btnOpenMap = findViewById(R.id.btn_form_open_map);
+        cardLocationSummary = findViewById(R.id.card_form_location_summary);
+        tvCoords = findViewById(R.id.tv_form_coords);
+        tvMapAddress = findViewById(R.id.tv_form_map_address);
 
-        ImageButton btnBack = findViewById(R.id.btn_form_back);
-        btnBack.setOnClickListener(v -> checkDiscardAndExit());
+        // 1. Populate Provinsi
+        List<String> provList = IndonesiaLocationData.getProvinsiList();
+        ArrayAdapter<String> provAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, provList);
+        actProvinsi.setAdapter(provAdapter);
 
-        TextWatcher roomWatcher = new TextWatcher() {
+        // Default: Riau
+        actProvinsi.setText("Riau", false);
+        setupKotaDropdown("Riau");
+
+        actProvinsi.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedProv = (String) parent.getItemAtPosition(position);
+            actKota.setText("", false);
+            actKecamatan.setText("", false);
+            actKelurahan.setText("", false);
+            actKecamatan.setEnabled(false);
+            actKelurahan.setEnabled(false);
+            setupKotaDropdown(selectedProv);
+        });
+
+        // Autocomplete Streets
+        ArrayAdapter<String> streetAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, IndonesiaLocationData.getCommonStreets());
+        actJalan.setAdapter(streetAdapter);
+
+        btnOpenMap.setOnClickListener(v -> {
+            Intent mapIntent = new Intent(this, MapPinPickerActivity.class);
+            mapIntent.putExtra(MapPinPickerActivity.EXTRA_LAT, selectedLat);
+            mapIntent.putExtra(MapPinPickerActivity.EXTRA_LNG, selectedLng);
+            mapPinLauncher.launch(mapIntent);
+        });
+
+        updateLocationSummaryUI("Kota Pekanbaru", "Pekanbaru", "Riau");
+    }
+
+    private void setupKotaDropdown(String provinsi) {
+        List<String> kotaList = IndonesiaLocationData.getKotaList(provinsi);
+        ArrayAdapter<String> kotaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, kotaList);
+        actKota.setAdapter(kotaAdapter);
+        actKota.setEnabled(true);
+
+        if ("Riau".equalsIgnoreCase(provinsi) && actKota.getText().toString().isEmpty()) {
+            actKota.setText("Kota Pekanbaru", false);
+            setupKecamatanDropdown("Kota Pekanbaru");
+        }
+
+        actKota.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedKota = (String) parent.getItemAtPosition(position);
+            actKecamatan.setText("", false);
+            actKelurahan.setText("", false);
+            actKelurahan.setEnabled(false);
+            setupKecamatanDropdown(selectedKota);
+        });
+    }
+
+    private void setupKecamatanDropdown(String kota) {
+        List<String> initialList = IndonesiaLocationData.getKecamatanList(kota);
+        ArrayAdapter<String> initialAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, new ArrayList<>(initialList));
+        actKecamatan.setAdapter(initialAdapter);
+        actKecamatan.setEnabled(true);
+
+        String prov = actProvinsi != null ? actProvinsi.getText().toString().trim() : "Riau";
+        wilayahService.getKecamatanList(kota, prov, new WilayahIndonesiaService.WilayahCallback<List<String>>() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateRoomVacancyCalculation();
+            public void onSuccess(List<String> data) {
+                if (isFinishing() || isDestroyed()) return;
+                if (data != null && !data.isEmpty()) {
+                    ArrayAdapter<String> liveAdapter = new ArrayAdapter<>(AdminKostFormActivity.this,
+                            android.R.layout.simple_dropdown_item_1line, data);
+                    actKecamatan.setAdapter(liveAdapter);
+                }
             }
 
             @Override
-            public void afterTextChanged(Editable s) {}
-        };
-        etTotalKamar.addTextChangedListener(roomWatcher);
-        etKamarTersedia.addTextChangedListener(roomWatcher);
+            public void onError(String message, List<String> fallbackData) {
+                if (isFinishing() || isDestroyed()) return;
+                if (fallbackData != null && !fallbackData.isEmpty()) {
+                    ArrayAdapter<String> fallbackAdapter = new ArrayAdapter<>(AdminKostFormActivity.this,
+                            android.R.layout.simple_dropdown_item_1line, fallbackData);
+                    actKecamatan.setAdapter(fallbackAdapter);
+                }
+            }
+        });
 
-        if (editKostId != -1) {
-            tvTitle.setText("Edit Properti Kost");
-            btnSave.setText("Simpan Perubahan");
-        } else {
-            tvTitle.setText("Tambah Kost Baru");
-            btnSave.setText("Simpan Properti Kost");
-        }
+        actKecamatan.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedKec = (String) parent.getItemAtPosition(position);
+            actKelurahan.setText("", false);
+            setupKelurahanDropdown(selectedKec);
+        });
 
-        btnSave.setOnClickListener(v -> handleSave());
+        actKelurahan.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                String currentKec = actKecamatan.getText().toString().trim();
+                if (!currentKec.isEmpty()) {
+                    setupKelurahanDropdown(currentKec);
+                }
+            }
+        });
     }
 
-    private void setupPhotoGallery() {
+    private void setupKelurahanDropdown(String kecamatan) {
+        List<String> initialList = IndonesiaLocationData.getKelurahanList(kecamatan);
+        ArrayAdapter<String> initialAdapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, new ArrayList<>(initialList));
+        actKelurahan.setAdapter(initialAdapter);
+        actKelurahan.setEnabled(true);
+
+        String prov = actProvinsi != null ? actProvinsi.getText().toString().trim() : "Riau";
+        String kota = actKota != null ? actKota.getText().toString().trim() : "Kota Pekanbaru";
+
+        wilayahService.getKelurahanList(kecamatan, kota, prov, new WilayahIndonesiaService.WilayahCallback<List<String>>() {
+            @Override
+            public void onSuccess(List<String> data) {
+                if (isFinishing() || isDestroyed()) return;
+                if (data != null && !data.isEmpty()) {
+                    ArrayAdapter<String> liveAdapter = new ArrayAdapter<>(AdminKostFormActivity.this,
+                            android.R.layout.simple_dropdown_item_1line, data);
+                    actKelurahan.setAdapter(liveAdapter);
+                }
+            }
+
+            @Override
+            public void onError(String message, List<String> fallbackData) {
+                if (isFinishing() || isDestroyed()) return;
+                if (fallbackData != null && !fallbackData.isEmpty()) {
+                    ArrayAdapter<String> fallbackAdapter = new ArrayAdapter<>(AdminKostFormActivity.this,
+                            android.R.layout.simple_dropdown_item_1line, fallbackData);
+                    actKelurahan.setAdapter(fallbackAdapter);
+                }
+            }
+        });
+    }
+
+    private void updateLocationSummaryUI(String street, String kota, String prov) {
+        if (tvCoords != null) {
+            tvCoords.setText(String.format(Locale.getDefault(), "%.6f, %.6f", selectedLat, selectedLng));
+        }
+        if (tvMapAddress != null) {
+            StringBuilder sb = new StringBuilder();
+            if (street != null && !street.isEmpty()) sb.append(street).append(", ");
+            if (kota != null && !kota.isEmpty()) sb.append(kota).append(", ");
+            sb.append(prov != null ? prov : "Indonesia");
+            tvMapAddress.setText(sb.toString());
+        }
+    }
+
+    private void setupStep3() {
+        cbKamarMandi = findViewById(R.id.cb_fas_kamar_mandi);
+        cbAc = findViewById(R.id.cb_fas_ac);
+        cbWifi = findViewById(R.id.cb_fas_wifi);
+        cbLemari = findViewById(R.id.cb_fas_lemari);
+        cbKasur = findViewById(R.id.cb_fas_kasur);
+        cbMeja = findViewById(R.id.cb_fas_meja);
+        cbDapur = findViewById(R.id.cb_fas_dapur);
+        cbParkirMotor = findViewById(R.id.cb_fas_parkir_motor);
+        cbParkirMobil = findViewById(R.id.cb_fas_parkir_mobil);
+        cbAkses24 = findViewById(R.id.cb_fas_akses_24);
+        cbListrik = findViewById(R.id.cb_fas_listrik);
+        cbAir = findViewById(R.id.cb_fas_air);
+
+        allCheckBoxes.add(cbKamarMandi);
+        allCheckBoxes.add(cbAc);
+        allCheckBoxes.add(cbWifi);
+        allCheckBoxes.add(cbLemari);
+        allCheckBoxes.add(cbKasur);
+        allCheckBoxes.add(cbMeja);
+        allCheckBoxes.add(cbDapur);
+        allCheckBoxes.add(cbParkirMotor);
+        allCheckBoxes.add(cbParkirMobil);
+        allCheckBoxes.add(cbAkses24);
+        allCheckBoxes.add(cbListrik);
+        allCheckBoxes.add(cbAir);
+
+        // Tags corresponding to getMasterFasilitas
+        cbWifi.setTag(1);
+        cbParkirMotor.setTag(2);
+        cbParkirMobil.setTag(3);
+        cbAc.setTag(4);
+        cbKamarMandi.setTag(5);
+        cbKasur.setTag(6);
+        cbLemari.setTag(7);
+        cbMeja.setTag(8);
+        cbDapur.setTag(9);
+        cbListrik.setTag(10);
+        cbAkses24.setTag(11);
+        cbAir.setTag(12);
+    }
+
+    private void setupStep4() {
+        btnAddFoto = findViewById(R.id.btn_form_add_foto);
+        tvFotoCounter = findViewById(R.id.tv_form_foto_counter);
+        rvFotos = findViewById(R.id.rv_form_fotos);
+
         formFotoAdapter = new FormFotoAdapter(this, new FormFotoAdapter.OnFotoActionListener() {
             @Override
             public void onDeleteFoto(int position) {
-                AppDialogHelper.showConfirmationDialog(AdminKostFormActivity.this,
-                        "Hapus Foto",
-                        "Apakah Anda yakin ingin menghapus foto ini dari daftar?",
-                        () -> {
-                            formFotoAdapter.removeFoto(position);
-                            updateFotoCounter();
-                        });
+                formFotoAdapter.removeFoto(position);
+                updateFotoCounter();
             }
 
             @Override
             public void onSetAsCover(int position) {
                 formFotoAdapter.setCover(position);
-                Toast.makeText(AdminKostFormActivity.this, "Foto utama diperbarui", Toast.LENGTH_SHORT).show();
             }
         });
 
-        rvFormFotos.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        rvFormFotos.setAdapter(formFotoAdapter);
+        rvFotos.setLayoutManager(new LinearLayoutManager(this));
+        rvFotos.setAdapter(formFotoAdapter);
 
         btnAddFoto.setOnClickListener(v -> {
             if (formFotoAdapter.getItemCount() >= 6) {
-                Toast.makeText(this, "Maksimal 6 foto telah tercapai", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Maksimal 6 foto kost", Toast.LENGTH_SHORT).show();
                 return;
             }
             pickMultipleImagesLauncher.launch("image/*");
@@ -236,178 +497,312 @@ public class AdminKostFormActivity extends AppCompatActivity {
     }
 
     private void updateFotoCounter() {
-        if (tvFotoCounter != null && formFotoAdapter != null) {
-            tvFotoCounter.setText(formFotoAdapter.getItemCount() + " / 6 foto");
-            if (tvFotoEmpty != null) {
-                tvFotoEmpty.setVisibility(formFotoAdapter.getItemCount() > 0 ? View.GONE : View.VISIBLE);
-            }
+        int count = formFotoAdapter != null ? formFotoAdapter.getItemCount() : 0;
+        if (tvFotoCounter != null) {
+            tvFotoCounter.setText(count + " / 6 Foto");
         }
     }
 
-    private void setupLocationControls() {
-        btnCurrentLocation.setOnClickListener(v -> requestLocation());
+    private void setupStep5Preview() {
+        ivPreviewCover = findViewById(R.id.iv_preview_cover);
+        tvPreviewTipeBadge = findViewById(R.id.tv_preview_tipe_badge);
+        tvPreviewKamarBadge = findViewById(R.id.tv_preview_kamar_badge);
+        tvPreviewNama = findViewById(R.id.tv_preview_nama);
+        tvPreviewAlamat = findViewById(R.id.tv_preview_alamat);
+        tvPreviewHarga = findViewById(R.id.tv_preview_harga);
+        tvPreviewFasilitas = findViewById(R.id.tv_preview_fasilitas);
 
-        btnTestMaps.setOnClickListener(v -> {
-            String latStr = etLat.getText().toString().trim();
-            String lngStr = etLng.getText().toString().trim();
-            double lat = 0.463280;
-            double lng = 101.450123;
-            try {
-                if (!latStr.isEmpty()) lat = Double.parseDouble(latStr);
-                if (!lngStr.isEmpty()) lng = Double.parseDouble(lngStr);
-            } catch (Exception ignored) {}
+        String nama = etNama.getText().toString().trim();
+        tvPreviewNama.setText(!nama.isEmpty() ? nama : "Nama Kost");
 
-            String label = etNama.getText().toString().trim();
-            if (label.isEmpty()) label = "Lokasi Kost";
-
-            Uri gmmIntentUri = Uri.parse("geo:" + lat + "," + lng + "?q=" + lat + "," + lng + "(" + Uri.encode(label) + ")");
-            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-            mapIntent.setPackage("com.google.android.apps.maps");
-            if (mapIntent.resolveActivity(getPackageManager()) != null) {
-                startActivity(mapIntent);
-            } else {
-                Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://www.google.com/maps/search/?api=1&query=" + lat + "," + lng));
-                startActivity(webIntent);
-            }
-        });
-
-        TextWatcher locWatcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                updateLocationPreview();
-            }
-            @Override
-            public void afterTextChanged(Editable s) {}
-        };
-        etLat.addTextChangedListener(locWatcher);
-        etLng.addTextChangedListener(locWatcher);
-        etAlamat.addTextChangedListener(locWatcher);
-        etPatokan.addTextChangedListener(locWatcher);
-    }
-
-    private void requestLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            fetchCurrentLocation();
-        } else {
-            locationPermissionLauncher.launch(new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-            });
-        }
-    }
-
-    private void fetchCurrentLocation() {
+        String hargaStr = etHarga.getText().toString().trim();
         try {
-            LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (lm != null) {
-                Location loc = null;
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if (loc == null) {
-                        loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                    }
-                } else if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                }
+            double h = Double.parseDouble(hargaStr);
+            tvPreviewHarga.setText("Rp " + FormatUtil.formatRupiah(h) + " / bulan");
+        } catch (Exception e) {
+            tvPreviewHarga.setText("Rp 0 / bulan");
+        }
 
-                if (loc != null) {
-                    etLat.setText(String.format(Locale.US, "%.6f", loc.getLatitude()));
-                    etLng.setText(String.format(Locale.US, "%.6f", loc.getLongitude()));
-                    updateLocationPreview();
-                    Toast.makeText(this, "Koordinat GPS berhasil disinkronkan", Toast.LENGTH_SHORT).show();
-                } else {
-                    etLat.setText("0.463280");
-                    etLng.setText("101.450123");
-                    updateLocationPreview();
-                    Toast.makeText(this, "Lokasi GPS belum tersedia, diset ke Bukit Raya default", Toast.LENGTH_SHORT).show();
+        String tipe = "PUTRI";
+        if (rbPutra.isChecked()) {
+            tipe = "PUTRA";
+            tvPreviewTipeBadge.setBackgroundResource(R.drawable.bg_badge_putra);
+            tvPreviewTipeBadge.setTextColor(ContextCompat.getColor(this, R.color.badge_putra));
+        } else if (rbCampur.isChecked()) {
+            tipe = "CAMPUR";
+            tvPreviewTipeBadge.setBackgroundResource(R.drawable.bg_badge_campur);
+            tvPreviewTipeBadge.setTextColor(ContextCompat.getColor(this, R.color.badge_campur));
+        } else {
+            tvPreviewTipeBadge.setBackgroundResource(R.drawable.bg_badge_putri);
+            tvPreviewTipeBadge.setTextColor(ContextCompat.getColor(this, R.color.badge_putri));
+        }
+        tvPreviewTipeBadge.setText(tipe);
+
+        String kosong = etKamarTersedia.getText().toString().trim();
+        tvPreviewKamarBadge.setText("Tersedia " + (!kosong.isEmpty() ? kosong : "0") + " Kamar");
+
+        StringBuilder sbAlamat = new StringBuilder();
+        String jalan = actJalan.getText().toString().trim();
+        String detailAlamat = etAlamat.getText().toString().trim();
+        String kec = actKecamatan.getText().toString().trim();
+        String kota = actKota.getText().toString().trim();
+
+        if (!jalan.isEmpty()) sbAlamat.append(jalan).append(", ");
+        if (!detailAlamat.isEmpty()) sbAlamat.append(detailAlamat).append(", ");
+        if (!kec.isEmpty()) sbAlamat.append(kec).append(", ");
+        if (!kota.isEmpty()) sbAlamat.append(kota);
+        tvPreviewAlamat.setText(sbAlamat.toString());
+
+        // Selected Facilities List
+        StringBuilder sbFas = new StringBuilder();
+        for (CheckBox cb : allCheckBoxes) {
+            if (cb.isChecked()) {
+                if (sbFas.length() > 0) sbFas.append(" • ");
+                sbFas.append(cb.getText().toString().replaceAll("[^a-zA-Z0-9 ()&/]", "").trim());
+            }
+        }
+        if (sbFas.length() == 0) {
+            sbFas.append("Standar Kamar Kost");
+        }
+        tvPreviewFasilitas.setText(sbFas.toString());
+
+        // Cover Photo
+        List<FotoKost> fotos = formFotoAdapter.getFotoList();
+        if (!fotos.isEmpty()) {
+            String coverPath = null;
+            for (FotoKost f : fotos) {
+                if (f.isThumbnail()) {
+                    coverPath = f.getPathFile();
+                    break;
                 }
             }
-        } catch (Exception e) {
-            Toast.makeText(this, "Gagal mengambil lokasi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            if (coverPath == null) coverPath = fotos.get(0).getPathFile();
+            Glide.with(this).load(coverPath).placeholder(R.drawable.bg_thumb_placeholder).into(ivPreviewCover);
         }
     }
 
-    private void updateLocationPreview() {
-        String latStr = etLat.getText().toString().trim();
-        String lngStr = etLng.getText().toString().trim();
-        String patokan = etPatokan.getText().toString().trim();
-        StringBuilder sb = new StringBuilder();
-        if (!latStr.isEmpty() && !lngStr.isEmpty()) {
-            sb.append("Koordinat: ").append(latStr).append(", ").append(lngStr);
+    private void setupBottomActions() {
+        btnPrev.setOnClickListener(v -> handleBackNavigation());
+        btnNext.setOnClickListener(v -> handleNextNavigation());
+    }
+
+    private void updateStepUI() {
+        // Toggle containers
+        stepContainer1.setVisibility(currentStep == 1 ? View.VISIBLE : View.GONE);
+        stepContainer2.setVisibility(currentStep == 2 ? View.VISIBLE : View.GONE);
+        stepContainer3.setVisibility(currentStep == 3 ? View.VISIBLE : View.GONE);
+        stepContainer4.setVisibility(currentStep == 4 ? View.VISIBLE : View.GONE);
+        stepContainer5.setVisibility(currentStep == 5 ? View.VISIBLE : View.GONE);
+
+        // Update Dots & Lines
+        updateStepIndicator(stepIndicator1, currentStep >= 1);
+        updateStepIndicator(stepIndicator2, currentStep >= 2);
+        updateStepIndicator(stepIndicator3, currentStep >= 3);
+        updateStepIndicator(stepIndicator4, currentStep >= 4);
+        updateStepIndicator(stepIndicator5, currentStep >= 5);
+
+        if (stepLine1 != null) stepLine1.setBackgroundColor(ContextCompat.getColor(this, currentStep >= 2 ? R.color.primary : R.color.border));
+        if (stepLine2 != null) stepLine2.setBackgroundColor(ContextCompat.getColor(this, currentStep >= 3 ? R.color.primary : R.color.border));
+        if (stepLine3 != null) stepLine3.setBackgroundColor(ContextCompat.getColor(this, currentStep >= 4 ? R.color.primary : R.color.border));
+        if (stepLine4 != null) stepLine4.setBackgroundColor(ContextCompat.getColor(this, currentStep >= 5 ? R.color.primary : R.color.border));
+
+        // Subtitle
+        switch (currentStep) {
+            case 1:
+                tvStepTitle.setText("Langkah 1 dari 5 — Informasi Umum");
+                btnPrev.setVisibility(View.GONE);
+                btnNext.setText("Lanjut ke Lokasi ›");
+                break;
+            case 2:
+                tvStepTitle.setText("Langkah 2 dari 5 — Harga & Lokasi");
+                btnPrev.setVisibility(View.VISIBLE);
+                btnNext.setText("Lanjut ke Fasilitas ›");
+                break;
+            case 3:
+                tvStepTitle.setText("Langkah 3 dari 5 — Fasilitas");
+                btnPrev.setVisibility(View.VISIBLE);
+                btnNext.setText("Lanjut ke Foto ›");
+                break;
+            case 4:
+                tvStepTitle.setText("Langkah 4 dari 5 — Foto Kost");
+                btnPrev.setVisibility(View.VISIBLE);
+                btnNext.setText("Lanjut ke Preview ›");
+                break;
+            case 5:
+                tvStepTitle.setText("Langkah 5 dari 5 — Pratinjau & Publikasi");
+                btnPrev.setVisibility(View.VISIBLE);
+                btnNext.setText(editKostId != null ? "Simpan Perubahan" : "Publikasikan Kost");
+                setupStep5Preview();
+                break;
+        }
+    }
+
+    private void updateStepIndicator(TextView tv, boolean active) {
+        if (tv == null) return;
+        if (active) {
+            tv.setBackgroundResource(R.drawable.bg_nav_pill_active);
+            tv.setTextColor(ContextCompat.getColor(this, R.color.white));
         } else {
-            sb.append("Koordinat belum diisi");
+            tv.setBackgroundResource(R.drawable.bg_circle_icon_blue);
+            tv.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
         }
-        if (!patokan.isEmpty()) {
-            sb.append("\nPatokan: ").append(patokan);
-        }
-        tvLocationPreviewDesc.setText(sb.toString());
     }
 
-    private void updateRoomVacancyCalculation() {
-        try {
-            int total = Integer.parseInt(etTotalKamar.getText().toString().trim());
-            int tersedia = Integer.parseInt(etKamarTersedia.getText().toString().trim());
-            int terisi = Math.max(0, total - tersedia);
-            tvKamarTerisiInfo.setText("Kamar Terisi: " + terisi + " kamar (Total: " + total + ", Kosong: " + tersedia + ")");
-        } catch (Exception e) {
-            tvKamarTerisiInfo.setText("Kamar Terisi: dihitung otomatis dari (Total - Kosong)");
+    private void handleNextNavigation() {
+        if (currentStep == 1) {
+            if (!validateStep1()) return;
+            currentStep = 2;
+            updateStepUI();
+        } else if (currentStep == 2) {
+            if (!validateStep2()) return;
+            currentStep = 3;
+            updateStepUI();
+        } else if (currentStep == 3) {
+            currentStep = 4;
+            updateStepUI();
+        } else if (currentStep == 4) {
+            if (!validateStep4()) return;
+            currentStep = 5;
+            updateStepUI();
+        } else if (currentStep == 5) {
+            submitKost();
+        }
+    }
+
+    private void handleBackNavigation() {
+        if (currentStep > 1) {
+            currentStep--;
+            updateStepUI();
+        } else {
+            AppDialogHelper.showConfirmationDialog(this,
+                    "Batalkan Pengisian?",
+                    "Data kost yang belum disimpan akan hilang jika Anda keluar sekarang. Lanjutkan?",
+                    this::finish);
         }
     }
 
     @Override
     public void onBackPressed() {
-        checkDiscardAndExit();
+        handleBackNavigation();
     }
 
-    private void checkDiscardAndExit() {
-        AppDialogHelper.showConfirmationDialog(this,
-                "Batalkan Pengisian?",
-                "Perubahan atau data properti kost yang sudah dimasukkan belum disimpan. Anda yakin ingin keluar?",
-                this::finish);
+    private boolean validateStep1() {
+        String nama = etNama.getText().toString().trim();
+        String deskripsi = etDeskripsi.getText().toString().trim();
+        String totalKamarStr = etTotalKamar.getText().toString().trim();
+        String kamarTersediaStr = etKamarTersedia.getText().toString().trim();
+        String wa = etWhatsapp.getText().toString().trim();
+
+        if (nama.isEmpty()) {
+            etNama.setError("Nama kost wajib diisi");
+            etNama.requestFocus();
+            return false;
+        }
+
+        if (deskripsi.isEmpty()) {
+            etDeskripsi.setError("Deskripsi kost wajib diisi");
+            etDeskripsi.requestFocus();
+            return false;
+        }
+
+        if (totalKamarStr.isEmpty()) {
+            etTotalKamar.setError("Total kamar wajib diisi");
+            etTotalKamar.requestFocus();
+            return false;
+        }
+
+        int total = Integer.parseInt(totalKamarStr);
+        if (total <= 0) {
+            etTotalKamar.setError("Total kamar harus lebih dari 0");
+            etTotalKamar.requestFocus();
+            return false;
+        }
+
+        int kosong = 0;
+        if (!kamarTersediaStr.isEmpty()) {
+            kosong = Integer.parseInt(kamarTersediaStr);
+        }
+        if (kosong > total) {
+            etKamarTersedia.setError("Kamar kosong tidak boleh melebihi total kamar");
+            etKamarTersedia.requestFocus();
+            return false;
+        }
+
+        if (wa.isEmpty() || wa.length() < 8) {
+            etWhatsapp.setError("Nomor WhatsApp pengelola minimal 8 digit");
+            etWhatsapp.requestFocus();
+            return false;
+        }
+
+        return true;
     }
 
-    private void loadWilayahAndFasilitas() {
+    private boolean validateStep2() {
+        String hargaStr = etHarga.getText().toString().trim();
+        String prov = actProvinsi.getText().toString().trim();
+        String kota = actKota.getText().toString().trim();
+        String kec = actKecamatan.getText().toString().trim();
+        String jalan = actJalan.getText().toString().trim();
+        String alamat = etAlamat.getText().toString().trim();
+
+        if (hargaStr.isEmpty()) {
+            etHarga.setError("Harga bulanan wajib diisi");
+            etHarga.requestFocus();
+            return false;
+        }
+
+        try {
+            double h = Double.parseDouble(hargaStr);
+            if (h <= 0) {
+                etHarga.setError("Harga harus lebih dari 0");
+                etHarga.requestFocus();
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            etHarga.setError("Format harga tidak valid");
+            return false;
+        }
+
+        if (prov.isEmpty()) {
+            Toast.makeText(this, "Silakan pilih Provinsi", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (kota.isEmpty()) {
+            Toast.makeText(this, "Silakan pilih Kota / Kabupaten", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (kec.isEmpty()) {
+            Toast.makeText(this, "Silakan pilih Kecamatan", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (jalan.isEmpty()) {
+            actJalan.setError("Nama jalan wajib diisi");
+            actJalan.requestFocus();
+            return false;
+        }
+        if (alamat.isEmpty()) {
+            etAlamat.setError("Nomor bangunan / alamat lengkap wajib diisi");
+            etAlamat.requestFocus();
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean validateStep4() {
+        if (formFotoAdapter.getItemCount() == 0) {
+            Toast.makeText(this, "Harap pilih minimal 1 foto utama kost", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        return true;
+    }
+
+    private void loadWilayahData() {
         kostRepository.getAllWilayah(new DataCallback<List<Wilayah>>() {
             @Override
             public void onSuccess(List<Wilayah> data) {
                 wilayahList = data;
-                List<String> labels = new ArrayList<>();
-                for (Wilayah w : data) {
-                    labels.add(w.getKelurahan() + " (" + w.getKecamatan() + ")");
-                }
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(AdminKostFormActivity.this,
-                        android.R.layout.simple_spinner_dropdown_item, labels);
-                spWilayah.setAdapter(adapter);
-
-                if (editKostId != -1) {
-                    checkAndPopulateEdit();
-                }
-            }
-
-            @Override
-            public void onError(String message) {}
-        });
-
-        kostRepository.getAllFasilitas(new DataCallback<List<Fasilitas>>() {
-            @Override
-            public void onSuccess(List<Fasilitas> data) {
-                masterFasilitas = data;
-                layoutFasilitasChecks.removeAllViews();
-                fasilitasCheckBoxes.clear();
-
-                for (Fasilitas f : data) {
-                    CheckBox cb = new CheckBox(AdminKostFormActivity.this);
-                    cb.setText(f.getNamaFasilitas());
-                    cb.setTag(f.getIdFasilitas());
-                    layoutFasilitasChecks.addView(cb);
-                    fasilitasCheckBoxes.add(cb);
-                }
-
-                if (editKostId != -1) {
+                if (editKostId != null) {
                     checkAndPopulateEdit();
                 }
             }
@@ -418,240 +813,116 @@ public class AdminKostFormActivity extends AppCompatActivity {
     }
 
     private void checkAndPopulateEdit() {
-        if (existingKost != null) return;
+        if (existingKost != null || editKostId == null) return;
 
-        kostRepository.getKostDetail(editKostId, 0, new DataCallback<Kost>() {
+        kostRepository.getKostDetail(editKostId, sessionManager.getUserUid(), new DataCallback<Kost>() {
             @Override
             public void onSuccess(Kost kost) {
-                // Security RBAC: Pemilik can only edit their own property
-                if (sessionManager.isPemilikKost() && !sessionManager.isDeveloper()) {
-                    if (kost.getIdPemilik() > 0 && kost.getIdPemilik() != sessionManager.getUserId()) {
-                        Toast.makeText(AdminKostFormActivity.this, "Akses ditolak: Anda hanya dapat mengelola kost milik Anda sendiri", Toast.LENGTH_LONG).show();
-                        finish();
-                        return;
-                    }
-                }
-
                 existingKost = kost;
-
-                // Show revision note banner if revision was requested
-                if (kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REVISION_REQUIRED) {
-                    if (cardRevisiAlert != null) cardRevisiAlert.setVisibility(View.VISIBLE);
-                    if (tvRevisiNote != null) {
-                        String note = kost.getCatatanRevisi();
-                        tvRevisiNote.setText("Catatan Reviewer: " + (note != null && !note.isEmpty() ? note : "Mohon perbaiki data/foto kost sesuai catatan admin."));
-                    }
-                } else {
-                    if (cardRevisiAlert != null) cardRevisiAlert.setVisibility(View.GONE);
-                }
-
                 etNama.setText(kost.getNamaKost());
-                etHarga.setText(String.valueOf((long) kost.getHarga()));
-                if (kost.getProvinsi() != null && !kost.getProvinsi().isEmpty()) {
-                    etProvinsi.setText(kost.getProvinsi());
-                }
-                if (kost.getKota() != null && !kost.getKota().isEmpty()) {
-                    etKota.setText(kost.getKota());
-                }
-                etAlamat.setText(kost.getAlamat());
-                if (kost.getPatokan() != null) {
-                    etPatokan.setText(kost.getPatokan());
-                }
-                if (kost.getUkuranKamar() != null && !kost.getUkuranKamar().isEmpty()) {
-                    etUkuranKamar.setText(kost.getUkuranKamar());
-                }
-                etTotalKamar.setText(String.valueOf(kost.getTotalKamar() > 0 ? kost.getTotalKamar() : 10));
-                etKamarTersedia.setText(String.valueOf(kost.getKamarTersedia()));
-                updateRoomVacancyCalculation();
+                if (kost.getTipeKost() == TipeKost.PUTRA) rbPutra.setChecked(true);
+                else if (kost.getTipeKost() == TipeKost.CAMPUR) rbCampur.setChecked(true);
+                else rbPutri.setChecked(true);
 
-                etWhatsapp.setText(kost.getNoWhatsapp());
-                etLat.setText(String.valueOf(kost.getLatitude()));
-                etLng.setText(String.valueOf(kost.getLongitude()));
-                updateLocationPreview();
                 etDeskripsi.setText(kost.getDeskripsi());
+                etTotalKamar.setText(String.valueOf(kost.getTotalKamar()));
+                etKamarTersedia.setText(String.valueOf(kost.getKamarTersedia()));
+                etWhatsapp.setText(kost.getNoWhatsapp());
 
-                // Tipe
-                if (kost.getTipeKost() == TipeKost.PUTRI) rbPutri.setChecked(true);
-                else if (kost.getTipeKost() == TipeKost.PUTRA) rbPutra.setChecked(true);
-                else rbCampur.setChecked(true);
+                etHarga.setText(String.valueOf((long) kost.getHarga()));
+                if (kost.getProvinsi() != null) actProvinsi.setText(kost.getProvinsi(), false);
+                if (kost.getKota() != null) actKota.setText(kost.getKota(), false);
+                if (kost.getAlamat() != null) etAlamat.setText(kost.getAlamat());
 
-                // Status
-                if (kost.getStatus() == StatusKost.TERSEDIA) rbTersedia.setChecked(true);
-                else if (kost.getStatus() == StatusKost.PENUH) rbPenuh.setChecked(true);
-                else rbTidakAktif.setChecked(true);
+                selectedLat = kost.getLatitude();
+                selectedLng = kost.getLongitude();
+                updateLocationSummaryUI(kost.getAlamat(), kost.getKota(), kost.getProvinsi());
 
-                // Select Wilayah in Spinner
-                for (int i = 0; i < wilayahList.size(); i++) {
-                    if (wilayahList.get(i).getIdWilayah() == kost.getIdWilayah()) {
-                        spWilayah.setSelection(i);
-                        break;
-                    }
-                }
-
-                // Check existing facilities
-                if (kost.getListFasilitas() != null) {
-                    List<Integer> existingIds = new ArrayList<>();
-                    for (Fasilitas f : kost.getListFasilitas()) {
-                        existingIds.add(f.getIdFasilitas());
-                    }
-                    for (CheckBox cb : fasilitasCheckBoxes) {
-                        int fId = (int) cb.getTag();
-                        if (existingIds.contains(fId)) {
-                            cb.setChecked(true);
+                // Check facilities
+                List<String> fasList = kost.getFasilitas();
+                if (fasList != null) {
+                    for (String fName : fasList) {
+                        for (CheckBox cb : allCheckBoxes) {
+                            if (cb.getText().toString().toLowerCase().contains(fName.toLowerCase())) {
+                                cb.setChecked(true);
+                            }
                         }
                     }
                 }
 
                 // Load photos
-                if (kost.getListFoto() != null && !kost.getListFoto().isEmpty()) {
-                    formFotoAdapter.setFotos(kost.getListFoto());
-                } else if (kost.getFotoUtama() != null && !kost.getFotoUtama().isEmpty()) {
-                    List<FotoKost> fl = new ArrayList<>();
-                    fl.add(new FotoKost(0, kost.getIdKost(), "cover.jpg", kost.getFotoUtama(), true));
-                    formFotoAdapter.setFotos(fl);
+                List<FotoKost> fotos = kost.getListFoto();
+                if (fotos != null && !fotos.isEmpty()) {
+                    formFotoAdapter.setFotos(fotos);
+                    updateFotoCounter();
                 }
-                updateFotoCounter();
             }
 
             @Override
             public void onError(String message) {
-                Toast.makeText(AdminKostFormActivity.this, message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(AdminKostFormActivity.this, "Gagal memuat detail kost: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void handleSave() {
+    private void submitKost() {
         String nama = etNama.getText().toString().trim();
         String hargaStr = etHarga.getText().toString().trim();
-        String provinsi = etProvinsi.getText().toString().trim();
-        String kota = etKota.getText().toString().trim();
-        String alamat = etAlamat.getText().toString().trim();
-        String patokan = etPatokan.getText().toString().trim();
-        String ukuranKamar = etUkuranKamar.getText().toString().trim();
-        String totalKamarStr = etTotalKamar.getText().toString().trim();
-        String kamarTersediaStr = etKamarTersedia.getText().toString().trim();
-        String wa = etWhatsapp.getText().toString().trim();
-        String latStr = etLat.getText().toString().trim();
-        String lngStr = etLng.getText().toString().trim();
+        double harga = Double.parseDouble(hargaStr);
+        String prov = actProvinsi.getText().toString().trim();
+        String kota = actKota.getText().toString().trim();
+        String kec = actKecamatan.getText().toString().trim();
+        String kel = actKelurahan.getText().toString().trim();
+        String jalan = actJalan.getText().toString().trim();
+        String alamatLengkap = etAlamat.getText().toString().trim();
         String deskripsi = etDeskripsi.getText().toString().trim();
+        int totalKamar = Integer.parseInt(etTotalKamar.getText().toString().trim());
+        int kamarTersedia = Integer.parseInt(etKamarTersedia.getText().toString().trim());
+        String wa = etWhatsapp.getText().toString().trim();
 
-        if (nama.isEmpty()) {
-            etNama.setError("Nama kost wajib diisi");
-            etNama.requestFocus();
-            return;
-        }
+        TipeKost tipe = TipeKost.PUTRI;
+        if (rbPutra.isChecked()) tipe = TipeKost.PUTRA;
+        else if (rbCampur.isChecked()) tipe = TipeKost.CAMPUR;
 
-        if (hargaStr.isEmpty()) {
-            etHarga.setError("Harga wajib diisi");
-            etHarga.requestFocus();
-            return;
-        }
+        StatusKost status = kamarTersedia > 0 ? StatusKost.TERSEDIA : StatusKost.PENUH;
 
-        double harga;
-        try {
-            harga = Double.parseDouble(hargaStr);
-            if (harga <= 0) {
-                etHarga.setError("Harga harus lebih dari 0");
-                return;
-            }
-        } catch (NumberFormatException e) {
-            etHarga.setError("Format harga tidak valid");
-            return;
-        }
-
-        if (provinsi.isEmpty()) {
-            provinsi = "Riau";
-        }
-        if (kota.isEmpty()) {
-            kota = "Pekanbaru";
-        }
-
-        if (alamat.isEmpty()) {
-            etAlamat.setError("Alamat lengkap wajib diisi");
-            etAlamat.requestFocus();
-            return;
-        }
-
-        int totalKamar = 10;
-        int kamarTersedia = 3;
-        try {
-            if (!totalKamarStr.isEmpty()) totalKamar = Integer.parseInt(totalKamarStr);
-            if (!kamarTersediaStr.isEmpty()) kamarTersedia = Integer.parseInt(kamarTersediaStr);
-        } catch (Exception ignored) {}
-
-        if (kamarTersedia > totalKamar) {
-            etKamarTersedia.setError("Kamar tersedia tidak boleh melebihi total kamar");
-            etKamarTersedia.requestFocus();
-            return;
-        }
-
-        if (spWilayah.getSelectedItemPosition() < 0 || spWilayah.getSelectedItemPosition() >= wilayahList.size()) {
-            Toast.makeText(this, "Silakan pilih kelurahan", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int idWilayah = wilayahList.get(spWilayah.getSelectedItemPosition()).getIdWilayah();
-
-        // Tipe Kost
-        TipeKost tipe = TipeKost.CAMPUR;
-        if (rbPutri.isChecked()) tipe = TipeKost.PUTRI;
-        else if (rbPutra.isChecked()) tipe = TipeKost.PUTRA;
-
-        // Status Kost
-        StatusKost status = StatusKost.TERSEDIA;
-        if (kamarTersedia == 0 || rbPenuh.isChecked()) {
-            status = StatusKost.PENUH;
-        } else if (rbTidakAktif.isChecked()) {
-            status = StatusKost.TIDAK_AKTIF;
-        }
-
-        double latitude = 0.463280;
-        double longitude = 101.450123;
-        try {
-            if (!latStr.isEmpty()) latitude = Double.parseDouble(latStr);
-            if (!lngStr.isEmpty()) longitude = Double.parseDouble(lngStr);
-        } catch (Exception ignored) {}
-
-        // Selected Fasilitas
+        // Collect Facility IDs
         List<Integer> selectedFasilitas = new ArrayList<>();
-        for (CheckBox cb : fasilitasCheckBoxes) {
-            if (cb.isChecked()) {
-                selectedFasilitas.add((int) cb.getTag());
+        for (CheckBox cb : allCheckBoxes) {
+            if (cb.isChecked() && cb.getTag() != null) {
+                selectedFasilitas.add((Integer) cb.getTag());
             }
         }
 
-        Kost kost = (editKostId != -1 && existingKost != null) ? existingKost : new Kost();
+        Kost kost = (editKostId != null && existingKost != null) ? existingKost : new Kost();
         kost.setNamaKost(nama);
-        kost.setIdWilayah(idWilayah);
-        kost.setProvinsi(provinsi);
+        kost.setIdWilayah(wilayahList.isEmpty() ? 1 : wilayahList.get(0).getIdWilayah());
+        kost.setProvinsi(prov);
         kost.setKota(kota);
-        kost.setAlamat(alamat);
-        kost.setPatokan(patokan);
-        kost.setUkuranKamar(ukuranKamar.isEmpty() ? "3x4 m" : ukuranKamar);
+        kost.setAlamat(jalan + ", " + alamatLengkap);
+        kost.setPatokan(kec + (!kel.isEmpty() ? ", " + kel : ""));
+        kost.setUkuranKamar("3x4 m");
         kost.setTotalKamar(totalKamar);
         kost.setKamarTersedia(kamarTersedia);
         kost.setHarga(harga);
         kost.setTipeKost(tipe);
         kost.setNoWhatsapp(wa);
-        kost.setLatitude(latitude);
-        kost.setLongitude(longitude);
+        kost.setLatitude(selectedLat);
+        kost.setLongitude(selectedLng);
         kost.setDeskripsi(deskripsi);
         kost.setStatus(status);
 
-        // Associate owner ID
-        int currentUserId = sessionManager.getUserId();
-        if (kost.getIdPemilik() <= 0 && currentUserId > 0) {
-            kost.setIdPemilik(currentUserId);
+        String currentUserId = sessionManager.getUserUid();
+        if ((kost.getOwnerId() == null || kost.getOwnerId().isEmpty()) && currentUserId != null) {
+            kost.setOwnerId(currentUserId);
         }
 
         boolean isOwner = sessionManager.isPemilikKost() && !sessionManager.isDeveloper();
         if (isOwner) {
-            kost.setVerificationStatus(com.carikostkita.data.model.KostVerificationStatus.PENDING);
+            kost.setVerificationStatus(KostVerificationStatus.PENDING);
             kost.setCatatanRevisi(null);
-        } else {
-            if (editKostId == -1) {
-                kost.setVerificationStatus(com.carikostkita.data.model.KostVerificationStatus.APPROVED);
-            }
+        } else if (editKostId == null) {
+            kost.setVerificationStatus(KostVerificationStatus.APPROVED);
         }
 
         List<FotoKost> fotosToSave = formFotoAdapter.getFotoList();
@@ -668,58 +939,69 @@ public class AdminKostFormActivity extends AppCompatActivity {
             }
         }
 
-        btnSave.setEnabled(false);
-        if (editKostId == -1) {
+        pbSaving.setVisibility(View.VISIBLE);
+        btnNext.setEnabled(false);
+        btnPrev.setEnabled(false);
+
+        if (editKostId == null) {
             kostRepository.saveKostWithFotos(kost, selectedFasilitas, fotosToSave, new DataCallback<Long>() {
                 @Override
                 public void onSuccess(Long id) {
+                    pbSaving.setVisibility(View.GONE);
                     if (isOwner) {
                         activityLogRepository.logActivity(currentUserId, "SUBMIT_KOST",
-                                "Pemilik mengajukan kost baru: " + kost.getNamaKost(), "kost", id.intValue());
-                        AppDialogHelper.showSuccessDialog(AdminKostFormActivity.this, "Pengajuan Berhasil",
-                                "Properti kost Anda berhasil dikirim dan masuk ke antrean verifikasi Developer / Admin sebelum dipublikasikan.",
-                                AdminKostFormActivity.this::finish);
-                    } else {
-                        activityLogRepository.logActivity(currentUserId, "CREATE_KOST",
-                                "Admin menambahkan kost baru: " + kost.getNamaKost(), "kost", id.intValue());
-                        AppDialogHelper.showSuccessDialog(AdminKostFormActivity.this, "Berhasil Disimpan",
-                                "Data properti kost dan foto berhasil disimpan ke sistem.",
-                                AdminKostFormActivity.this::finish);
+                                "Pemilik mengajukan kost baru: " + kost.getNamaKost(), "kost", String.valueOf(id));
                     }
+                    showSuccessPublishDialog(isOwner);
                 }
 
                 @Override
                 public void onError(String message) {
-                    btnSave.setEnabled(true);
-                    AppDialogHelper.showErrorDialog(AdminKostFormActivity.this, "Gagal Menyimpan", message);
+                    pbSaving.setVisibility(View.GONE);
+                    btnNext.setEnabled(true);
+                    btnPrev.setEnabled(true);
+                    AppDialogHelper.showErrorDialog(AdminKostFormActivity.this, "Gagal Mempublikasikan", message);
                 }
             });
         } else {
-            kost.setIdKost(editKostId);
+            kost.setId(editKostId);
             kostRepository.updateKostWithFotos(kost, selectedFasilitas, fotosToSave, new DataCallback<Boolean>() {
                 @Override
                 public void onSuccess(Boolean ok) {
+                    pbSaving.setVisibility(View.GONE);
                     if (isOwner) {
                         activityLogRepository.logActivity(currentUserId, "RESUBMIT_KOST",
-                                "Pemilik memperbarui & mengajukan ulang kost: " + kost.getNamaKost(), "kost", editKostId);
-                        AppDialogHelper.showSuccessDialog(AdminKostFormActivity.this, "Perubahan Terkirim",
-                                "Perbaikan data kost berhasil disimpan dan diajukan kembali ke antrean verifikasi Admin.",
-                                AdminKostFormActivity.this::finish);
-                    } else {
-                        activityLogRepository.logActivity(currentUserId, "UPDATE_KOST",
-                                "Admin memperbarui kost: " + kost.getNamaKost(), "kost", editKostId);
-                        AppDialogHelper.showSuccessDialog(AdminKostFormActivity.this, "Perubahan Disimpan",
-                                "Data properti kost dan galeri foto berhasil diperbarui.",
-                                AdminKostFormActivity.this::finish);
+                                "Pemilik memperbarui kost: " + kost.getNamaKost(), "kost", editKostId);
                     }
+                    showSuccessPublishDialog(isOwner);
                 }
 
                 @Override
                 public void onError(String message) {
-                    btnSave.setEnabled(true);
+                    pbSaving.setVisibility(View.GONE);
+                    btnNext.setEnabled(true);
+                    btnPrev.setEnabled(true);
                     AppDialogHelper.showErrorDialog(AdminKostFormActivity.this, "Gagal Memperbarui", message);
                 }
             });
         }
+    }
+
+    private void showSuccessPublishDialog(boolean isOwner) {
+        String title = editKostId != null ? "Perubahan Berhasil Disimpan" : "Kost Berhasil Ditambahkan";
+        String message = isOwner ?
+                "Properti kost Anda berhasil disimpan dan masuk ke antrean verifikasi Admin sebelum ditampilkan di hasil pencarian." :
+                "Data kost berhasil dipublikasikan dan langsung aktif di katalog publik.";
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton("Selesai", (dialog, which) -> {
+                    dialog.dismiss();
+                    setResult(RESULT_OK);
+                    finish();
+                })
+                .show();
     }
 }

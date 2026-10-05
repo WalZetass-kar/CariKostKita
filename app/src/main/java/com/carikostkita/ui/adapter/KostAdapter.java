@@ -1,6 +1,10 @@
 package com.carikostkita.ui.adapter;
 
 import android.content.Context;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,14 +12,20 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.carikostkita.R;
-import com.carikostkita.data.model.Fasilitas;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
+import com.google.android.material.snackbar.Snackbar;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,27 +71,29 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
     }
 
     public static class KostViewHolder extends RecyclerView.ViewHolder {
+        private final View cardRoot;
         private final ImageView ivThumbnail;
+        private final View layoutPlaceholder;
         private final TextView tvBadgeTipe;
         private final ImageButton btnFavorite;
         private final TextView tvName;
         private final TextView tvLocation;
         private final TextView tvFacilities;
         private final TextView tvRoomSpecs;
-        private final TextView tvKamarTersedia;
         private final TextView tvPrice;
         private final TextView tvStatus;
 
         public KostViewHolder(@NonNull View itemView) {
             super(itemView);
+            cardRoot = itemView.findViewById(R.id.card_kost_root);
             ivThumbnail = itemView.findViewById(R.id.iv_kost_thumbnail);
+            layoutPlaceholder = itemView.findViewById(R.id.layout_thumb_placeholder);
             tvBadgeTipe = itemView.findViewById(R.id.tv_badge_tipe);
             btnFavorite = itemView.findViewById(R.id.btn_favorite_toggle);
             tvName = itemView.findViewById(R.id.tv_kost_name);
             tvLocation = itemView.findViewById(R.id.tv_kost_location);
             tvFacilities = itemView.findViewById(R.id.tv_kost_facilities);
             tvRoomSpecs = itemView.findViewById(R.id.tv_kost_room_specs);
-            tvKamarTersedia = itemView.findViewById(R.id.tv_kost_kamar_tersedia);
             tvPrice = itemView.findViewById(R.id.tv_kost_price);
             tvStatus = itemView.findViewById(R.id.tv_kost_status);
         }
@@ -92,15 +104,26 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             tvLocation.setText(kost.getFullLocation());
             tvPrice.setText(kost.getFormattedHarga());
 
-            // Ukuran Kamar & Ketersediaan
-            String ukuran = kost.getUkuranKamar() != null && !kost.getUkuranKamar().isEmpty() ? kost.getUkuranKamar() : "3x4 m";
-            tvRoomSpecs.setText(ukuran);
-            if (kost.getKamarTersedia() > 0) {
-                tvKamarTersedia.setText("Sisa " + kost.getKamarTersedia() + " kamar");
-                tvKamarTersedia.setTextColor(ContextCompat.getColor(context, R.color.text_secondary));
-            } else {
-                tvKamarTersedia.setText("Kamar habis");
-                tvKamarTersedia.setTextColor(ContextCompat.getColor(context, R.color.status_penuh));
+            // Specs
+            String ukuran = (kost.getUkuranKamar() != null && !kost.getUkuranKamar().isEmpty()) ? kost.getUkuranKamar() : "3x4 m";
+            if (tvRoomSpecs != null) {
+                tvRoomSpecs.setText(ukuran);
+            }
+
+            // Facilities
+            if (tvFacilities != null) {
+                if (kost.getListFasilitas() != null && !kost.getListFasilitas().isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    int max = Math.min(3, kost.getListFasilitas().size());
+                    for (int i = 0; i < max; i++) {
+                        if (i > 0) sb.append(" • ");
+                        sb.append(kost.getListFasilitas().get(i).getNamaFasilitas());
+                    }
+                    tvFacilities.setText(sb.toString());
+                    tvFacilities.setVisibility(View.VISIBLE);
+                } else {
+                    tvFacilities.setVisibility(View.GONE);
+                }
             }
 
             // Badge Tipe
@@ -118,32 +141,63 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
                 tvBadgeTipe.setTextColor(ContextCompat.getColor(context, R.color.badge_campur));
             }
 
-            // Status Badge
-            if (kost.getStatus() == StatusKost.TERSEDIA && kost.getKamarTersedia() > 0) {
-                tvStatus.setText("Tersedia");
-                tvStatus.setBackgroundResource(R.drawable.bg_badge_tersedia);
-                tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
-            } else {
+            // Ketersediaan & Efek Penuh (Opacity 0.6 + Grayscale)
+            boolean isPenuh = (kost.getStatus() == StatusKost.PENUH || kost.getKamarTersedia() <= 0);
+            if (isPenuh) {
+                if (cardRoot != null) cardRoot.setAlpha(0.6f);
+                ColorMatrix cm = new ColorMatrix();
+                cm.setSaturation(0);
+                ivThumbnail.setColorFilter(new ColorMatrixColorFilter(cm));
                 tvStatus.setText("Penuh");
-                tvStatus.setBackgroundResource(R.drawable.bg_badge_penuh);
+                tvStatus.setBackgroundResource(R.drawable.bg_pill_penuh);
                 tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_penuh));
-            }
-
-            // Ringkasan Fasilitas dengan separator '·'
-            if (kost.getListFasilitas() != null && !kost.getListFasilitas().isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                int max = Math.min(3, kost.getListFasilitas().size());
-                for (int i = 0; i < max; i++) {
-                    if (i > 0) sb.append(" · ");
-                    sb.append(kost.getListFasilitas().get(i).getNamaFasilitas());
-                }
-                tvFacilities.setText(sb.toString());
-                tvFacilities.setVisibility(View.VISIBLE);
             } else {
-                tvFacilities.setVisibility(View.GONE);
+                if (cardRoot != null) cardRoot.setAlpha(1.0f);
+                ivThumbnail.clearColorFilter();
+                tvStatus.setText(kost.getKamarTersedia() + " kamar");
+                tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
+                tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
             }
 
-            // Favorite Icon & Micro-animation
+            // Thumbnail Loading via Glide
+            String path = kost.getThumbnailPath();
+            if (path != null && !path.trim().isEmpty()) {
+                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
+                ivThumbnail.setVisibility(View.VISIBLE);
+
+                Object loadTarget;
+                if (path.startsWith("content://") || path.startsWith("file://")) {
+                    loadTarget = Uri.parse(path);
+                } else if (path.startsWith("http://") || path.startsWith("https://")) {
+                    loadTarget = path;
+                } else {
+                    File file = new File(path);
+                    loadTarget = file.exists() ? file : path;
+                }
+
+                Glide.with(context)
+                        .load(loadTarget)
+                        .centerCrop()
+                        .listener(new RequestListener<Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
+                                return false;
+                            }
+                        })
+                        .into(ivThumbnail);
+            } else {
+                ivThumbnail.setImageDrawable(null);
+                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
+            }
+
+            // Favorite Icon & Pop Animation + Feedback Snackbar
             if (kost.isFavorite()) {
                 btnFavorite.setImageResource(R.drawable.ic_heart_filled);
             } else {
@@ -151,21 +205,24 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             }
 
             btnFavorite.setOnClickListener(v -> {
-                // Heart bounce animation: 0.8 -> 1.15 -> 1.0 (200ms)
                 btnFavorite.setScaleX(0.8f);
                 btnFavorite.setScaleY(0.8f);
                 btnFavorite.animate()
-                        .scaleX(1.15f)
-                        .scaleY(1.15f)
-                        .setDuration(100)
-                        .setInterpolator(new FastOutSlowInInterpolator())
+                        .scaleX(1.3f)
+                        .scaleY(1.3f)
+                        .setDuration(120)
                         .withEndAction(() -> btnFavorite.animate()
                                 .scaleX(1.0f)
                                 .scaleY(1.0f)
-                                .setDuration(100)
-                                .setInterpolator(new FastOutSlowInInterpolator())
+                                .setDuration(120)
                                 .start())
                         .start();
+
+                boolean willBeFav = !kost.isFavorite();
+                String msg = willBeFav ? "Disimpan ke favorit" : "Dihapus dari favorit";
+                Snackbar.make(itemView, msg, Snackbar.LENGTH_SHORT)
+                        .setDuration(1500)
+                        .show();
 
                 if (listener != null) {
                     listener.onFavoriteToggle(kost, position);

@@ -3,10 +3,9 @@ package com.carikostkita.data.model;
 import java.io.Serializable;
 
 public class User implements Serializable {
-    private int idUser;
+    private String uid;
     private String nama;
     private String email;
-    private String password;
     private Role role;
     private String noHp;
     private String avatarUrl;
@@ -15,34 +14,49 @@ public class User implements Serializable {
     private String pengajuanCatatan;
     private String catatanRevisi;
     private boolean isActive;
-    private String authProvider; // "LOCAL" or "GOOGLE"
+    private String authProvider; // "EMAIL" or "GOOGLE"
     private String createdAt;
 
     public User() {
         this.role = Role.USER;
         this.verificationStatus = VerificationStatus.NONE;
         this.isActive = true;
-        this.authProvider = "LOCAL";
+        this.authProvider = "EMAIL";
     }
 
-    public User(int idUser, String nama, String email, String password, Role role, String createdAt) {
-        this.idUser = idUser;
+    public User(String uid, String nama, String email, Role role, String createdAt) {
+        this.uid = uid;
         this.nama = nama;
         this.email = email;
-        this.password = password;
         this.role = role != null ? role : Role.USER;
         this.verificationStatus = (role == Role.PEMILIK_KOST) ? VerificationStatus.APPROVED : VerificationStatus.NONE;
         this.isActive = true;
-        this.authProvider = "LOCAL";
+        this.authProvider = "EMAIL";
         this.createdAt = createdAt;
     }
 
-    public int getIdUser() {
-        return idUser;
+    public String getUid() {
+        return uid;
     }
 
-    public void setIdUser(int idUser) {
-        this.idUser = idUser;
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getId() {
+        return uid;
+    }
+
+    public void setId(String id) {
+        this.uid = id;
+    }
+
+    public String getIdUser() {
+        return uid;
+    }
+
+    public void setIdUser(String idUser) {
+        this.uid = idUser;
     }
 
     public String getNama() {
@@ -59,14 +73,6 @@ public class User implements Serializable {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public Role getRole() {
@@ -118,7 +124,7 @@ public class User implements Serializable {
     }
 
     public String getAuthProvider() {
-        return authProvider != null ? authProvider : "LOCAL";
+        return authProvider != null ? authProvider : "EMAIL";
     }
 
     public void setAuthProvider(String authProvider) {

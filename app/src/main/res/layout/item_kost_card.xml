@@ -1,107 +1,132 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_kost_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="20dp"
-    android:layout_marginVertical="8dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="6dp"
     app:cardBackgroundColor="@color/surface"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="1dp"
-    app:strokeColor="@color/border"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/border_subtle"
     app:strokeWidth="1dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-        <!-- Thumbnail Image (Aspect Ratio 16:10) -->
-        <ImageView
-            android:id="@+id/iv_kost_thumbnail"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="#F0F2F5"
-            android:contentDescription="Foto Kost"
-            android:scaleType="centerCrop"
-            android:src="@mipmap/ic_launcher"
-            app:layout_constraintDimensionRatio="16:10"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Badge Tipe Kost (Putra/Putri/Campur) Top-Left -->
-        <TextView
-            android:id="@+id/tv_badge_tipe"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:background="@drawable/bg_badge_putri"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="5dp"
-            android:text="PUTRI"
-            android:textColor="@color/badge_putri"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="@+id/iv_kost_thumbnail"
-            app:layout_constraintTop_toTopOf="@+id/iv_kost_thumbnail" />
-
-        <!-- Floating Favorite Heart Button Top-Right -->
+        <!-- Left Thumbnail Container (92dp x 104dp) -->
         <FrameLayout
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:layout_margin="12dp"
-            android:background="@drawable/bg_fav_circle"
-            app:layout_constraintEnd_toEndOf="@+id/iv_kost_thumbnail"
-            app:layout_constraintTop_toTopOf="@+id/iv_kost_thumbnail">
+            android:layout_width="92dp"
+            android:layout_height="104dp">
 
-            <ImageButton
-                android:id="@+id/btn_favorite_toggle"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Simpan Favorit"
-                android:padding="8dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_heart_outline" />
-        </FrameLayout>
+            <!-- Rounded Mask Container for Image -->
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/iv_kost_thumbnail"
+                android:layout_width="92dp"
+                android:layout_height="104dp"
+                android:contentDescription="Foto Kost"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.CariKostKita.ThumbRadius14" />
 
-        <!-- Information Container -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/iv_kost_thumbnail">
+            <!-- Placeholder Gradient Layout (when no image) -->
+            <LinearLayout
+                android:id="@+id/layout_thumb_placeholder"
+                android:layout_width="92dp"
+                android:layout_height="104dp"
+                android:background="@drawable/bg_thumb_placeholder"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="6dp"
+                android:visibility="gone">
 
-            <!-- Nama Kost -->
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="Placeholder"
+                    android:src="@drawable/ic_nav_home"
+                    app:tint="@color/placeholder_icon" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center"
+                    android:text="Foto belum\ntersedia"
+                    android:textColor="@color/placeholder_text"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- Category Badge Overlaid on Thumbnail Top-Left -->
             <TextView
-                android:id="@+id/tv_kost_name"
-                android:layout_width="match_parent"
+                android:id="@+id/tv_badge_tipe"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Kost Melati Bukit Raya"
-                android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:layout_gravity="top|start"
+                android:layout_margin="5dp"
+                android:background="@drawable/bg_badge_putri"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="3dp"
+                android:text="PUTRI"
+                android:textColor="@color/badge_putri"
+                android:textSize="9sp"
                 android:textStyle="bold" />
 
-            <!-- Lokasi with Pin Icon -->
+        </FrameLayout>
+
+        <!-- Right Info Container -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="104dp"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <!-- Title & Favorite Button Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tv_kost_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Kost Melati Bukit Raya"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/btn_favorite_toggle"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Simpan Favorit"
+                    android:padding="6dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_heart_outline" />
+            </LinearLayout>
+
+            <!-- Location with Pin -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:contentDescription="Location"
+                    android:layout_width="13dp"
+                    android:layout_height="13dp"
+                    android:contentDescription="Lokasi"
                     android:src="@drawable/ic_location_pin"
                     app:tint="@color/text_secondary" />
 
@@ -113,24 +138,44 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="Simpang Tiga, Bukit Raya, Pekanbaru"
+                    android:text="Simpang Tiga, Bukit Raya"
                     android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
-            <!-- Fasilitas Singkat -->
-            <TextView
-                android:id="@+id/tv_kost_facilities"
+            <!-- Facilities & Specs Row -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="WiFi · AC · Parkir"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp" />
+                android:layout_marginTop="3dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <!-- Room Size & Kamar Tersedia -->
+                <TextView
+                    android:id="@+id/tv_kost_room_specs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_kategori_unselected"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:text="3x4 m"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/tv_kost_facilities"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="AC • WiFi • K. Mandi"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Price & Availability Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -139,87 +184,30 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/tv_kost_room_specs"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tv_kost_price"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_badge_campur"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="3dp"
-                    android:text="3x4 m"
-                    android:textColor="@color/badge_campur"
-                    android:textSize="11sp"
+                    android:layout_weight="1"
+                    android:text="Rp750.000 /bulan"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_kost_kamar_tersedia"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Sisa 3 kamar"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Divider -->
-            <View
-                android:id="@+id/divider_card"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="12dp"
-                android:background="@color/border" />
-
-            <!-- Price and Status Row -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <!-- Harga -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:layout_centerVertical="true"
-                    android:baselineAligned="true"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tv_kost_price"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Rp 1.200.000"
-                        android:textColor="@color/primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="2dp"
-                        android:text=" /bulan"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <!-- Status Badge -->
+                <!-- Single Availability Pill: "2 kamar" (Green) or "Penuh" (Soft Red) -->
                 <TextView
                     android:id="@+id/tv_kost_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:background="@drawable/bg_badge_tersedia"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="5dp"
-                    android:text="● Tersedia"
+                    android:background="@drawable/bg_pill_tersedia"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:text="2 kamar"
                     android:textColor="@color/status_tersedia"
-                    android:textSize="12sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
-            </RelativeLayout>
+            </LinearLayout>
 
         </LinearLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

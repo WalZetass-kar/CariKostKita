@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="16dp">
+
+    <!-- Search Bar Skeleton -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_skeleton_pill" />
+
+    <!-- Filter Chips Row Skeleton -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="64dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_skeleton_pill" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_skeleton_pill" />
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_skeleton_pill" />
+
+        <View
+            android:layout_width="68dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_skeleton_pill" />
+
+        <View
+            android:layout_width="74dp"
+            android:layout_height="34dp"
+            android:background="@drawable/bg_skeleton_pill" />
+    </LinearLayout>
+
+    <!-- Count & Sort Line Skeleton -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="14dp"
+            android:background="@drawable/bg_skeleton_item" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <View
+            android:layout_width="80dp"
+            android:layout_height="14dp"
+            android:background="@drawable/bg_skeleton_item" />
+    </LinearLayout>
+
+    <!-- Cards List -->
+    <include layout="@layout/layout_skeleton_cards_list" />
+</LinearLayout>

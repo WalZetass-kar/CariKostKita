@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <!-- Soft circular backdrop -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M80,80m-70,0a70,70 0,1 1,140 0a70,70 0,1 1,-140 0" />
+    <path
+        android:fillColor="#BAE6FD"
+        android:pathData="M80,80m-52,0a52,52 0,1 1,104 0a52,52 0,1 1,-104 0" />
+
+    <!-- Left / Larger Chat Bubble in Sky Blue -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M40,50 h52 a12,12 0 0,1 12,12 v24 a12,12 0 0,1 -12,12 h-34 l-14,12 v-12 h-4 a12,12 0 0,1 -12,-12 v-24 a12,12 0 0,1 12,-12 z" />
+    
+    <!-- Lines inside larger chat bubble -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,66 h38 v4 h-38 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,76 h26 v4 h-26 z" />
+
+    <!-- Right / Smaller Chat Bubble in Pure White -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M80,80 h36 a10,10 0 0,1 10,10 v18 a10,10 0 0,1 -10,10 h-2 l10,10 l-12,-10 h-22 a10,10 0 0,1 -10,-10 v-18 a10,10 0 0,1 10,-10 z" />
+
+    <!-- Accent Dots inside small bubble -->
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M92,96m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M100,96m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M108,96m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+</vector>
