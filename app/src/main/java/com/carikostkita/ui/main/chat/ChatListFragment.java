@@ -129,6 +129,7 @@ public class ChatListFragment extends Fragment {
             intent.putExtra("id_pemilik", conversation.getIdPemilik());
             intent.putExtra("nama_kost", conversation.getNamaKost());
             intent.putExtra("foto_kost", conversation.getFotoKost());
+            intent.putExtra("avatar_counterpart", conversation.getAvatarLawan());
             if (isOwner) {
                 intent.putExtra("nama_counterpart", conversation.getNamaPencari());
             } else {

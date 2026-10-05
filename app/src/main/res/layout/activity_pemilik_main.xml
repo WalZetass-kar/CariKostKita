@@ -30,8 +30,8 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="20dp"
-                android:paddingTop="32dp"
-                android:paddingBottom="36dp">
+                android:paddingTop="22dp"
+                android:paddingBottom="18dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -99,7 +99,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="16dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="10dp"
                     app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="20dp"
                     app:cardElevation="2dp"
@@ -1002,7 +1002,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="16dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="10dp"
                     android:layout_marginBottom="10dp"
                     app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="18dp"
@@ -1413,7 +1413,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:paddingHorizontal="16dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="10dp"
                     android:paddingBottom="12dp">
 
                     <TextView
@@ -1488,7 +1488,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingHorizontal="16dp"
-                android:paddingTop="16dp"
+                android:paddingTop="10dp"
                 android:visibility="gone">
 
                 <!-- Profile Card -->
@@ -1739,21 +1739,22 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- FAB Tambah Kost (Khusus Tab Kost Saya) -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    <!-- FAB Tambah Kost (Circular "+" Icon Only, 56dp) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_pemilik_add_kost"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="18dp"
         android:layout_marginBottom="88dp"
-        android:backgroundTint="@color/primary"
-        android:text="Tambah Kost"
-        android:textColor="@color/on_primary"
+        android:contentDescription="Tambah Kost"
+        android:tooltipText="Tambah Kost"
+        android:src="@drawable/ic_add"
         android:visibility="gone"
+        app:backgroundTint="@color/primary"
         app:elevation="4dp"
-        app:icon="@drawable/ic_add"
-        app:iconTint="@color/on_primary" />
+        app:fabSize="normal"
+        app:tint="@color/white" />
 
     <!-- Modern 4-Tab Bottom Navigation Bar for Pemilik -->
     <LinearLayout

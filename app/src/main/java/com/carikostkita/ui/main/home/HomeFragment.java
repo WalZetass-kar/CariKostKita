@@ -194,6 +194,7 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
                     ((MainActivity) getActivity()).navigateToChat();
                 }
             });
+            com.carikostkita.util.TouchFeedbackUtil.attachPress(btnNotification);
         }
 
         // Search bar & Filter Trigger -> Navigate to Map Search
@@ -201,7 +202,10 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             startActivity(new Intent(requireContext(), com.carikostkita.ui.map.MapSearchActivity.class));
         };
         if (mockSearch != null) mockSearch.setOnClickListener(goToSearch);
-        if (btnFilterTrigger != null) btnFilterTrigger.setOnClickListener(goToSearch);
+        if (btnFilterTrigger != null) {
+            btnFilterTrigger.setOnClickListener(goToSearch);
+            com.carikostkita.util.TouchFeedbackUtil.attachPress(btnFilterTrigger);
+        }
 
         // Carousel 220dp cards setup
         carouselAdapter = new KostCarouselAdapter(this);

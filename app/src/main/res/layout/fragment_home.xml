@@ -91,6 +91,16 @@
                             android:contentDescription="Notifikasi"
                             android:src="@drawable/ic_bell"
                             app:tint="@color/primary" />
+
+                        <View
+                            android:id="@+id/badge_home_notification"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="7dp"
+                            android:layout_marginEnd="7dp"
+                            android:background="@drawable/bg_dot_active"
+                            android:visibility="gone" />
                     </FrameLayout>
                 </LinearLayout>
 
@@ -119,8 +129,8 @@
                     android:paddingVertical="5dp">
 
                     <ImageView
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
                         android:layout_marginEnd="6dp"
                         android:src="@drawable/ic_location_pin"
                         app:tint="@color/white" />

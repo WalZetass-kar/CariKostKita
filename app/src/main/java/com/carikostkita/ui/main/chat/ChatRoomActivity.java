@@ -32,7 +32,7 @@ import java.util.List;
 public class ChatRoomActivity extends AppCompatActivity {
 
     private ImageButton btnBack;
-    private ImageView ivAvatar;
+    private com.google.android.material.imageview.ShapeableImageView ivAvatar;
     private TextView tvCounterpartName;
     private TextView tvKostSubtitle;
 
@@ -62,6 +62,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     private String idPemilik = null;
     private String namaKost = "";
     private String namaCounterpart = "";
+    private String avatarCounterpart = "";
     private String fotoKost = "";
     private String lokasiKost = "";
     private String statusKost = "";
@@ -120,12 +121,14 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         namaKost = getIntent().getStringExtra("nama_kost");
         namaCounterpart = getIntent().getStringExtra("nama_counterpart");
+        avatarCounterpart = getIntent().getStringExtra("avatar_counterpart");
         fotoKost = getIntent().getStringExtra("foto_kost");
         lokasiKost = getIntent().getStringExtra("lokasi_kost");
         statusKost = getIntent().getStringExtra("status_kost");
         hargaKost = getIntent().getDoubleExtra("harga_kost", 0);
 
         if (namaKost == null) namaKost = "Informasi Kost";
+        if (avatarCounterpart == null) avatarCounterpart = "";
         if (namaCounterpart == null || namaCounterpart.isEmpty()) {
             namaCounterpart = sessionManager.isPemilikKost() ? "Pencari Kost" : "Pemilik Kost";
         }
@@ -159,6 +162,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         tvCounterpartName.setText(namaCounterpart);
         tvKostSubtitle.setText(namaKost);
         tvContextKostName.setText(namaKost);
+
+        if (!avatarCounterpart.isEmpty()) {
+            com.carikostkita.util.UserAvatarHelper.loadAvatar(ivAvatar, avatarCounterpart);
+        }
 
         if (lokasiKost != null && !lokasiKost.trim().isEmpty()) {
             tvContextKostLocation.setText(lokasiKost.trim());
@@ -200,6 +207,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
 
         btnBack.setOnClickListener(v -> finish());
+        com.carikostkita.util.TouchFeedbackUtil.attachPress(btnBack);
         btnSend.setOnClickListener(v -> handleSendMessage());
     }
 

@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         MainPagerAdapter adapter = new MainPagerAdapter(this);
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(4); // Cache all 5 tabs in memory for instantaneous switching
+        viewPager.setPageTransformer(new com.carikostkita.ui.view.SmoothPageTransformer());
 
         // Atur touch slop 2x agar scroll vertikal di halaman tidak sengaja memicu swipe horizontal
         tuneTouchSlop(viewPager);

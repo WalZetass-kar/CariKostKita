@@ -50,7 +50,7 @@ import java.util.Date;
 import java.util.Locale;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import java.util.ArrayList;
@@ -80,7 +80,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
     private View containerKost;
     private View containerPesan;
     private View containerProfil;
-    private ExtendedFloatingActionButton fabAddKost;
+    private FloatingActionButton fabAddKost;
 
     // Dashboard Tab Views
     private TextView tvWelcomeName;

@@ -245,6 +245,23 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="Informasi Kost"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Masukkan informasi dasar kost yang ingin kamu daftarkan."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="Nama Kost *"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
@@ -265,7 +282,7 @@
                         android:id="@+id/et_form_nama"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Contoh: Kost Griya Putri Berkah"
+                        android:hint="Contoh: Kost Melati"
                         android:inputType="textCapWords"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
@@ -340,7 +357,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="top|start"
-                        android:hint="Ceritakan kelebihan, suasana lingkungan, dan aturan kost Anda..."
+                        android:hint="Ceritakan sedikit tentang kost kamu..."
                         android:inputType="textMultiLine"
                         android:lines="4"
                         android:textColor="@color/text_primary"
@@ -384,7 +401,7 @@
                                 android:id="@+id/et_form_total_kamar"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:hint="Mis: 10"
+                                android:hint="Jumlah seluruh kamar"
                                 android:inputType="number"
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp" />
@@ -420,7 +437,7 @@
                                 android:id="@+id/et_form_kamar_tersedia"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:hint="Mis: 3"
+                                android:hint="Jumlah kamar yang masih tersedia"
                                 android:inputType="number"
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp" />
@@ -433,7 +450,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Nomor WhatsApp Pengelola *"
+                    android:text="Nomor WhatsApp *"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -446,15 +463,13 @@
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:prefixText="+62 "
-                    app:prefixTextColor="@color/text_primary">
+                    app:boxCornerRadiusTopStart="12dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_form_whatsapp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="81234567890"
+                        android:hint="08xxxxxxxxxx"
                         android:inputType="phone"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
@@ -814,18 +829,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pilih Fasilitas yang Tersedia"
+                    android:text="Fasilitas Kost"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Tandai fasilitas kamar dan bersama yang tersedia di kost Anda."
+                    android:layout_marginTop="3dp"
+                    android:text="Pilih fasilitas yang tersedia di kost kamu."
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="13sp" />
 
                 <!-- 12 Facility Checkboxes Container -->
                 <LinearLayout
@@ -1031,18 +1046,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Foto Properti Kost *"
+                    android:text="Foto Kost"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Minimal 1 foto utama, maksimal 6 foto. Foto urutan pertama akan menjadi sampul utama yang dilihat pencari kost."
+                    android:layout_marginTop="3dp"
+                    android:text="Tambahkan foto terbaik agar pencari kost bisa melihat kondisi kost kamu."
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="13sp" />
 
                 <!-- Action Add & Counter -->
                 <LinearLayout
@@ -1098,18 +1113,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Pratinjau Tampilan Kost"
+                    android:text="Periksa Kembali"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Ini adalah pratinjau bagaimana pencari kost akan melihat properti Anda."
+                    android:layout_marginTop="3dp"
+                    android:text="Pastikan informasi kost sudah benar sebelum dipublikasikan."
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="13sp" />
 
                 <!-- Seeker Style Realistic Card Preview -->
                 <com.google.android.material.card.MaterialCardView
