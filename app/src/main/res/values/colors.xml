@@ -1,102 +1,103 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand Palette: CariKostKita SKY BLUE Visual Identity -->
-    <color name="primary">#38BDF8</color>
-    <color name="primary_dark">#0284C7</color>
-    <color name="primary_soft">#E0F2FE</color>
-    <color name="primary_light">#7DD3FC</color>
-    <color name="primary_pill_start">#38BDF8</color>
-    <color name="primary_pill_end">#0284C7</color>
-    <color name="soft_blue">#E0F2FE</color>
-    <color name="soft_red">#E0F2FE</color>
-    <color name="badge_info_bg">#E0F2FE</color>
-    <color name="badge_info_border">#BAE6FD</color>
-    <color name="badge_info_text">#0284C7</color>
-    <color name="on_primary">#FFFFFF</color>
+    <!-- Brand Palette: CariKostKita MAROON & CREAM Visual Identity -->
+    <color name="primary">#6D0808</color>
+    <color name="primary_dark">#620808</color>
+    <color name="primary_soft">#F4EFE0</color>
+    <color name="primary_light">#8C1818</color>
+    <color name="primary_pill_start">#6D0808</color>
+    <color name="primary_pill_end">#620808</color>
+    <color name="soft_blue">#F4EFE0</color>
+    <color name="soft_red">#FDE8EA</color>
+    <color name="badge_info_bg">#F4EFE0</color>
+    <color name="badge_info_border">#D8D2BC</color>
+    <color name="badge_info_text">#6D0808</color>
+    <color name="on_primary">#EEEAD7</color>
     <color name="white">#FFFFFF</color>
 
-    <!-- Sky Blue Header Gradients -->
-    <color name="header_primary_start">#38BDF8</color>
-    <color name="header_primary_end">#0284C7</color>
-    <color name="header_pastel_start">#38BDF8</color>
-    <color name="header_pastel_mid">#0EA5E9</color>
-    <color name="header_pastel_end">#0284C7</color>
+    <!-- Maroon Header Gradients -->
+    <color name="header_primary_start">#6D0808</color>
+    <color name="header_primary_mid">#680808</color>
+    <color name="header_primary_end">#620808</color>
+    <color name="header_pastel_start">#6D0808</color>
+    <color name="header_pastel_mid">#680808</color>
+    <color name="header_pastel_end">#620808</color>
 
     <!-- Semantic & Action Colors -->
     <color name="whatsapp_green">#16803C</color>
     <color name="action_whatsapp">#16803C</color>
     <color name="whatsapp_green_dark">#0E5031</color>
     <color name="whatsapp_green_soft">#E3F4EA</color>
-    <color name="maps_blue">#0284C7</color>
+    <color name="maps_blue">#6D0808</color>
 
-    <!-- Backgrounds & Surfaces (Off-white soft sky #F0F9FF, Pure White Cards) -->
-    <color name="background">#F0F9FF</color>
+    <!-- Backgrounds & Surfaces (Warm Cream #EEEAD7, Pure White Cards) -->
+    <color name="background">#EEEAD7</color>
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F8FAFC</color>
-    <color name="border">#E2E8F0</color>
-    <color name="border_subtle">#BAE6FD</color>
-    <color name="divider">#E2E8F0</color>
-    <color name="ripple_soft">#E0F2FE</color>
+    <color name="surface_variant">#FAF8F0</color>
+    <color name="border">#D8D2BC</color>
+    <color name="border_subtle">#D8D2BC</color>
+    <color name="divider">#E2DCC9</color>
+    <color name="ripple_soft">#EAE4D0</color>
 
-    <!-- Typography (Slate Theme: Primary #172033, Secondary #667085) -->
-    <color name="text_primary">#172033</color>
-    <color name="text_secondary">#667085</color>
-    <color name="text_muted">#94A3B8</color>
+    <!-- Typography (High Contrast Slate & Warm Dark Tone) -->
+    <color name="text_primary">#1C1917</color>
+    <color name="text_secondary">#57534E</color>
+    <color name="text_muted">#78716C</color>
     <color name="text_white">#FFFFFF</color>
 
     <!-- Category Badges (WCAG AAA Contrast) -->
-    <color name="badge_putra">#0284C7</color>
-    <color name="badge_putra_soft">#E0F2FE</color>
-    <color name="badge_putri">#BE185D</color>
+    <color name="badge_putra">#6D0808</color>
+    <color name="badge_putra_soft">#F4EFE0</color>
+    <color name="badge_putri">#831843</color>
     <color name="badge_putri_soft">#FCE7F3</color>
-    <color name="badge_campur">#6D28D9</color>
-    <color name="badge_campur_soft">#EDE9FE</color>
+    <color name="badge_campur">#7C2D12</color>
+    <color name="badge_campur_soft">#FFEDD5</color>
 
-    <!-- Category Filter Chips (Active: Sky Blue #38BDF8, Text #FFFFFF) -->
-    <color name="chip_active_bg">#38BDF8</color>
-    <color name="chip_active_text">#FFFFFF</color>
+    <!-- Category Filter Chips (Active: Maroon #6D0808, Text #EEEAD7) -->
+    <color name="chip_active_bg">#6D0808</color>
+    <color name="chip_active_text">#EEEAD7</color>
 
-    <!-- Photo Placeholder Treatment (Sky Blue Tinted #E0F2FE / #0284C7) -->
-    <color name="placeholder_bg">#E0F2FE</color>
-    <color name="placeholder_icon">#38BDF8</color>
-    <color name="placeholder_text">#0284C7</color>
+    <!-- Photo Placeholder Treatment (Warm Tinted #F4EFE0 / #6D0808) -->
+    <color name="placeholder_bg">#F4EFE0</color>
+    <color name="placeholder_icon">#6D0808</color>
+    <color name="placeholder_text">#620808</color>
 
     <!-- Status Badges -->
     <color name="status_tersedia">#16803C</color>
     <color name="status_tersedia_soft">#E3F4EA</color>
     <color name="status_penuh">#EF4444</color>
     <color name="status_penuh_soft">#FEE2E2</color>
-    <color name="status_tidak_aktif">#64748B</color>
-    <color name="status_tidak_aktif_soft">#F1F5F9</color>
+    <color name="status_tidak_aktif">#78716C</color>
+    <color name="status_tidak_aktif_soft">#FAF8F0</color>
     <color name="status_ditolak">#EF4444</color>
     <color name="status_ditolak_soft">#FEE2E2</color>
-    <color name="status_pending">#F59E0B</color>
+    <color name="status_pending">#D97706</color>
     <color name="status_pending_soft">#FEF3C7</color>
-    <color name="status_verified">#0284C7</color>
-    <color name="status_verified_soft">#E0F2FE</color>
+    <color name="status_verified">#6D0808</color>
+    <color name="status_verified_soft">#F4EFE0</color>
 
     <!-- Role Chip Netral -->
-    <color name="role_neutral_bg">#E0F2FE</color>
-    <color name="role_neutral_text">#0284C7</color>
+    <color name="role_neutral_bg">#F4EFE0</color>
+    <color name="role_neutral_text">#6D0808</color>
 
     <!-- Favorite Heart -->
-    <color name="favorite_active">#38BDF8</color>
-    <color name="favorite_inactive">#94A3B8</color>
+    <color name="favorite_active">#6D0808</color>
+    <color name="favorite_inactive">#A8A29E</color>
 
     <!-- Logout & Danger Actions (Semantic Red / Rose) -->
-    <color name="logout_red">#EF4444</color>
+    <color name="logout_red">#DC2626</color>
     <color name="logout_red_soft">#FEE2E2</color>
     <color name="logout_red_border">#FECACA</color>
-    <color name="danger">#EF4444</color>
-    <color name="danger_dark">#DC2626</color>
+    <color name="danger">#DC2626</color>
+    <color name="danger_dark">#991B1B</color>
     <color name="danger_soft">#FEE2E2</color>
     <color name="danger_border">#FECACA</color>
 
     <!-- Chat & Banner Colors -->
-    <color name="chat_incoming_bg">#F1F5F9</color>
-    <color name="chat_outgoing_bg">#38BDF8</color>
+    <color name="chat_incoming_bg">#FAF8F0</color>
+    <color name="chat_outgoing_bg">#6D0808</color>
 
-    <!-- Skeleton Loading Colors (Soft & Subtle) -->
-    <color name="skeleton_base">#E5F3FA</color>
-    <color name="skeleton_highlight">#F5FBFE</color>
+    <!-- Skeleton Loading Colors (Soft Warm Tone) -->
+    <color name="skeleton_base">#E6E0CC</color>
+    <color name="skeleton_highlight">#F4EFE0</color>
 </resources>

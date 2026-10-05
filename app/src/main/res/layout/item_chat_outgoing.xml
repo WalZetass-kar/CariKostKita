@@ -43,7 +43,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
                 android:text="14:31"
-                android:textColor="#DDE5F5"
+                android:textColor="@color/on_primary"
                 android:textSize="10sp" />
 
             <ImageView
@@ -52,7 +52,7 @@
                 android:layout_height="14dp"
                 android:layout_marginStart="4dp"
                 android:src="@drawable/ic_check"
-                app:tint="#DDE5F5" />
+                app:tint="@color/on_primary" />
         </LinearLayout>
     </LinearLayout>
 

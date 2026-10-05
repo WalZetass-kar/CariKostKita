@@ -15,17 +15,17 @@
         <item name="colorOutline">@color/border</item>
 
         <!-- Modern Clean Status Bar & Navigation Bar -->
-        <item name="android:statusBarColor">@color/surface</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:navigationBarColor">@color/background</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
     </style>
 
     <!-- Splash Screen Theme (Night) -->
     <style name="Theme.CariKostKita.Splash" parent="Theme.CariKostKita">
-        <item name="android:windowBackground">#7D0B14</item>
-        <item name="android:statusBarColor">#7D0B14</item>
+        <item name="android:windowBackground">@color/primary</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">#1A1112</item>
+        <item name="android:navigationBarColor">@color/primary_dark</item>
     </style>
 </resources>

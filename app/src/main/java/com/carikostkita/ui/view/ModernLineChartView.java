@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * ModernLineChartView — Komponen Grafik Garis Interaktif Native
- * Didesain khusus untuk tema Sky Blue (#38BDF8):
+ * Didesain khusus untuk tema Maroon (#6D0808) & Warm Cream (#EEEAD7):
  * - Kurva Bezier halus dengan gradien lembut di bawah garis
  * - Titik interaktif dengan tooltip/scrubber sentuh
  * - Grid horizontal lembut dan label tanggal dinamis
@@ -85,8 +85,8 @@ public class ModernLineChartView extends View {
     private void init(Context context) {
         primaryColor = ContextCompat.getColor(context, R.color.primary);
         primaryDarkColor = ContextCompat.getColor(context, R.color.primary_dark);
-        gridColor = Color.parseColor("#E2E8F0");
-        textColor = Color.parseColor("#64748B");
+        gridColor = ContextCompat.getColor(context, R.color.divider);
+        textColor = ContextCompat.getColor(context, R.color.text_secondary);
 
         float density = getResources().getDisplayMetrics().density;
         paddingLeft = 32f * density;
@@ -124,7 +124,7 @@ public class ModernLineChartView extends View {
         textPaint.setTextAlign(Paint.Align.CENTER);
 
         tooltipBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        tooltipBgPaint.setColor(Color.parseColor("#0F172A"));
+        tooltipBgPaint.setColor(primaryDarkColor);
         tooltipBgPaint.setStyle(Paint.Style.FILL);
 
         tooltipTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -276,7 +276,7 @@ public class ModernLineChartView extends View {
         float density = getResources().getDisplayMetrics().density;
         Paint emptyPaint = new Paint(textPaint);
         emptyPaint.setTextSize(12f * density);
-        emptyPaint.setColor(Color.parseColor("#94A3B8"));
+        emptyPaint.setColor(ContextCompat.getColor(getContext(), R.color.text_muted));
         canvas.drawText("Belum ada statistik pada periode ini", w / 2f, h / 2f, emptyPaint);
     }
 

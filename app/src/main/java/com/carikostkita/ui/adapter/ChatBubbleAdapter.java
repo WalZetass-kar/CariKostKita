@@ -136,11 +136,11 @@ public class ChatBubbleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 int status = msg.getStatus();
                 if (status == ChatMessage.STATUS_SENDING) {
                     vh.ivStatus.setImageResource(R.drawable.ic_clock);
-                    vh.ivStatus.setImageTintList(ColorStateList.valueOf(Color.parseColor("#CBD5E1")));
+                    vh.ivStatus.setImageTintList(ColorStateList.valueOf(Color.parseColor("#D8D2BC")));
                     vh.itemView.setOnClickListener(null);
                 } else if (status == ChatMessage.STATUS_READ || msg.isRead()) {
                     vh.ivStatus.setImageResource(R.drawable.ic_check_double);
-                    vh.ivStatus.setImageTintList(ColorStateList.valueOf(Color.parseColor("#93C5FD")));
+                    vh.ivStatus.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FFFFFF")));
                     vh.itemView.setOnClickListener(null);
                 } else if (status == ChatMessage.STATUS_FAILED) {
                     vh.ivStatus.setImageResource(R.drawable.ic_error_circle);
@@ -152,7 +152,7 @@ public class ChatBubbleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                     });
                 } else { // STATUS_SENT
                     vh.ivStatus.setImageResource(R.drawable.ic_check);
-                    vh.ivStatus.setImageTintList(ColorStateList.valueOf(Color.parseColor("#E2E8F0")));
+                    vh.ivStatus.setImageTintList(ColorStateList.valueOf(Color.parseColor("#EEEAD7")));
                     vh.itemView.setOnClickListener(null);
                 }
             }

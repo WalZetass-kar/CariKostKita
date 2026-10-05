@@ -229,7 +229,7 @@ public class AppDialogHelper {
                 break;
             case INFO:
             default:
-                badgeBgColor = Color.parseColor("#E0F2FE");
+                badgeBgColor = ContextCompat.getColor(context, R.color.primary_soft);
                 iconColor = ContextCompat.getColor(context, R.color.primary);
                 iconRes = R.drawable.ic_info;
                 positiveBtnColor = ContextCompat.getColor(context, R.color.primary);
