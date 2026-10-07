@@ -18,6 +18,7 @@ jobs:
           cache: gradle
       - name: Konfigurasi Supabase dummy untuk build
         run: |
+          sed -i '/org.gradle.java.home/d' gradle.properties || true
           echo "SUPABASE_URL=https://example.supabase.co" >> local.properties
           echo "SUPABASE_ANON_KEY=ci-placeholder" >> local.properties
       - name: Unit test
