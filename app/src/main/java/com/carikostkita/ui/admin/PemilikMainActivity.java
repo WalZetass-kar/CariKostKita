@@ -17,8 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -69,8 +68,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
 
     private TabPemilik currentTab = TabPemilik.DASHBOARD;
 
-    // Drawer & Header Views
-    private DrawerLayout drawerLayout;
+    // Header Views
     private TextView tvHeaderSub;
     private TextView tvHeaderTitle;
     private ProgressBar pbLoading;
@@ -142,9 +140,9 @@ public class PemilikMainActivity extends AppCompatActivity implements
     private MaterialButton btnEditProfile;
     private MaterialButton btnOpenKatalogPublik;
     private View itemChangePassword;
-    private View itemNotification;
-    private TextView tvNotificationStatus;
+    private android.widget.CompoundButton switchNotification;
     private boolean notificationsEnabled = true;
+    private int kostTanpaDataKamar = 0;
 
     // Bottom Navigation Views
     private final View[] navTabs = new View[4];
@@ -183,6 +181,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_pemilik_main);
 
         initViews();
+        com.carikostkita.notifications.AppNotifications.onAppOpened(this);
         setupBottomNav();
         setupAdapters();
         switchTab(TabPemilik.DASHBOARD);
@@ -195,7 +194,6 @@ public class PemilikMainActivity extends AppCompatActivity implements
             finish();
             return;
         }
-        updateDrawerProfile();
         populateProfileData();
         loadDashboardStats();
         if (currentTab == TabPemilik.KOST_SAYA) {
@@ -206,20 +204,11 @@ public class PemilikMainActivity extends AppCompatActivity implements
     }
 
     private void initViews() {
+        View headerBanner = findViewById(R.id.header_pemilik_banner);
+        if (headerBanner != null) headerBanner.setClipToOutline(true);
         tvHeaderSub = findViewById(R.id.tv_pemilik_header_sub);
         tvHeaderTitle = findViewById(R.id.tv_pemilik_header_title);
         pbLoading = findViewById(R.id.pb_pemilik_loading);
-        
-        drawerLayout = findViewById(R.id.drawer_pemilik_layout);
-        ImageButton btnMenu = findViewById(R.id.btn_pemilik_menu);
-        if (btnMenu != null) {
-            btnMenu.setOnClickListener(v -> {
-                if (drawerLayout != null) {
-                    drawerLayout.openDrawer(GravityCompat.START);
-                }
-            });
-        }
-        setupDrawer();
 
         containerDashboard = findViewById(R.id.container_tab_dashboard);
         containerKost = findViewById(R.id.container_tab_kost);
@@ -255,8 +244,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
         if (btnQuickAdd != null) {
             btnQuickAdd.setOnClickListener(v -> {
                 Intent intent = new Intent(this, AdminKostFormActivity.class);
-                intent.putExtra("owner_id", sessionManager.getUserId());
-                startActivity(intent);
+                                startActivity(intent);
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
@@ -266,8 +254,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
         if (btnQuickKatalog != null) {
             btnQuickKatalog.setOnClickListener(v -> {
                 Intent intent = new Intent(this, OwnerKatalogPublikActivity.class);
-                intent.putExtra("owner_id", sessionManager.getUserId());
-                startActivity(intent);
+                                startActivity(intent);
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
@@ -320,8 +307,24 @@ public class PemilikMainActivity extends AppCompatActivity implements
         btnEditProfile = findViewById(R.id.btn_pemilik_edit_profile);
         btnOpenKatalogPublik = findViewById(R.id.btn_pemilik_open_katalog_publik);
         itemChangePassword = findViewById(R.id.item_pemilik_change_password);
-        itemNotification = findViewById(R.id.item_pemilik_notification_settings);
-        tvNotificationStatus = findViewById(R.id.tv_pemilik_notification_status);
+        notificationsEnabled = sessionManager.isChatNotificationEnabled();
+        switchNotification = com.carikostkita.util.SettingRowBinder.bindToggle(
+                findViewById(R.id.item_pemilik_notification_settings), R.drawable.ic_bell,
+                "Notifikasi Pesan", "Kabari saya saat ada calon penyewa bertanya",
+                notificationsEnabled, (btn, isChecked) -> {
+                    notificationsEnabled = isChecked;
+                    sessionManager.setChatNotificationEnabled(isChecked);
+                });
+        com.carikostkita.util.SettingRowBinder.bind(itemChangePassword, R.drawable.ic_lock,
+                "Ganti Kata Sandi", "Jaga akun pemilik tetap aman", null);
+        com.carikostkita.util.SettingRowBinder.bind(findViewById(R.id.item_pemilik_surveys), R.drawable.ic_clock,
+                "Jadwal Survei", "Konfirmasi kunjungan calon penyewa",
+                v -> startActivity(new Intent(this, com.carikostkita.ui.survey.SurveyListActivity.class)));
+        com.carikostkita.util.SettingRowBinder.bind(findViewById(R.id.item_pemilik_delete_account), R.drawable.ic_delete,
+                "Hapus Akun", "Akun dan semua kost milikmu dihapus permanen",
+                v -> com.carikostkita.util.AccountDeletion.confirm(this));
+        View seeAllChats = findViewById(R.id.btn_pemilik_see_all_chats);
+        if (seeAllChats != null) seeAllChats.setOnClickListener(v -> switchTab(TabPemilik.PESAN));
 
         // Chip Filters
         chipAll.setOnClickListener(v -> applyKostFilter("ALL"));
@@ -332,8 +335,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
         // FAB Tambah Kost
         fabAddKost.setOnClickListener(v -> {
             Intent intent = new Intent(this, AdminKostFormActivity.class);
-            intent.putExtra("owner_id", sessionManager.getUserId());
-            startActivity(intent);
+                        startActivity(intent);
         });
 
         // Profil Actions
@@ -347,55 +349,40 @@ public class PemilikMainActivity extends AppCompatActivity implements
 
         itemChangePassword.setOnClickListener(v -> showChangePasswordDialog());
 
-        itemNotification.setOnClickListener(v -> {
-            notificationsEnabled = !notificationsEnabled;
-            tvNotificationStatus.setText(notificationsEnabled ? "Aktif" : "Senyap");
-            tvNotificationStatus.setTextColor(ContextCompat.getColor(this,
-                    notificationsEnabled ? R.color.status_tersedia : R.color.text_muted));
-            Toast.makeText(this, notificationsEnabled ? "Notifikasi chat aktif" : "Notifikasi chat disenyapkan", Toast.LENGTH_SHORT).show();
-        });
+        setupProfilMenuItems();
     }
 
-    private void setupDrawer() {
-        if (drawerLayout == null) return;
-        updateDrawerProfile();
+    private void setupProfilMenuItems() {
+        View itemTips = findViewById(R.id.item_pemilik_tips);
+        View itemBantuan = findViewById(R.id.item_pemilik_bantuan);
+        View itemTentang = findViewById(R.id.item_pemilik_tentang);
+        View btnLogoutProfile = findViewById(R.id.btn_pemilik_logout_profile);
 
-        // 5 Primary Hamburger Menu Items
-        View itemTips = findViewById(R.id.item_drawer_pemilik_tips);
-        View itemBantuan = findViewById(R.id.item_drawer_pemilik_bantuan);
-        View itemPengaturan = findViewById(R.id.item_drawer_pemilik_pengaturan);
-        View itemTentang = findViewById(R.id.item_drawer_pemilik_tentang);
-        View btnLogoutDrawer = findViewById(R.id.btn_drawer_pemilik_logout);
+        com.carikostkita.util.SettingRowBinder.bind(itemTips, R.drawable.ic_sparkle,
+                "Tips & Panduan", "Cara membuat listing yang cepat laku", null);
+        com.carikostkita.util.SettingRowBinder.bind(itemBantuan, R.drawable.ic_info,
+                "Pusat Bantuan", "Pertanyaan umum & kontak tim", null);
+        com.carikostkita.util.SettingRowBinder.bind(itemTentang, R.drawable.ic_verified,
+                "Tentang CariKostKita", "Versi " + com.carikostkita.BuildConfig.VERSION_NAME + ", syarat & privasi", null);
+        if (itemTips != null) itemTips.setOnClickListener(v -> showTipsPanduanDialog());
+        if (itemBantuan != null) itemBantuan.setOnClickListener(v -> showBantuanDialog());
+        if (itemTentang != null) itemTentang.setOnClickListener(v -> showAboutDialog());
+        if (btnLogoutProfile != null) btnLogoutProfile.setOnClickListener(v -> performLogout());
+    }
 
-        if (itemTips != null) {
-            itemTips.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                showTipsPanduanDialog();
-            });
-        }
-        if (itemBantuan != null) {
-            itemBantuan.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                showBantuanDialog();
-            });
-        }
-        if (itemPengaturan != null) {
-            itemPengaturan.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                switchTab(TabPemilik.PROFIL);
-            });
-        }
-        if (itemTentang != null) {
-            itemTentang.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                showAboutDialog();
-            });
-        }
-        if (btnLogoutDrawer != null) {
-            btnLogoutDrawer.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                performLogout();
-            });
+    private static class TipSlideItem {
+        final String title;
+        final String desc;
+        final int iconRes;
+        final int iconColor;
+        final int bgRes;
+
+        TipSlideItem(String title, String desc, int iconRes, int iconColor, int bgRes) {
+            this.title = title;
+            this.desc = desc;
+            this.iconRes = iconRes;
+            this.iconColor = iconColor;
+            this.bgRes = bgRes;
         }
     }
 
@@ -404,8 +391,73 @@ public class PemilikMainActivity extends AppCompatActivity implements
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_tips_panduan, null);
         dialog.setContentView(view);
 
-        View btnClose = view.findViewById(R.id.btn_close_tips);
+        final TipSlideItem[] tips = new TipSlideItem[]{
+                new TipSlideItem("1. Cara Menambahkan Kost",
+                        "Buka menu 'Kost Saya', lalu tekan tombol '+ Tambah Kost'. Ikuti formulir multi-langkah mulai dari info umum, lokasi peta, hingga foto kost.",
+                        R.drawable.ic_add, ContextCompat.getColor(this, R.color.primary), R.drawable.bg_circle_icon_blue),
+                new TipSlideItem("2. Cara Mengubah Data Kost",
+                        "Pilih kost di tab 'Kost Saya' dan tekan tombol 'Edit'. Anda dapat memperbarui foto, fasilitas terbaru, atau harga sewa bulanan kapan saja.",
+                        R.drawable.ic_edit, 0xFF8B5CF6, R.drawable.bg_circle_icon_purple),
+                new TipSlideItem("3. Cara Memperbarui Kamar Kosong",
+                        "Selalu perbarui jumlah ketersediaan kamar kosong di kartu properti Anda. Status kamar yang akurat menarik minat pencari kost lebih cepat.",
+                        R.drawable.ic_bed, 0xFF10B981, R.drawable.bg_circle_icon_green),
+                new TipSlideItem("4. Menangani Pesan Calon Penyewa",
+                        "Cek tab 'Pesan' secara berkala. Berikan respons cepat dan sopan terhadap pertanyaan calon penyewa mengenai peraturan, fasilitas, atau jadwal survei.",
+                        R.drawable.ic_nav_chat, ContextCompat.getColor(this, R.color.primary), R.drawable.bg_circle_icon_blue),
+                new TipSlideItem("5. Tingkatkan Peluang Ditemukan",
+                        "Tentukan titik peta secara presisi, gunakan foto kamar yang terang, dan tandai semua fasilitas yang Anda sediakan (WiFi, AC, Parkir, Kamar Mandi).",
+                        R.drawable.ic_sparkle, 0xFFF59E0B, R.drawable.bg_circle_icon_amber),
+                new TipSlideItem("6. Pastikan Informasi Selalu Akurat",
+                        "Hindari perbedaan harga atau fasilitas antara aplikasi dan kondisi lapangan untuk membangun reputasi kost yang terpercaya dan terverifikasi.",
+                        R.drawable.ic_check, 0xFFEF4444, R.drawable.bg_circle_icon_peach)
+        };
+
+        LinearLayout dotsContainer = view.findViewById(R.id.dots_tips_container);
+        View btnPrev = view.findViewById(R.id.btn_tips_prev);
+        View btnNext = view.findViewById(R.id.btn_tips_next);
         View btnDismiss = view.findViewById(R.id.btn_dismiss_tips);
+        View btnClose = view.findViewById(R.id.btn_close_tips);
+
+        final int[] currentStep = {0};
+
+        if (dotsContainer != null) {
+            dotsContainer.removeAllViews();
+            int dotSize = (int) (8 * getResources().getDisplayMetrics().density);
+            int dotMargin = (int) (4 * getResources().getDisplayMetrics().density);
+            for (int i = 0; i < tips.length; i++) {
+                View dot = new View(this);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dotSize, dotSize);
+                params.setMargins(dotMargin, 0, dotMargin, 0);
+                dot.setLayoutParams(params);
+                dot.setBackgroundResource(i == 0 ? R.drawable.bg_dot_active : R.drawable.bg_dot_inactive);
+                final int targetIndex = i;
+                dot.setOnClickListener(v -> {
+                    currentStep[0] = targetIndex;
+                    renderTipSlide(view, tips, currentStep[0]);
+                });
+                dotsContainer.addView(dot);
+            }
+        }
+
+        renderTipSlide(view, tips, 0);
+
+        if (btnNext != null) {
+            btnNext.setOnClickListener(v -> {
+                if (currentStep[0] < tips.length - 1) {
+                    currentStep[0]++;
+                    renderTipSlide(view, tips, currentStep[0]);
+                }
+            });
+        }
+
+        if (btnPrev != null) {
+            btnPrev.setOnClickListener(v -> {
+                if (currentStep[0] > 0) {
+                    currentStep[0]--;
+                    renderTipSlide(view, tips, currentStep[0]);
+                }
+            });
+        }
 
         if (btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
         if (btnDismiss != null) btnDismiss.setOnClickListener(v -> dialog.dismiss());
@@ -413,44 +465,84 @@ public class PemilikMainActivity extends AppCompatActivity implements
         dialog.show();
     }
 
+    private void renderTipSlide(View view, TipSlideItem[] tips, int index) {
+        if (index < 0 || index >= tips.length) return;
+        TipSlideItem item = tips[index];
+
+        TextView tvProgress = view.findViewById(R.id.tv_tips_progress);
+        View flIconBg = view.findViewById(R.id.fl_tip_icon_bg);
+        ImageView ivIcon = view.findViewById(R.id.iv_tip_icon);
+        TextView tvTitle = view.findViewById(R.id.tv_tip_title);
+        TextView tvDesc = view.findViewById(R.id.tv_tip_desc);
+        LinearLayout dotsContainer = view.findViewById(R.id.dots_tips_container);
+        View btnPrev = view.findViewById(R.id.btn_tips_prev);
+        View btnNext = view.findViewById(R.id.btn_tips_next);
+        View btnDismiss = view.findViewById(R.id.btn_dismiss_tips);
+
+        if (tvProgress != null) tvProgress.setText("Langkah " + (index + 1) + " dari " + tips.length);
+        if (flIconBg != null) flIconBg.setBackgroundResource(item.bgRes);
+        if (ivIcon != null) {
+            ivIcon.setImageResource(item.iconRes);
+            ivIcon.setColorFilter(item.iconColor);
+        }
+        if (tvTitle != null) tvTitle.setText(item.title);
+        if (tvDesc != null) tvDesc.setText(item.desc);
+
+        if (dotsContainer != null) {
+            for (int i = 0; i < dotsContainer.getChildCount(); i++) {
+                View dot = dotsContainer.getChildAt(i);
+                dot.setBackgroundResource(i == index ? R.drawable.bg_dot_active : R.drawable.bg_dot_inactive);
+            }
+        }
+
+        if (btnPrev != null) btnPrev.setVisibility(index > 0 ? View.VISIBLE : View.GONE);
+        if (index == tips.length - 1) {
+            if (btnNext != null) btnNext.setVisibility(View.GONE);
+            if (btnDismiss != null) btnDismiss.setVisibility(View.VISIBLE);
+        } else {
+            if (btnNext != null) btnNext.setVisibility(View.VISIBLE);
+            if (btnDismiss != null) btnDismiss.setVisibility(View.GONE);
+        }
+    }
+
     private void showBantuanDialog() {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Pusat Bantuan Pemilik")
-                .setMessage("Butuh bantuan teknis atau informasi mengenai verifikasi akun pemilik kost?\n\n• Email Dukungan: support@carikostkita.com\n• WhatsApp Care: +62 822-8390-1234\n• Jam Operasional: Setiap Hari (08.00 - 21.00 WIB)")
+                .setMessage("Pertanyaan yang sering muncul:\n\n"
+                        + "• Kenapa kost saya belum tampil?\nKost baru tampil setelah disetujui tim. Cek status di tab Kost Saya.\n\n"
+                        + "• Perlu review ulang setiap edit?\nHanya perubahan nama, alamat, lokasi, foto, deskripsi, atau tipe. Harga dan jumlah kamar kosong langsung tampil.\n\n"
+                        + "• Ada kendala lain?\nKirim email ke " + getString(R.string.support_email) + " beserta nama kost kamu.")
                 .setPositiveButton("Tutup", (dialog, which) -> dialog.dismiss())
+                .setNeutralButton("Kirim Email", (dialog, which) -> {
+                    Intent email = new Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:" + getString(R.string.support_email)));
+                    email.putExtra(Intent.EXTRA_SUBJECT, "Bantuan Pemilik CariKostKita");
+                    try {
+                        startActivity(email);
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Tidak ada aplikasi email di perangkat ini", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
+    }
+
+    private void showPengaturanDialog() {
+        boolean[] checked = {sessionManager.isChatNotificationEnabled()};
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Pengaturan")
+                .setMultiChoiceItems(new String[]{"Tampilkan pemberitahuan pesan baru"}, checked,
+                        (dialog, which, isChecked) -> checked[0] = isChecked)
+                .setPositiveButton("Simpan", (dialog, which) -> {
+                    notificationsEnabled = checked[0];
+                    sessionManager.setChatNotificationEnabled(checked[0]);
+                    if (switchNotification != null) switchNotification.setChecked(checked[0]);
+                    Toast.makeText(this, "Pengaturan disimpan", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Batal", null)
                 .show();
     }
 
     private void showAboutDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Tentang CariKostKita")
-                .setMessage("CariKostKita Mobile v1.0.0\n\nPlatform pencarian dan pengelolaan kost modern berbasis peta di Pekanbaru.\n\n© 2026 CariKostKita. Hak cipta dilindungi undang-undang.")
-                .setPositiveButton("Tutup", (dialog, which) -> dialog.dismiss())
-                .show();
-    }
-
-    private void updateDrawerProfile() {
-        ImageView ivDrawerAvatar = findViewById(R.id.iv_pemilik_drawer_avatar);
-        TextView tvDrawerName = findViewById(R.id.tv_pemilik_drawer_name);
-        TextView tvDrawerEmail = findViewById(R.id.tv_pemilik_drawer_email);
-        TextView tvDrawerRole = findViewById(R.id.tv_pemilik_drawer_role);
-
-        if (tvDrawerName != null) tvDrawerName.setText(sessionManager.getUserName());
-        if (tvDrawerEmail != null) tvDrawerEmail.setText(sessionManager.getUserEmail());
-        if (ivDrawerAvatar != null) {
-            UserAvatarHelper.loadAvatar(ivDrawerAvatar, sessionManager.getUserAvatar());
-        }
-        if (tvDrawerRole != null) {
-            if (sessionManager.isDeveloper()) {
-                tvDrawerRole.setText("DEVELOPER / SUPER ADMIN");
-                tvDrawerRole.setBackgroundResource(R.drawable.bg_badge_campur);
-                tvDrawerRole.setTextColor(ContextCompat.getColor(this, R.color.badge_campur));
-            } else {
-                tvDrawerRole.setText("PEMILIK KOST TERVERIFIKASI");
-                tvDrawerRole.setBackgroundResource(R.drawable.bg_badge_putra);
-                tvDrawerRole.setTextColor(ContextCompat.getColor(this, R.color.badge_putra));
-            }
-        }
+        com.carikostkita.util.AppInfoSheets.showAbout(this);
     }
 
     private void animateContainerIn(View view) {
@@ -471,10 +563,6 @@ public class PemilikMainActivity extends AppCompatActivity implements
 
     @Override
     public void onBackPressed() {
-        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return;
-        }
         long currentTime = System.currentTimeMillis();
         if (currentTime - backPressedTime < 2000) {
             if (backToast != null) {
@@ -613,13 +701,63 @@ public class PemilikMainActivity extends AppCompatActivity implements
         }
     }
 
+    private boolean dashboardLoadedOnce = false;
+    private long dashboardSkeletonStart = 0;
+
+    /** Skeleton konten dashboard hanya pada pemuatan pertama. */
+    private void setDashboardSkeleton(boolean show) {
+        View skeleton = findViewById(R.id.skeleton_pemilik_dashboard);
+        if (skeleton == null) return;
+        if (show) {
+            dashboardSkeletonStart = com.carikostkita.util.SkeletonHelper.markStart();
+            skeleton.setVisibility(View.VISIBLE);
+            containerDashboard.setVisibility(View.GONE);
+        } else {
+            com.carikostkita.util.SkeletonHelper.complete(dashboardSkeletonStart, () -> {
+                if (isFinishing() || isDestroyed()) return;
+                skeleton.setVisibility(View.GONE);
+                if (currentTab == TabPemilik.DASHBOARD) containerDashboard.setVisibility(View.VISIBLE);
+            });
+        }
+    }
+
     private void loadDashboardStats() {
-        int ownerId = sessionManager.getUserId();
+        String ownerId = sessionManager.getUserUid();
         tvWelcomeName.setText(sessionManager.getUserName());
+        if (!dashboardLoadedOnce) setDashboardSkeleton(true);
+        loadRecentChats();
+        new com.carikostkita.data.repository.SurveyRepository(this).list(false, new DataCallback<List<com.carikostkita.data.model.SurveyRequest>>() {
+            @Override
+            public void onSuccess(List<com.carikostkita.data.model.SurveyRequest> data) {
+                pendingSurveys = 0;
+                for (com.carikostkita.data.model.SurveyRequest r : data) {
+                    if (com.carikostkita.data.model.SurveyRequest.MENUNGGU.equals(r.status)) pendingSurveys++;
+                }
+                if (lastOwnerKosts != null) renderActionNeeded(lastOwnerKosts);
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+        loadOwnerPerformance();
 
         kostRepository.getPemilikStats(ownerId, new DataCallback<KostRepository.PemilikStats>() {
             @Override
             public void onSuccess(KostRepository.PemilikStats stats) {
+                if (!dashboardLoadedOnce) {
+                    dashboardLoadedOnce = true;
+                    setDashboardSkeleton(false);
+                }
+                TextView tvSummary = findViewById(R.id.tv_pemilik_dashboard_summary);
+                if (tvSummary != null) {
+                    tvSummary.setText(stats.totalKost == 0
+                            ? "Belum ada kost. Pasang kost pertamamu, sekitar 5 menit."
+                            : stats.totalAktif + " kost tampil • " + stats.totalTersedia + " kamar kosong");
+                }
+                TextView pk = findViewById(R.id.tv_pemilik_profile_kost_count);
+                TextView pf = findViewById(R.id.tv_pemilik_profile_fav_count);
+                if (pk != null) pk.setText(String.valueOf(stats.totalKost));
+                if (pf != null) pf.setText(String.valueOf(stats.totalFavorit));
                 tvStatTotal.setText(String.valueOf(stats.totalKost));
                 tvStatAktif.setText(String.valueOf(stats.totalAktif));
                 tvStatPending.setText(String.valueOf(stats.totalPending));
@@ -630,7 +768,13 @@ public class PemilikMainActivity extends AppCompatActivity implements
                 if (tvOccupancyPercent != null) tvOccupancyPercent.setText(percent + "%");
                 if (pbOccupancy != null) pbOccupancy.setProgress(percent);
                 if (tvOccupancySub != null) {
-                    tvOccupancySub.setText(stats.totalTerisi + " dari " + totalKamar + " kamar aktif terisi (" + stats.totalTersedia + " kamar kosong)");
+                    String sub = totalKamar > 0
+                            ? stats.totalTerisi + " dari " + totalKamar + " kamar terisi (" + stats.totalTersedia + " kamar kosong)"
+                            : "Isi jumlah kamar di Edit Kost untuk melihat tingkat hunian";
+                    if (stats.kostTanpaDataKamar > 0 && totalKamar > 0) {
+                        sub += ". " + stats.kostTanpaDataKamar + " kost belum mengisi data kamar.";
+                    }
+                    tvOccupancySub.setText(sub);
                 }
                 if (tvKamarTerisi != null) tvKamarTerisi.setText(String.valueOf(stats.totalTerisi));
                 if (tvKamarTersedia != null) tvKamarTersedia.setText(String.valueOf(stats.totalTersedia));
@@ -638,13 +782,22 @@ public class PemilikMainActivity extends AppCompatActivity implements
             }
 
             @Override
-            public void onError(String message) {}
+            public void onError(String message) {
+                if (!dashboardLoadedOnce) {
+                    dashboardLoadedOnce = true;
+                    setDashboardSkeleton(false);
+                }
+                Toast.makeText(PemilikMainActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
         });
 
         // Load primary property highlight for dashboard
         kostRepository.getKostByPemilik(ownerId, new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> list) {
+                lastOwnerKosts = list;
+                renderActionNeeded(list);
+                renderQuickRooms(list);
                 if (list != null && !list.isEmpty()) {
                     Kost primary = list.get(0);
                     if (cardHighlight != null) cardHighlight.setVisibility(View.VISIBLE);
@@ -652,7 +805,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
                     if (tvHighlightLocation != null) tvHighlightLocation.setText(primary.getFullLocation());
                     if (tvHighlightPrice != null) tvHighlightPrice.setText(primary.getFormattedHarga());
                     if (tvHighlightRooms != null) {
-                        tvHighlightRooms.setText(primary.getKamarTersedia() + " Kamar Kosong");
+                        tvHighlightRooms.setText(primary.hasRoomInfo() ? primary.getKamarTersedia() + " Kamar Kosong" : primary.getAvailabilityLabel());
                     }
                 } else {
                     if (cardHighlight != null) cardHighlight.setVisibility(View.GONE);
@@ -664,8 +817,211 @@ public class PemilikMainActivity extends AppCompatActivity implements
         });
     }
 
+    /** Kartu "Perlu tindakan": revisi dari tim, kost tanpa data kamar, dan pesan belum dibaca. */
+    private void renderActionNeeded(List<Kost> list) {
+        View card = findViewById(R.id.card_pemilik_action_needed);
+        android.widget.LinearLayout container = findViewById(R.id.layout_pemilik_action_items);
+        if (card == null || container == null) return;
+        container.removeAllViews();
+        if (list != null) {
+            for (Kost k : list) {
+                if (k.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REVISION_REQUIRED
+                        || k.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REJECTED) {
+                    String note = k.getCatatanRevisi() != null && !k.getCatatanRevisi().isEmpty() ? k.getCatatanRevisi() : "Cek catatan dari tim";
+                    addActionRow(container, R.drawable.ic_edit, "Perbaiki \"" + k.getNamaKost() + "\"", note, v -> onEditClick(k));
+                } else if (!k.hasRoomInfo()) {
+                    addActionRow(container, R.drawable.ic_bed, "Isi jumlah kamar \"" + k.getNamaKost() + "\"",
+                            "Pencari lebih percaya bila jumlah kamar kosong jelas", v -> onEditClick(k));
+                }
+            }
+        }
+        if (pendingSurveys > 0) {
+            addActionRow(container, R.drawable.ic_clock, pendingSurveys + " permintaan survei menunggu",
+                    "Konfirmasi atau tawarkan waktu lain", v -> startActivity(new Intent(this, com.carikostkita.ui.survey.SurveyListActivity.class)));
+        }
+        if (pendingUnreadChats > 0) {
+            addActionRow(container, R.drawable.ic_nav_chat, pendingUnreadChats + " pesan belum dibalas",
+                    "Balas cepat menaikkan peluang kamar terisi", v -> switchTab(TabPemilik.PESAN));
+        }
+        card.setVisibility(container.getChildCount() > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private int pendingUnreadChats = 0;
+    private int pendingSurveys = 0;
+    private List<Kost> lastOwnerKosts;
+
+    private void addActionRow(android.widget.LinearLayout container, int icon, String title, String sub, View.OnClickListener onClick) {
+        View row = getLayoutInflater().inflate(R.layout.item_setting_row, container, false);
+        com.carikostkita.util.SettingRowBinder.bind(row, icon, title, sub, onClick);
+        if (container.getChildCount() > 0) {
+            View divider = new View(this);
+            divider.setBackgroundColor(ContextCompat.getColor(this, R.color.border_subtle));
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1);
+            lp.setMarginStart((int) (72 * getResources().getDisplayMetrics().density));
+            container.addView(divider, lp);
+        }
+        container.addView(row);
+    }
+
+    /** Stepper −/+ kamar kosong per kost yang sudah tampil; tersimpan langsung tanpa review ulang. */
+    private void renderQuickRooms(List<Kost> list) {
+        android.widget.LinearLayout container = findViewById(R.id.layout_pemilik_quick_rooms);
+        if (container == null) return;
+        container.removeAllViews();
+        int shown = 0;
+        if (list != null) {
+            for (Kost k : list) {
+                if (shown >= 5) break;
+                if (k.getVerificationStatus() != com.carikostkita.data.model.KostVerificationStatus.APPROVED) continue;
+                View row = getLayoutInflater().inflate(R.layout.item_quick_room, container, false);
+                bindQuickRoom(row, k);
+                if (shown > 0) {
+                    View divider = new View(this);
+                    divider.setBackgroundColor(ContextCompat.getColor(this, R.color.border_subtle));
+                    container.addView(divider, new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                }
+                container.addView(row);
+                shown++;
+            }
+        }
+        if (shown == 0) {
+            TextView empty = new TextView(this);
+            empty.setText("Kost yang sudah disetujui akan muncul di sini supaya kamar kosong bisa diperbarui dengan sekali ketuk.");
+            empty.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            empty.setTextSize(13);
+            int pad = (int) (16 * getResources().getDisplayMetrics().density);
+            empty.setPadding(pad, pad, pad, pad);
+            container.addView(empty);
+        }
+    }
+
+    private void bindQuickRoom(View row, Kost kost) {
+        TextView name = row.findViewById(R.id.tv_quick_room_name);
+        TextView sub = row.findViewById(R.id.tv_quick_room_sub);
+        TextView value = row.findViewById(R.id.tv_quick_room_value);
+        View minus = row.findViewById(R.id.btn_quick_room_minus);
+        View plus = row.findViewById(R.id.btn_quick_room_plus);
+        name.setText(kost.getNamaKost());
+        final int total = kost.getTotalKamar();
+        final int[] current = {kost.hasRoomInfo() ? kost.getKamarTersedia() : 0};
+        Runnable render = () -> {
+            value.setText(String.valueOf(current[0]));
+            sub.setText(current[0] == 0 ? "Penuh" : (total > 0 ? "dari " + total + " kamar" : "kamar kosong"));
+            minus.setEnabled(current[0] > 0);
+            minus.setAlpha(current[0] > 0 ? 1f : 0.4f);
+            boolean canAdd = total <= 0 || current[0] < total;
+            plus.setEnabled(canAdd);
+            plus.setAlpha(canAdd ? 1f : 0.4f);
+        };
+        render.run();
+        View.OnClickListener change = v -> {
+            int next = current[0] + (v == plus ? 1 : -1);
+            if (next < 0 || (total > 0 && next > total)) return;
+            int previous = current[0];
+            current[0] = next;
+            render.run();
+            kostRepository.updateRoomAvailability(kost.getIdKost(), next, new DataCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean ok) {
+                    kost.setKamarTersedia(next);
+                    kost.setStatus(next > 0 ? StatusKost.TERSEDIA : StatusKost.PENUH);
+                }
+
+                @Override
+                public void onError(String message) {
+                    current[0] = previous;
+                    render.run();
+                    Toast.makeText(PemilikMainActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+            });
+        };
+        minus.setOnClickListener(change);
+        plus.setOnClickListener(change);
+    }
+
+    /** Tiga percakapan terbaru di dashboard + jumlah pesan belum dibaca untuk "Perlu tindakan". */
+    private void loadRecentChats() {
+        chatRepository.getConversationsForUser(sessionManager.getUserUid(), new DataCallback<List<ChatConversation>>() {
+            @Override
+            public void onSuccess(List<ChatConversation> list) {
+                android.widget.LinearLayout container = findViewById(R.id.layout_pemilik_recent_chats);
+                TextView chatCount = findViewById(R.id.tv_pemilik_profile_chat_count);
+                if (chatCount != null) chatCount.setText(String.valueOf(list != null ? list.size() : 0));
+                pendingUnreadChats = 0;
+                if (list != null) for (ChatConversation c : list) pendingUnreadChats += c.getUnreadCount();
+                if (lastOwnerKosts != null) renderActionNeeded(lastOwnerKosts);
+                if (container == null) return;
+                container.removeAllViews();
+                if (list == null || list.isEmpty()) {
+                    View row = getLayoutInflater().inflate(R.layout.item_setting_row, container, false);
+                    com.carikostkita.util.SettingRowBinder.bind(row, R.drawable.ic_nav_chat, "Belum ada pesan",
+                            "Pertanyaan calon penyewa akan muncul di sini", null);
+                    row.findViewById(R.id.iv_setting_chevron).setVisibility(View.GONE);
+                    container.addView(row);
+                    return;
+                }
+                for (int i = 0; i < Math.min(3, list.size()); i++) {
+                    ChatConversation c = list.get(i);
+                    String who = c.getNamaPencari() != null ? c.getNamaPencari() : "Calon penyewa";
+                    String msg = c.getLastMessage() != null ? c.getLastMessage() : "Belum ada pesan";
+                    String title = c.getUnreadCount() > 0 ? who + " • " + c.getUnreadCount() + " baru" : who;
+                    View row = getLayoutInflater().inflate(R.layout.item_setting_row, container, false);
+                    com.carikostkita.util.SettingRowBinder.bind(row, R.drawable.ic_nav_chat, title,
+                            (c.getNamaKost() != null ? c.getNamaKost() + ": " : "") + msg, v -> onConversationClick(c));
+                    if (i > 0) {
+                        View divider = new View(PemilikMainActivity.this);
+                        divider.setBackgroundColor(ContextCompat.getColor(PemilikMainActivity.this, R.color.border_subtle));
+                        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1);
+                        lp.setMarginStart((int) (72 * getResources().getDisplayMetrics().density));
+                        container.addView(divider, lp);
+                    }
+                    container.addView(row);
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+    }
+
+    /** Performa 30 hari per kost dari fungsi SQL owner_kost_stats. */
+    private void loadOwnerPerformance() {
+        new com.carikostkita.data.repository.AnalyticsRepository(this).ownerKostStats(new DataCallback<List<com.carikostkita.data.model.OwnerKostStat>>() {
+            @Override
+            public void onSuccess(List<com.carikostkita.data.model.OwnerKostStat> list) {
+                android.widget.LinearLayout container = findViewById(R.id.layout_pemilik_performance);
+                if (container == null) return;
+                container.removeAllViews();
+                if (list.isEmpty()) {
+                    View row = getLayoutInflater().inflate(R.layout.item_setting_row, container, false);
+                    com.carikostkita.util.SettingRowBinder.bind(row, R.drawable.ic_activity, "Belum ada data",
+                            "Data muncul setelah kost disetujui dan dilihat pencari", null);
+                    row.findViewById(R.id.iv_setting_chevron).setVisibility(View.GONE);
+                    container.addView(row);
+                    return;
+                }
+                for (int i = 0; i < Math.min(5, list.size()); i++) {
+                    com.carikostkita.data.model.OwnerKostStat st = list.get(i);
+                    View row = getLayoutInflater().inflate(R.layout.item_setting_row, container, false);
+                    com.carikostkita.util.SettingRowBinder.bind(row, R.drawable.ic_activity, st.namaKost,
+                            st.dilihat + " dilihat • " + st.disimpan + " disimpan • " + st.chat + " chat • " + st.survei + " survei", null);
+                    row.findViewById(R.id.iv_setting_chevron).setVisibility(View.GONE);
+                    if (i > 0) {
+                        View divider = new View(PemilikMainActivity.this);
+                        divider.setBackgroundColor(ContextCompat.getColor(PemilikMainActivity.this, R.color.border_subtle));
+                        container.addView(divider, new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+                    }
+                    container.addView(row);
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+    }
+
     private void loadOwnerKosts() {
-        int ownerId = sessionManager.getUserId();
+        String ownerId = sessionManager.getUserUid();
         pbLoading.setVisibility(View.VISIBLE);
 
         kostRepository.getKostByPemilik(ownerId, new DataCallback<List<Kost>>() {
@@ -705,7 +1061,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
                     tvPortfolioOccupancy.setText(percent + "% terisi (" + totalKamar + " total)");
                 }
                 if (tvPortfolioFavoritCount != null) {
-                    tvPortfolioFavoritCount.setText(stats.totalFavorit + " Pengguna");
+                    tvPortfolioFavoritCount.setText(stats.totalFavorit + " kali disimpan");
                 }
 
                 cachedOwnerKosts.clear();
@@ -780,7 +1136,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
                               currentPortfolioDays == 30 ? "30 Hari Terakhir" : "3 Bulan Terakhir");
 
         if (tvPortfolioChartTitle != null) {
-            tvPortfolioChartTitle.setText("Tren Kapasitas Kamar Terisi (" + periodTitle + ")");
+            tvPortfolioChartTitle.setText("Jumlah Kamar Terdaftar (" + periodTitle + ")");
         }
 
         List<ModernLineChartView.DataPoint> points = new ArrayList<>();
@@ -797,16 +1153,15 @@ public class PemilikMainActivity extends AppCompatActivity implements
             long bucketTime = (i == numBuckets - 1) ? now : (startTime + (i * intervalStep));
             String label = dayFormat.format(new Date(bucketTime));
 
-            int terisiAtPoint = 0;
+            // Data historis yang benar-benar ada: kamar dari kost yang sudah terdaftar pada tanggal itu
+            int kamarAtPoint = 0;
             for (KostDto k : cachedOwnerKosts) {
                 long t = parseIsoDate(k.createdAt);
-                if (t <= bucketTime) {
-                    if (k.totalKamar != null && k.kamarTersedia != null) {
-                        terisiAtPoint += Math.max(0, k.totalKamar - k.kamarTersedia);
-                    }
+                if (t > 0 && t <= bucketTime && k.totalKamar != null) {
+                    kamarAtPoint += Math.max(0, k.totalKamar);
                 }
             }
-            points.add(new ModernLineChartView.DataPoint(label, terisiAtPoint));
+            points.add(new ModernLineChartView.DataPoint(label, kamarAtPoint));
         }
 
         chartPemilikPortfolio.setData(points);
@@ -903,6 +1258,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
         intent.putExtra("nama_kost", conversation.getNamaKost());
         intent.putExtra("foto_kost", conversation.getFotoKost());
         intent.putExtra("nama_counterpart", conversation.getNamaPencari());
+        intent.putExtra("avatar_counterpart", conversation.getAvatarLawan());
         startActivity(intent);
     }
 
@@ -910,8 +1266,26 @@ public class PemilikMainActivity extends AppCompatActivity implements
     public void onEditClick(Kost kost) {
         Intent intent = new Intent(this, AdminKostFormActivity.class);
         intent.putExtra("kost_id", kost.getIdKost());
-        intent.putExtra("owner_id", sessionManager.getUserId());
-        startActivity(intent);
+                startActivity(intent);
+    }
+
+    @Override
+    public void onResubmitClick(Kost kost, int position) {
+        AppDialogHelper.showConfirm(this, "Ajukan ulang kost?",
+                "Pastikan catatan dari tim sudah diperbaiki lewat Edit. \"" + kost.getNamaKost() + "\" akan masuk antrean verifikasi lagi.",
+                "Ajukan Ulang", () -> kostRepository.resubmit(kost.getIdKost(), new DataCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean ok) {
+                        Toast.makeText(PemilikMainActivity.this, "Kost diajukan ulang ke tim verifikasi", Toast.LENGTH_SHORT).show();
+                        loadOwnerKosts();
+                        loadDashboardStats();
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        AppDialogHelper.showError(PemilikMainActivity.this, "Gagal Mengajukan Ulang", message);
+                    }
+                }));
     }
 
     @Override

@@ -17,8 +17,10 @@ public class ActivityLogRepository {
     private final SupabaseDbService dbService;
     private final ExecutorService executorService;
     private final Handler mainHandler;
+    private final com.carikostkita.util.SessionManager sessionManager;
 
     public ActivityLogRepository(Context context) {
+        this.sessionManager = new com.carikostkita.util.SessionManager(context);
         this.dbService = SupabaseClient.getInstance().createService(SupabaseDbService.class);
         this.executorService = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
@@ -34,7 +36,7 @@ public class ActivityLogRepository {
     }
 
     public void log(int legacyIdUser, String actorName, String actionType, String description, String targetType, int legacyTargetId) {
-        log(String.valueOf(legacyIdUser), actorName, actionType, description, targetType, String.valueOf(legacyTargetId));
+        log(sessionManager.getUserUid(), actorName, actionType, description, targetType, String.valueOf(legacyTargetId));
     }
 
     public void logActivity(String idUser, String actionType, String description, String targetType, String targetId) {
@@ -42,11 +44,11 @@ public class ActivityLogRepository {
     }
 
     public void logActivity(int legacyIdUser, String actionType, String description, String targetType, int legacyTargetId) {
-        log(String.valueOf(legacyIdUser), null, actionType, description, targetType, String.valueOf(legacyTargetId));
+        log(sessionManager.getUserUid(), null, actionType, description, targetType, String.valueOf(legacyTargetId));
     }
 
     public void logActivity(int legacyIdUser, String actionType, String description, String targetType, String targetId) {
-        log(String.valueOf(legacyIdUser), null, actionType, description, targetType, targetId);
+        log(sessionManager.getUserUid(), null, actionType, description, targetType, targetId);
     }
 
     public void logActivity(String idUser, String actorName, String actionType, String description, String targetType, String targetId) {
@@ -54,11 +56,11 @@ public class ActivityLogRepository {
     }
 
     public void logActivity(int legacyIdUser, String actorName, String actionType, String description, String targetType, String targetId) {
-        log(String.valueOf(legacyIdUser), actorName, actionType, description, targetType, targetId);
+        log(sessionManager.getUserUid(), actorName, actionType, description, targetType, targetId);
     }
 
     public void logActivity(int legacyIdUser, String actorName, String actionType, String description, String targetType, int legacyTargetId) {
-        log(String.valueOf(legacyIdUser), actorName, actionType, description, targetType, String.valueOf(legacyTargetId));
+        log(sessionManager.getUserUid(), actorName, actionType, description, targetType, String.valueOf(legacyTargetId));
     }
 
     public void getAllLogs(DataCallback<List<SystemActivityLog>> callback) {

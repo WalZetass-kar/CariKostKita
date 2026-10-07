@@ -1,69 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Skeleton konten Dashboard Developer (header asli tetap tampil) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:background="@color/background"
+    android:clickable="true"
+    android:focusable="true"
+    android:importantForAccessibility="noHideDescendants"
+    android:orientation="vertical">
 
-    <!-- Title Skeleton -->
-    <View
-        android:layout_width="160dp"
-        android:layout_height="14dp"
-        android:background="@drawable/bg_skeleton_item" />
-
-    <View
-        android:layout_width="220dp"
-        android:layout_height="22dp"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/bg_skeleton_item" />
-
-    <!-- 4 Stat Grid (2x2) -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:orientation="horizontal">
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_skeleton_item" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_skeleton_item" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_skeleton_item" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="76dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_skeleton_item" />
-    </LinearLayout>
-
-    <!-- Section Title -->
-    <View
-        android:layout_width="150dp"
-        android:layout_height="18dp"
-        android:layout_marginTop="24dp"
-        android:background="@drawable/bg_skeleton_item" />
-
-    <include layout="@layout/layout_skeleton_cards_list" />
+<com.carikostkita.ui.view.ShimmerView android:layout_width="match_parent" android:layout_height="wrap_content">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="24dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="14dp" android:paddingHorizontal="16dp"><LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="0dp" android:layout_marginTop="0dp" android:padding="14dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_skeleton_circle" /><View android:layout_width="48dp" android:layout_height="22dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="90dp" android:layout_height="11dp" android:layout_marginTop="6dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout><LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp" android:layout_marginTop="0dp" android:padding="14dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_skeleton_circle" /><View android:layout_width="48dp" android:layout_height="22dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="90dp" android:layout_height="11dp" android:layout_marginTop="6dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="12dp" android:paddingHorizontal="16dp"><LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="0dp" android:layout_marginTop="0dp" android:padding="14dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_skeleton_circle" /><View android:layout_width="48dp" android:layout_height="22dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="90dp" android:layout_height="11dp" android:layout_marginTop="6dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout><LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp" android:layout_marginTop="0dp" android:padding="14dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_skeleton_circle" /><View android:layout_width="48dp" android:layout_height="22dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="90dp" android:layout_height="11dp" android:layout_marginTop="6dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="12dp" android:paddingHorizontal="16dp"><LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="0dp" android:layout_marginTop="0dp" android:padding="14dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_skeleton_circle" /><View android:layout_width="48dp" android:layout_height="22dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="90dp" android:layout_height="11dp" android:layout_marginTop="6dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout><LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp" android:layout_marginTop="0dp" android:padding="14dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="36dp" android:layout_height="36dp" android:background="@drawable/bg_skeleton_circle" /><View android:layout_width="48dp" android:layout_height="22dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="90dp" android:layout_height="11dp" android:layout_marginTop="6dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginHorizontal="16dp" android:layout_marginTop="20dp" android:padding="16dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="160dp" android:layout_height="15dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="match_parent" android:layout_height="150dp" android:layout_marginTop="12dp" android:background="@drawable/bg_skeleton_block" /></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginHorizontal="16dp" android:layout_marginTop="12dp" android:padding="16dp" android:background="@drawable/bg_skeleton_card"><View android:layout_width="140dp" android:layout_height="15dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="match_parent" android:layout_height="12dp" android:layout_marginTop="14dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="match_parent" android:layout_height="12dp" android:layout_marginTop="10dp" android:background="@drawable/bg_skeleton_item" /><View android:layout_width="200dp" android:layout_height="12dp" android:layout_marginTop="10dp" android:background="@drawable/bg_skeleton_item" /></LinearLayout>
+</LinearLayout>
+</com.carikostkita.ui.view.ShimmerView>
 </LinearLayout>

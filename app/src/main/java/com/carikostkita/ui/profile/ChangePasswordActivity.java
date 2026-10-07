@@ -52,6 +52,12 @@ public class ChangePasswordActivity extends AppCompatActivity {
         etNewPassword = findViewById(R.id.et_new_password);
         etConfirmPassword = findViewById(R.id.et_confirm_password);
         btnChangePassword = findViewById(R.id.btn_change_password);
+
+        // Akun Google tidak punya kata sandi lama untuk diverifikasi
+        if (sessionManager.isGoogleAccount() && etOldPassword != null) {
+            android.view.View oldField = findViewById(R.id.til_old_password);
+            if (oldField != null) oldField.setVisibility(android.view.View.GONE);
+        }
     }
 
     private void setupListeners() {
@@ -60,11 +66,12 @@ public class ChangePasswordActivity extends AppCompatActivity {
     }
 
     private void attemptChangePassword() {
-        String oldPass = etOldPassword.getText() != null ? etOldPassword.getText().toString().trim() : "";
-        String newPass = etNewPassword.getText() != null ? etNewPassword.getText().toString().trim() : "";
-        String confirmPass = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString().trim() : "";
+        String oldPass = etOldPassword.getText() != null ? etOldPassword.getText().toString() : "";
+        String newPass = etNewPassword.getText() != null ? etNewPassword.getText().toString() : "";
+        String confirmPass = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString() : "";
+        boolean google = sessionManager.isGoogleAccount();
 
-        if (oldPass.isEmpty()) {
+        if (!google && oldPass.isEmpty()) {
             etOldPassword.setError("Masukkan kata sandi lama Anda");
             etOldPassword.requestFocus();
             return;
@@ -82,7 +89,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
             return;
         }
 
-        if (newPass.equals(oldPass)) {
+        if (!google && newPass.equals(oldPass)) {
             etNewPassword.setError("Kata sandi baru tidak boleh sama dengan kata sandi lama");
             etNewPassword.requestFocus();
             return;
@@ -95,7 +102,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         }
 
         btnChangePassword.setEnabled(false);
-        int userId = sessionManager.getUserId();
+        String userId = sessionManager.getUserUid();
 
         userRepository.changePassword(userId, oldPass, newPass, new DataCallback<Boolean>() {
             @Override

@@ -1,9 +1,14 @@
 package com.carikostkita.data.repository;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import com.carikostkita.data.model.Fasilitas;
 import com.carikostkita.data.model.FotoKost;
 import com.carikostkita.data.model.Kost;
@@ -12,18 +17,15 @@ import com.carikostkita.data.model.KostVerificationStatus;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
 import com.carikostkita.data.model.Wilayah;
-import android.util.Log;
-import com.carikostkita.data.remote.SupabaseAuthService;
 import com.carikostkita.data.remote.SupabaseClient;
 import com.carikostkita.data.remote.SupabaseDbService;
 import com.carikostkita.data.remote.SupabaseStorageService;
 import com.carikostkita.data.remote.dto.ActivityLogDto;
-import com.carikostkita.data.remote.dto.AuthResponse;
 import com.carikostkita.data.remote.dto.FavoriteDto;
 import com.carikostkita.data.remote.dto.KostDto;
 import com.carikostkita.data.remote.dto.KostUpdateDto;
-import com.carikostkita.data.remote.dto.RefreshRequest;
 import com.carikostkita.data.remote.dto.StorageUploadResponse;
+import com.carikostkita.util.ErrorMessages;
 import com.carikostkita.util.SessionManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,25 +35,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import okhttp3.MediaType;
-import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import org.json.JSONObject;
 import retrofit2.Response;
 
 public class KostRepository {
     private static final String TAG = "KostRepository";
+    private static final String BUCKET = "kost-images";
+    private static final int MAX_PHOTO_EDGE_PX = 1600;
+    private static final int PHOTO_JPEG_QUALITY = 82;
+
     private final Context appContext;
     private final SupabaseDbService dbService;
     private final SupabaseStorageService storageService;
-    private final SupabaseAuthService authService;
     private final SessionManager sessionManager;
     private final ExecutorService executor;
     private final Handler mainHandler;
@@ -85,6 +87,8 @@ public class KostRepository {
         public int totalTersedia;
         public int totalTerisi;
         public int totalFavorit = 0;
+        /** Jumlah kost yang belum mengisi data kamar (tidak ikut dihitung di okupansi). */
+        public int kostTanpaDataKamar = 0;
         public final List<KostDto> kostList = new ArrayList<>();
 
         public PemilikStats(int totalKost, int totalAktif, int totalPending, int totalRevisi, int totalTersedia, int totalTerisi) {
@@ -97,59 +101,58 @@ public class KostRepository {
         }
     }
 
+    /** Hasil simpan/ubah kost, termasuk jumlah foto yang gagal diunggah. */
+    public static class SaveResult {
+        public final String kostId;
+        public final int failedUploads;
+        public final boolean sentToReview;
+
+        public SaveResult(String kostId, int failedUploads, boolean sentToReview) {
+            this.kostId = kostId;
+            this.failedUploads = failedUploads;
+            this.sentToReview = sentToReview;
+        }
+    }
+
     public KostRepository(Context context) {
         this.appContext = context != null ? context.getApplicationContext() : null;
         this.dbService = SupabaseClient.getInstance().createService(SupabaseDbService.class);
         this.storageService = SupabaseClient.getInstance().createService(SupabaseStorageService.class);
-        this.authService = SupabaseClient.getInstance().createService(SupabaseAuthService.class);
         this.sessionManager = new SessionManager(context);
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
-    }
-
-    private void ensureValidAuthToken() {
-        try {
-            String token = sessionManager.getAccessToken();
-            if (token != null && !token.isEmpty()) {
-                SupabaseClient.getInstance().setAccessToken(token);
-            }
-            if (sessionManager.isTokenExpired() || token == null || token.isEmpty()) {
-                String refreshToken = sessionManager.getRefreshToken();
-                if (refreshToken != null && !refreshToken.isEmpty()) {
-                    Response<AuthResponse> refreshRes = authService.refreshToken(new RefreshRequest(refreshToken)).execute();
-                    if (refreshRes.isSuccessful() && refreshRes.body() != null) {
-                        AuthResponse body = refreshRes.body();
-                        sessionManager.saveTokens(body.accessToken, body.refreshToken, body.expiresIn);
-                        SupabaseClient.getInstance().setAccessToken(body.accessToken);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "Gagal auto-refresh token: " + e.getMessage());
-        }
     }
 
     // =========================================================================
     // PUBLIC CATALOG & USER QUERIES
     // =========================================================================
 
+    private Map<String, String> publicCatalogFilters() {
+        Map<String, String> filters = new HashMap<>();
+        filters.put("verification_status", "eq." + KostVerificationStatus.APPROVED.name());
+        filters.put("status", "neq." + StatusKost.TIDAK_AKTIF.name());
+        return filters;
+    }
+
+    /** Hapus karakter yang punya arti khusus di filter PostgREST agar query tidak rusak. */
+    static String sanitizeKeyword(String keyword) {
+        if (keyword == null) return "";
+        return keyword.replaceAll("[^\\p{L}\\p{N}\\s\\-']", " ").replaceAll("\\s+", " ").trim();
+    }
+
     public void getAllActiveKost(String currentUserId, DataCallback<List<Kost>> callback) {
         executor.execute(() -> {
             try {
-                Map<String, String> filters = new HashMap<>();
-                filters.put("verification_status", "eq." + KostVerificationStatus.APPROVED.name());
-                filters.put("status", "neq." + StatusKost.TIDAK_AKTIF.name());
-
-                Response<List<KostDto>> res = dbService.getKosts(filters, "*", "created_at.desc").execute();
+                Response<List<KostDto>> res = dbService.getKosts(publicCatalogFilters(), "*", "created_at.desc").execute();
                 if (res.isSuccessful() && res.body() != null) {
                     List<Kost> list = mapDtoListToKost(res.body());
                     populateFavorites(list, currentUserId);
                     mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("getAllActiveKost", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat katalog kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getAllActiveKost", e));
             }
         });
     }
@@ -159,29 +162,9 @@ public class KostRepository {
     }
 
     public void searchKost(String keyword, String currentUserId, DataCallback<List<Kost>> callback) {
-        executor.execute(() -> {
-            try {
-                Map<String, String> filters = new HashMap<>();
-                filters.put("verification_status", "eq." + KostVerificationStatus.APPROVED.name());
-                filters.put("status", "neq." + StatusKost.TIDAK_AKTIF.name());
-
-                if (keyword != null && !keyword.trim().isEmpty()) {
-                    String clean = keyword.trim();
-                    filters.put("or", "(nama_kost.ilike.*" + clean + "*,alamat.ilike.*" + clean + "*,kecamatan.ilike.*" + clean + "*,kelurahan.ilike.*" + clean + "*)");
-                }
-
-                Response<List<KostDto>> res = dbService.getKosts(filters, "*", "created_at.desc").execute();
-                if (res.isSuccessful() && res.body() != null) {
-                    List<Kost> list = mapDtoListToKost(res.body());
-                    populateFavorites(list, currentUserId);
-                    mainHandler.post(() -> callback.onSuccess(list));
-                } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
-                }
-            } catch (Exception e) {
-                postError(callback, "Gagal melakukan pencarian: " + e.getMessage());
-            }
-        });
+        KostFilterCriteria criteria = new KostFilterCriteria();
+        criteria.setKeyword(keyword);
+        filterKost(criteria, currentUserId, callback);
     }
 
     public void searchKost(String keyword, int legacyUserId, DataCallback<List<Kost>> callback) {
@@ -191,24 +174,35 @@ public class KostRepository {
     public void filterKost(KostFilterCriteria criteria, String currentUserId, DataCallback<List<Kost>> callback) {
         executor.execute(() -> {
             try {
-                Map<String, String> filters = new HashMap<>();
-                filters.put("verification_status", "eq." + KostVerificationStatus.APPROVED.name());
-                filters.put("status", "neq." + StatusKost.TIDAK_AKTIF.name());
+                Map<String, String> filters = publicCatalogFilters();
+                List<String> andConditions = new ArrayList<>();
 
                 if (criteria != null) {
                     if (criteria.getTipeKost() != null) {
                         filters.put("tipe_kost", "eq." + criteria.getTipeKost().name());
                     }
-                    if (criteria.getMaxHarga() != null && criteria.getMaxHarga() > 0) {
-                        filters.put("harga", "lte." + criteria.getMaxHarga());
-                    }
                     if (criteria.getMinHarga() != null && criteria.getMinHarga() > 0) {
-                        filters.put("harga", "gte." + criteria.getMinHarga());
+                        andConditions.add("harga.gte." + criteria.getMinHarga().longValue());
                     }
-                    if (criteria.getKeyword() != null && !criteria.getKeyword().trim().isEmpty()) {
-                        String clean = criteria.getKeyword().trim();
-                        filters.put("or", "(nama_kost.ilike.*" + clean + "*,alamat.ilike.*" + clean + "*,kecamatan.ilike.*" + clean + "*)");
+                    if (criteria.getMaxHarga() != null && criteria.getMaxHarga() > 0) {
+                        andConditions.add("harga.lte." + criteria.getMaxHarga().longValue());
                     }
+                    if (criteria.getStatus() == StatusKost.TERSEDIA) {
+                        filters.put("status", "eq." + StatusKost.TERSEDIA.name());
+                        andConditions.add("or(kamar_tersedia.is.null,kamar_tersedia.gt.0)");
+                    }
+                    if (criteria.getKecamatan() != null && !criteria.getKecamatan().trim().isEmpty()) {
+                        filters.put("kecamatan", "ilike." + sanitizeKeyword(criteria.getKecamatan()));
+                    }
+                    String clean = sanitizeKeyword(criteria.getKeyword());
+                    if (!clean.isEmpty()) {
+                        filters.put("or", "(nama_kost.ilike.*" + clean + "*,alamat.ilike.*" + clean
+                                + "*,kecamatan.ilike.*" + clean + "*,kelurahan.ilike.*" + clean
+                                + "*,kota.ilike.*" + clean + "*)");
+                    }
+                }
+                if (!andConditions.isEmpty()) {
+                    filters.put("and", "(" + android.text.TextUtils.join(",", andConditions) + ")");
                 }
 
                 String order = "created_at.desc";
@@ -222,7 +216,6 @@ public class KostRepository {
                 if (res.isSuccessful() && res.body() != null) {
                     List<Kost> list = mapDtoListToKost(res.body());
 
-                    // Filter fasilitas di client jika ada kriteria
                     if (criteria != null && criteria.getFasilitasIds() != null && !criteria.getFasilitasIds().isEmpty()) {
                         List<Kost> filtered = new ArrayList<>();
                         for (Kost k : list) {
@@ -233,14 +226,15 @@ public class KostRepository {
                         list = filtered;
                     }
 
+                    list = applyDistance(list, criteria);
                     populateFavorites(list, currentUserId);
                     final List<Kost> resultList = list;
                     mainHandler.post(() -> callback.onSuccess(resultList));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("filterKost", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memfilter data kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("filterKost", e));
             }
         });
     }
@@ -249,14 +243,40 @@ public class KostRepository {
         filterKost(criteria, sessionManager.getUserUid(), callback);
     }
 
+    /** Filter radius & urutan "Terdekat" dihitung di perangkat dari lokasi yang dipilih pengguna. */
+    private List<Kost> applyDistance(List<Kost> list, KostFilterCriteria criteria) {
+        if (criteria == null) return list;
+        boolean byDistance = "TERDEKAT".equalsIgnoreCase(criteria.getSortBy());
+        Double radius = criteria.getMaxDistanceKm();
+        if (!byDistance && (radius == null || radius <= 0)) return list;
+        double lat = criteria.getOriginLat() != null ? criteria.getOriginLat() : sessionManager.getUserSelectedLat();
+        double lng = criteria.getOriginLng() != null ? criteria.getOriginLng() : sessionManager.getUserSelectedLng();
+        if (lat == 0 || lng == 0) return list;
+        List<Kost> result = new ArrayList<>();
+        for (Kost k : list) {
+            if (radius != null && radius > 0) {
+                if (!k.hasCoordinates()) continue;
+                if (com.carikostkita.util.GeoUtil.distanceKm(lat, lng, k.getLatitude(), k.getLongitude()) > radius) continue;
+            }
+            result.add(k);
+        }
+        if (byDistance) {
+            java.util.Collections.sort(result, (a, b) -> Double.compare(
+                    a.hasCoordinates() ? com.carikostkita.util.GeoUtil.distanceKm(lat, lng, a.getLatitude(), a.getLongitude()) : Double.MAX_VALUE,
+                    b.hasCoordinates() ? com.carikostkita.util.GeoUtil.distanceKm(lat, lng, b.getLatitude(), b.getLongitude()) : Double.MAX_VALUE));
+        }
+        return result;
+    }
+
+    /** Cocokkan berdasarkan nama fasilitas master yang tersimpan di kolom kosts.fasilitas. */
     private boolean matchFasilitas(Kost kost, List<Integer> reqIds) {
-        if (kost.getListFasilitas() == null) return false;
-        Set<Integer> existing = new HashSet<>();
-        for (Fasilitas f : kost.getListFasilitas()) {
-            existing.add(f.getIdFasilitas());
+        Set<String> existing = new HashSet<>();
+        for (String name : kost.getFasilitas()) {
+            if (name != null) existing.add(name.trim().toLowerCase());
         }
         for (Integer req : reqIds) {
-            if (!existing.contains(req)) return false;
+            String name = Fasilitas.nameForId(req);
+            if (name == null || !existing.contains(name.toLowerCase())) return false;
         }
         return true;
     }
@@ -268,20 +288,24 @@ public class KostRepository {
                 if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
                     Kost kost = mapDtoToKost(res.body().get(0));
                     if (currentUserId != null && !currentUserId.isEmpty()) {
-                        Map<String, String> favFilter = new HashMap<>();
-                        favFilter.put("user_id", "eq." + currentUserId);
-                        favFilter.put("kost_id", "eq." + idKost);
-                        Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "*").execute();
-                        if (favRes.isSuccessful() && favRes.body() != null && !favRes.body().isEmpty()) {
-                            kost.setFavorite(true);
-                        }
+                        try {
+                            Map<String, String> favFilter = new HashMap<>();
+                            favFilter.put("user_id", "eq." + currentUserId);
+                            favFilter.put("kost_id", "eq." + idKost);
+                            Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "id").execute();
+                            if (favRes.isSuccessful() && favRes.body() != null && !favRes.body().isEmpty()) {
+                                kost.setFavorite(true);
+                            }
+                        } catch (Exception ignored) {}
                     }
                     mainHandler.post(() -> callback.onSuccess(kost));
+                } else if (res.isSuccessful()) {
+                    postError(callback, "Kost ini sudah tidak tersedia atau telah dihapus pemiliknya.");
                 } else {
-                    postError(callback, "Detail kost tidak ditemukan.");
+                    postError(callback, ErrorMessages.fromResponse("getKostDetail", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat detail kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getKostDetail", e));
             }
         });
     }
@@ -298,41 +322,36 @@ public class KostRepository {
         executor.execute(() -> {
             try {
                 if (userId == null || userId.isEmpty()) {
-                    postError(callback, "Silakan login terlebih dahulu untuk menyimpan favorit.");
+                    postError(callback, "Masuk terlebih dahulu untuk menyimpan favorit.");
                     return;
                 }
-
-                ensureValidAuthToken();
 
                 Map<String, String> favFilter = new HashMap<>();
                 favFilter.put("user_id", "eq." + userId);
                 favFilter.put("kost_id", "eq." + idKost);
 
-                Response<List<FavoriteDto>> checkRes = dbService.getFavorites(favFilter, "*").execute();
-                if (checkRes.isSuccessful() && checkRes.body() != null && !checkRes.body().isEmpty()) {
-                    // Sudah favorit -> Hapus
-                    Response<okhttp3.ResponseBody> delRes = dbService.removeFavorite("eq." + userId, "eq." + idKost).execute();
+                Response<List<FavoriteDto>> checkRes = dbService.getFavorites(favFilter, "id").execute();
+                if (!checkRes.isSuccessful()) {
+                    postError(callback, ErrorMessages.fromResponse("checkFavorite", checkRes));
+                    return;
+                }
+                if (checkRes.body() != null && !checkRes.body().isEmpty()) {
+                    Response<ResponseBody> delRes = dbService.removeFavorite("eq." + userId, "eq." + idKost).execute();
                     if (delRes.isSuccessful()) {
                         mainHandler.post(() -> callback.onSuccess(false));
                     } else {
-                        String err = delRes.errorBody() != null ? delRes.errorBody().string() : "";
-                        Log.e(TAG, "Gagal hapus favorit: code=" + delRes.code() + ", error=" + err);
-                        postError(callback, "Gagal menghapus favorit: " + parseErrorMessage(delRes.code(), err));
+                        postError(callback, ErrorMessages.fromResponse("removeFavorite", delRes));
                     }
                 } else {
-                    // Belum favorit -> Tambah
-                    FavoriteDto fav = new FavoriteDto(userId, idKost);
-                    Response<List<FavoriteDto>> addRes = dbService.addFavorite(fav).execute();
-                    if (addRes.isSuccessful() && addRes.body() != null) {
+                    Response<List<FavoriteDto>> addRes = dbService.addFavorite(new FavoriteDto(userId, idKost)).execute();
+                    if (addRes.isSuccessful()) {
                         mainHandler.post(() -> callback.onSuccess(true));
                     } else {
-                        String err = addRes.errorBody() != null ? addRes.errorBody().string() : "";
-                        Log.e(TAG, "Gagal simpan favorit: code=" + addRes.code() + ", error=" + err);
-                        postError(callback, "Gagal menyimpan favorit: " + parseErrorMessage(addRes.code(), err));
+                        postError(callback, ErrorMessages.fromResponse("addFavorite", addRes));
                     }
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal mengubah status favorit: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("toggleFavorite", e));
             }
         });
     }
@@ -356,29 +375,37 @@ public class KostRepository {
                 Map<String, String> favFilter = new HashMap<>();
                 favFilter.put("user_id", "eq." + userId);
                 Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "*").execute();
-                if (favRes.isSuccessful() && favRes.body() != null && !favRes.body().isEmpty()) {
-                    StringBuilder idsBuilder = new StringBuilder("(");
-                    for (int i = 0; i < favRes.body().size(); i++) {
-                        idsBuilder.append(favRes.body().get(i).kostId);
-                        if (i < favRes.body().size() - 1) idsBuilder.append(",");
-                    }
-                    idsBuilder.append(")");
-
-                    Map<String, String> kostFilter = new HashMap<>();
-                    kostFilter.put("id", "in." + idsBuilder.toString());
-                    Response<List<KostDto>> kostRes = dbService.getKosts(kostFilter, "*", "created_at.desc").execute();
-                    if (kostRes.isSuccessful() && kostRes.body() != null) {
-                        List<Kost> list = mapDtoListToKost(kostRes.body());
-                        for (Kost k : list) k.setFavorite(true);
-                        mainHandler.post(() -> callback.onSuccess(list));
-                    } else {
-                        mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
-                    }
-                } else {
+                if (!favRes.isSuccessful()) {
+                    postError(callback, ErrorMessages.fromResponse("getFavorites", favRes));
+                    return;
+                }
+                if (favRes.body() == null || favRes.body().isEmpty()) {
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    return;
+                }
+
+                List<String> ids = new ArrayList<>();
+                for (FavoriteDto f : favRes.body()) {
+                    if (f.kostId != null) ids.add(f.kostId);
+                }
+                Map<String, String> kostFilter = new HashMap<>();
+                kostFilter.put("id", "in.(" + android.text.TextUtils.join(",", ids) + ")");
+                Response<List<KostDto>> kostRes = dbService.getKosts(kostFilter, "*", "created_at.desc").execute();
+                if (kostRes.isSuccessful() && kostRes.body() != null) {
+                    List<Kost> list = mapDtoListToKost(kostRes.body());
+                    for (Kost k : list) {
+                        k.setFavorite(true);
+                        // Kost yang sudah tidak lolos moderasi tetap tampil, tapi ditandai nonaktif
+                        if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
+                            k.setStatus(StatusKost.TIDAK_AKTIF);
+                        }
+                    }
+                    mainHandler.post(() -> callback.onSuccess(list));
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("getFavoriteKosts", kostRes));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat daftar favorit: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getFavorites", e));
             }
         });
     }
@@ -414,12 +441,13 @@ public class KostRepository {
             try {
                 Response<List<KostDto>> res = dbService.getKosts(new HashMap<>(), "*", "created_at.desc").execute();
                 if (res.isSuccessful() && res.body() != null) {
-                    mainHandler.post(() -> callback.onSuccess(mapDtoListToKost(res.body())));
+                    List<Kost> list = mapDtoListToKost(res.body());
+                    mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("getAllKostForAdmin", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat list admin: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getAllKostForAdmin", e));
             }
         });
     }
@@ -432,12 +460,13 @@ public class KostRepository {
 
                 Response<List<KostDto>> res = dbService.getKosts(filters, "*", "created_at.desc").execute();
                 if (res.isSuccessful() && res.body() != null) {
-                    mainHandler.post(() -> callback.onSuccess(mapDtoListToKost(res.body())));
+                    List<Kost> list = mapDtoListToKost(res.body());
+                    mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("getKostByPemilik", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat kost milik Anda: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getKostByPemilik", e));
             }
         });
     }
@@ -446,266 +475,207 @@ public class KostRepository {
         getKostByPemilik(sessionManager.getUserUid(), callback);
     }
 
-    public void saveKost(Kost kost, List<Integer> fasilitasIds, DataCallback<Long> callback) {
-        saveKostWithFotos(kost, fasilitasIds, null, callback);
-    }
-
-    public void saveKostWithFotos(Kost kost, List<Integer> fasilitasIds, List<FotoKost> fotos, DataCallback<Long> callback) {
+    public void saveKostWithFotos(Kost kost, List<Integer> fasilitasIds, List<FotoKost> fotos, DataCallback<SaveResult> callback) {
         executor.execute(() -> {
             try {
-                ensureValidAuthToken();
-
                 if (kost.getOwnerId() == null || kost.getOwnerId().isEmpty()) {
                     kost.setOwnerId(sessionManager.getUserUid());
                 }
 
-                // Upload foto-foto baru jika ada
-                List<String> uploadedUrls = uploadFotos(fotos);
-                if (!uploadedUrls.isEmpty()) {
-                    kost.setImageUrls(uploadedUrls);
-                    String selectedThumb = uploadedUrls.get(0);
-                    if (fotos != null) {
-                        for (int i = 0; i < fotos.size() && i < uploadedUrls.size(); i++) {
-                            if (fotos.get(i).isThumbnail()) {
-                                selectedThumb = uploadedUrls.get(i);
-                                break;
-                            }
-                        }
-                    }
-                    kost.setThumbnailUrl(selectedThumb);
+                UploadResult upload = uploadFotos(fotos);
+                if (fotos != null && !fotos.isEmpty() && upload.urls.isEmpty()) {
+                    postError(callback, "Semua foto gagal diunggah. Periksa koneksi lalu coba lagi.");
+                    return;
                 }
-
-                // Map fasilitas integer IDs ke nama fasilitas
-                if (fasilitasIds != null && !fasilitasIds.isEmpty()) {
-                    List<String> fNames = new ArrayList<>();
-                    for (int id : fasilitasIds) {
-                        fNames.add(getFasilitasNameById(id));
-                    }
-                    kost.setFasilitas(fNames);
-                }
+                applyUploadedFotos(kost, fotos, upload);
+                applyFasilitas(kost, fasilitasIds);
 
                 KostDto dto = mapKostToDto(kost);
-                if (dto.ownerId == null || dto.ownerId.isEmpty()) {
-                    dto.ownerId = sessionManager.getUserUid();
-                }
-
                 Response<List<KostDto>> res = dbService.insertKost(dto).execute();
-                if (!res.isSuccessful() && (res.code() == 401 || res.code() == 403)) {
-                    String refreshToken = sessionManager.getRefreshToken();
-                    if (refreshToken != null && !refreshToken.isEmpty()) {
-                        try {
-                            Response<AuthResponse> refreshRes = authService.refreshToken(new RefreshRequest(refreshToken)).execute();
-                            if (refreshRes.isSuccessful() && refreshRes.body() != null) {
-                                AuthResponse authBody = refreshRes.body();
-                                sessionManager.saveTokens(authBody.accessToken, authBody.refreshToken, authBody.expiresIn);
-                                SupabaseClient.getInstance().setAccessToken(authBody.accessToken);
-                                res = dbService.insertKost(dto).execute();
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                }
-
                 if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(1L));
+                    KostDto created = res.body().get(0);
+                    boolean review = !KostVerificationStatus.APPROVED.name().equalsIgnoreCase(created.verificationStatus);
+                    SaveResult result = new SaveResult(created.id, upload.failed, review);
+                    mainHandler.post(() -> callback.onSuccess(result));
                 } else {
-                    String errDetail = "";
-                    if (res.errorBody() != null) {
-                        try {
-                            errDetail = res.errorBody().string();
-                        } catch (Exception ignored) {}
-                    }
-                    Log.e(TAG, "Gagal simpan kost: code=" + res.code() + ", error=" + errDetail);
-                    String userMsg = "Gagal menyimpan data kost di Supabase";
-                    if (errDetail.contains("42501")) {
-                        userMsg = "Izin database ditolak (42501): Kebijakan Row-Level Security (RLS) di Supabase membatasi penambahan kost. Jalankan script SQL perbaikan di Supabase Dashboard.";
-                    } else if (res.code() == 401 || res.code() == 403) {
-                        userMsg = "Akses ditolak (HTTP " + res.code() + "). Sesi akun Anda tidak memiliki izin. Silakan coba login ulang.";
-                    } else if (!errDetail.isEmpty() && errDetail.contains("\"message\"")) {
-                        try {
-                            JSONObject obj = new JSONObject(errDetail);
-                            userMsg = obj.optString("message", userMsg);
-                        } catch (Exception ignored) {}
-                    }
-                    postError(callback, userMsg);
+                    postError(callback, ErrorMessages.fromResponse("insertKost", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Kesalahan simpan kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("saveKost", e));
             }
         });
     }
 
-    public void updateKost(Kost kost, List<Integer> fasilitasIds, DataCallback<Boolean> callback) {
-        updateKostWithFotos(kost, fasilitasIds, null, callback);
-    }
-
-    public void updateKostWithFotos(Kost kost, List<Integer> fasilitasIds, List<FotoKost> fotos, DataCallback<Boolean> callback) {
+    public void updateKostWithFotos(Kost kost, List<Integer> fasilitasIds, List<FotoKost> fotos, DataCallback<SaveResult> callback) {
         executor.execute(() -> {
             try {
-                ensureValidAuthToken();
-
-                List<String> uploadedUrls = uploadFotos(fotos);
-                if (!uploadedUrls.isEmpty()) {
-                    kost.setImageUrls(uploadedUrls);
-                    String selectedThumb = uploadedUrls.get(0);
-                    if (fotos != null) {
-                        for (int i = 0; i < fotos.size() && i < uploadedUrls.size(); i++) {
-                            if (fotos.get(i).isThumbnail()) {
-                                selectedThumb = uploadedUrls.get(i);
-                                break;
-                            }
-                        }
-                    }
-                    kost.setThumbnailUrl(selectedThumb);
+                UploadResult upload = uploadFotos(fotos);
+                if (fotos != null && !fotos.isEmpty() && upload.urls.isEmpty()) {
+                    postError(callback, "Semua foto gagal diunggah. Periksa koneksi lalu coba lagi.");
+                    return;
                 }
-
-                if (fasilitasIds != null && !fasilitasIds.isEmpty()) {
-                    List<String> fNames = new ArrayList<>();
-                    for (int id : fasilitasIds) {
-                        fNames.add(getFasilitasNameById(id));
-                    }
-                    kost.setFasilitas(fNames);
-                }
+                applyUploadedFotos(kost, fotos, upload);
+                applyFasilitas(kost, fasilitasIds);
 
                 KostUpdateDto dto = mapKostToUpdateDto(kost);
                 Response<List<KostDto>> res = dbService.updateKost("eq." + kost.getId(), dto).execute();
-                if (!res.isSuccessful() && (res.code() == 401 || res.code() == 403)) {
-                    String refreshToken = sessionManager.getRefreshToken();
-                    if (refreshToken != null && !refreshToken.isEmpty()) {
-                        try {
-                            Response<AuthResponse> refreshRes = authService.refreshToken(new RefreshRequest(refreshToken)).execute();
-                            if (refreshRes.isSuccessful() && refreshRes.body() != null) {
-                                AuthResponse authBody = refreshRes.body();
-                                sessionManager.saveTokens(authBody.accessToken, authBody.refreshToken, authBody.expiresIn);
-                                SupabaseClient.getInstance().setAccessToken(authBody.accessToken);
-                                res = dbService.updateKost("eq." + kost.getId(), dto).execute();
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                }
-
-                if (res.isSuccessful()) {
-                    mainHandler.post(() -> callback.onSuccess(true));
+                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
+                    KostDto updated = res.body().get(0);
+                    boolean review = !KostVerificationStatus.APPROVED.name().equalsIgnoreCase(updated.verificationStatus);
+                    SaveResult result = new SaveResult(kost.getId(), upload.failed, review);
+                    mainHandler.post(() -> callback.onSuccess(result));
+                } else if (res.isSuccessful()) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
                 } else {
-                    String errDetail = "";
-                    if (res.errorBody() != null) {
-                        try {
-                            errDetail = res.errorBody().string();
-                        } catch (Exception ignored) {}
-                    }
-                    Log.e(TAG, "Gagal update kost: code=" + res.code() + ", error=" + errDetail);
-                    String userMsg = "Gagal mengupdate data kost di server";
-                    if (errDetail.contains("42501")) {
-                        userMsg = "Izin database ditolak (42501): Kebijakan Row-Level Security (RLS) di Supabase membatasi perubahan kost. Jalankan script SQL perbaikan di Supabase Dashboard.";
-                    } else if (res.code() == 401 || res.code() == 403) {
-                        userMsg = "Akses ditolak (HTTP " + res.code() + "). Sesi akun Anda tidak memiliki izin. Silakan coba login ulang.";
-                    } else if (!errDetail.isEmpty() && errDetail.contains("\"message\"")) {
-                        try {
-                            JSONObject obj = new JSONObject(errDetail);
-                            userMsg = obj.optString("message", userMsg);
-                        } catch (Exception ignored) {}
-                    }
-                    postError(callback, userMsg);
+                    postError(callback, ErrorMessages.fromResponse("updateKost", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Kesalahan update kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("updateKost", e));
             }
         });
     }
 
-    private List<String> uploadFotos(List<FotoKost> fotos) {
-        List<String> urls = new ArrayList<>();
-        if (fotos == null || fotos.isEmpty()) return urls;
+    private void applyFasilitas(Kost kost, List<Integer> fasilitasIds) {
+        if (fasilitasIds == null) return;
+        List<String> names = new ArrayList<>();
+        for (int id : fasilitasIds) {
+            String name = Fasilitas.nameForId(id);
+            if (name != null) names.add(name);
+        }
+        kost.setFasilitas(names);
+    }
 
-        for (FotoKost f : fotos) {
-            String path = f.getPathFile();
+    private void applyUploadedFotos(Kost kost, List<FotoKost> fotos, UploadResult upload) {
+        if (upload.urls.isEmpty()) return;
+        kost.setImageUrls(new ArrayList<>(upload.urls));
+        String thumb = upload.urls.get(0);
+        if (fotos != null) {
+            for (int i = 0; i < fotos.size(); i++) {
+                String url = upload.urlByIndex.get(i);
+                if (url != null && fotos.get(i).isThumbnail()) {
+                    thumb = url;
+                    break;
+                }
+            }
+        }
+        kost.setThumbnailUrl(thumb);
+    }
+
+    private static class UploadResult {
+        final List<String> urls = new ArrayList<>();
+        final Map<Integer, String> urlByIndex = new HashMap<>();
+        int failed = 0;
+    }
+
+    /**
+     * Unggah foto baru (URI lokal) dan pertahankan foto lama (URL http).
+     * Foto dikecilkan ke sisi terpanjang {@link #MAX_PHOTO_EDGE_PX} dan disimpan di
+     * folder milik user agar sesuai kebijakan storage per pengguna.
+     */
+    private UploadResult uploadFotos(List<FotoKost> fotos) {
+        UploadResult result = new UploadResult();
+        if (fotos == null || fotos.isEmpty()) return result;
+
+        String folder = sessionManager.getUserUid();
+        if (folder == null || folder.isEmpty()) folder = "anon";
+
+        for (int i = 0; i < fotos.size(); i++) {
+            String path = fotos.get(i).getPathFile();
             if (path == null || path.trim().isEmpty()) continue;
 
             if (path.startsWith("http://") || path.startsWith("https://")) {
-                urls.add(path);
+                result.urls.add(path);
+                result.urlByIndex.put(i, path);
                 continue;
             }
 
-            byte[] fileBytes = null;
-            String mimeType = "image/jpeg";
-            String ext = ".jpg";
-
             try {
-                if (path.startsWith("content://") && appContext != null) {
-                    Uri contentUri = Uri.parse(path);
-                    String resolvedType = appContext.getContentResolver().getType(contentUri);
-                    if (resolvedType != null) {
-                        mimeType = resolvedType;
-                        if (mimeType.contains("png")) ext = ".png";
-                        else if (mimeType.contains("webp")) ext = ".webp";
-                    }
-                    try (InputStream is = appContext.getContentResolver().openInputStream(contentUri);
-                         ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                        if (is != null) {
-                            byte[] data = new byte[8192];
-                            int nRead;
-                            while ((nRead = is.read(data, 0, data.length)) != -1) {
-                                buffer.write(data, 0, nRead);
-                            }
-                            buffer.flush();
-                            fileBytes = buffer.toByteArray();
-                        }
-                    }
-                } else {
-                    File file = new File(path);
-                    if (file.exists() && file.isFile()) {
-                        if (path.contains(".")) {
-                            ext = path.substring(path.lastIndexOf(".")).toLowerCase(Locale.ROOT);
-                            if (ext.equals(".png")) mimeType = "image/png";
-                            else if (ext.equals(".webp")) mimeType = "image/webp";
-                        }
-                        try (FileInputStream fis = new FileInputStream(file);
-                             ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
-                            byte[] data = new byte[8192];
-                            int nRead;
-                            while ((nRead = fis.read(data, 0, data.length)) != -1) {
-                                buffer.write(data, 0, nRead);
-                            }
-                            buffer.flush();
-                            fileBytes = buffer.toByteArray();
-                        }
-                    }
+                byte[] bytes = readCompressedJpeg(path);
+                if (bytes == null) {
+                    result.failed++;
+                    continue;
                 }
-
-                if (fileBytes != null && fileBytes.length > 0) {
-                    String remoteName = UUID.randomUUID().toString() + ext;
-                    RequestBody requestBody = RequestBody.create(MediaType.parse(mimeType), fileBytes);
-
-                    Response<StorageUploadResponse> uploadRes = storageService.uploadFileBinary("kost-images", remoteName, mimeType, requestBody).execute();
-                    if (uploadRes.isSuccessful()) {
-                        String publicUrl = SupabaseClient.getStoragePublicUrl("kost-images", remoteName);
-                        urls.add(publicUrl);
-                        Log.d(TAG, "Berhasil upload foto kost ke Supabase Storage: " + publicUrl);
-                    } else {
-                        String errStr = uploadRes.errorBody() != null ? uploadRes.errorBody().string() : "";
-                        Log.e(TAG, "Gagal upload foto ke Supabase Storage: code=" + uploadRes.code() + ", error=" + errStr);
-                    }
+                String remoteName = folder + "/" + UUID.randomUUID() + ".jpg";
+                RequestBody body = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
+                Response<StorageUploadResponse> uploadRes = storageService.uploadFileBinary(BUCKET, remoteName, "image/jpeg", body).execute();
+                if (uploadRes.isSuccessful()) {
+                    String url = SupabaseClient.getStoragePublicUrl(BUCKET, remoteName);
+                    result.urls.add(url);
+                    result.urlByIndex.put(i, url);
                 } else {
-                    Log.w(TAG, "File foto tidak dapat dibaca dari path: " + path);
+                    ErrorMessages.fromResponse("uploadFoto", uploadRes);
+                    result.failed++;
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Exception upload foto kost: " + e.getMessage(), e);
+                ErrorMessages.fromException("uploadFoto", e);
+                result.failed++;
             }
         }
-        return urls;
+        return result;
     }
 
-    private String parseErrorMessage(int code, String errDetail) {
-        if (errDetail != null && errDetail.contains("42501")) {
-            return "Izin database ditolak (42501): Kebijakan Row-Level Security (RLS) di Supabase membatasi aksi ini. Jalankan script SQL perbaikan di Supabase Dashboard.";
-        } else if (code == 401 || code == 403) {
-            return "Akses ditolak (HTTP " + code + "). Sesi akun Anda telah berakhir. Silakan login kembali.";
-        } else if (errDetail != null && errDetail.contains("\"message\"")) {
-            try {
-                JSONObject obj = new JSONObject(errDetail);
-                return obj.optString("message", "Terjadi kesalahan server (HTTP " + code + ")");
+    /** Baca foto dari URI/file, perbaiki rotasi EXIF, perkecil, lalu kompres ke JPEG. */
+    private byte[] readCompressedJpeg(String path) {
+        if (appContext == null) return null;
+        try {
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            try (InputStream is = openStream(path)) {
+                if (is == null) return null;
+                BitmapFactory.decodeStream(is, null, bounds);
+            }
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+            int sample = 1;
+            int longest = Math.max(bounds.outWidth, bounds.outHeight);
+            while (longest / (sample * 2) >= MAX_PHOTO_EDGE_PX) sample *= 2;
+
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inSampleSize = sample;
+            Bitmap bitmap;
+            try (InputStream is = openStream(path)) {
+                bitmap = BitmapFactory.decodeStream(is, null, opts);
+            }
+            if (bitmap == null) return null;
+
+            int rotation = 0;
+            try (InputStream is = openStream(path)) {
+                if (is != null) {
+                    int orientation = new ExifInterface(is).getAttributeInt(
+                            ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                    if (orientation == ExifInterface.ORIENTATION_ROTATE_90) rotation = 90;
+                    else if (orientation == ExifInterface.ORIENTATION_ROTATE_180) rotation = 180;
+                    else if (orientation == ExifInterface.ORIENTATION_ROTATE_270) rotation = 270;
+                }
             } catch (Exception ignored) {}
+
+            float scale = Math.min(1f, (float) MAX_PHOTO_EDGE_PX / Math.max(bitmap.getWidth(), bitmap.getHeight()));
+            if (scale < 1f || rotation != 0) {
+                Matrix m = new Matrix();
+                m.postScale(scale, scale);
+                m.postRotate(rotation);
+                Bitmap transformed = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
+                if (transformed != bitmap) bitmap.recycle();
+                bitmap = transformed;
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, PHOTO_JPEG_QUALITY, out);
+            bitmap.recycle();
+            return out.toByteArray();
+        } catch (OutOfMemoryError | Exception e) {
+            Log.e(TAG, "Gagal memproses foto: " + path, e);
+            return null;
         }
-        return "Terjadi kesalahan server (HTTP " + code + ")";
+    }
+
+    private InputStream openStream(String path) throws Exception {
+        if (path.startsWith("content://")) {
+            return appContext.getContentResolver().openInputStream(Uri.parse(path));
+        }
+        String filePath = path.startsWith("file://") ? Uri.parse(path).getPath() : path;
+        File file = new File(filePath);
+        return file.exists() ? new FileInputStream(file) : null;
     }
 
     public void updateStatus(String idKost, StatusKost status, DataCallback<Boolean> callback) {
@@ -718,10 +688,50 @@ public class KostRepository {
                 if (res.isSuccessful()) {
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else {
-                    postError(callback, "Gagal mengubah status kost");
+                    postError(callback, ErrorMessages.fromResponse("updateStatus", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Kesalahan update status: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("updateStatus", e));
+            }
+        });
+    }
+
+    /**
+     * Ubah jumlah kamar kosong (dan status Tersedia/Penuh) tanpa memicu review ulang:
+     * trigger server hanya me-review ulang perubahan isi listing.
+     */
+    public void updateRoomAvailability(String idKost, int kamarTersedia, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                KostUpdateDto dto = new KostUpdateDto();
+                dto.kamarTersedia = Math.max(0, kamarTersedia);
+                dto.status = kamarTersedia > 0 ? StatusKost.TERSEDIA.name() : StatusKost.PENUH.name();
+                Response<List<KostDto>> res = dbService.updateKost("eq." + idKost, dto).execute();
+                if (res.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("updateRoomAvailability", res));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("updateRoomAvailability", e));
+            }
+        });
+    }
+
+    /** Ajukan ulang kost REJECTED/REVISION_REQUIRED ke antrean (fungsi SQL resubmit_kost). */
+    public void resubmit(String idKost, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                Map<String, Object> p = new HashMap<>();
+                p.put("target_id", idKost);
+                Response<ResponseBody> res = dbService.rpc("resubmit_kost", p).execute();
+                if (res.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("resubmit", res));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("resubmit", e));
             }
         });
     }
@@ -738,12 +748,13 @@ public class KostRepository {
 
                 Response<List<KostDto>> res = dbService.getKosts(filters, "*", "created_at.desc").execute();
                 if (res.isSuccessful() && res.body() != null) {
-                    mainHandler.post(() -> callback.onSuccess(mapDtoListToKost(res.body())));
+                    List<Kost> list = mapDtoListToKost(res.body());
+                    mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("getPendingKosts", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat antrean verifikasi kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getPendingKosts", e));
             }
         });
     }
@@ -754,16 +765,16 @@ public class KostRepository {
             try {
                 KostUpdateDto dto = new KostUpdateDto();
                 dto.verificationStatus = status.name();
-                if (catatanRevisi != null) dto.catatanRevisi = catatanRevisi;
+                dto.catatanRevisi = catatanRevisi != null ? catatanRevisi : "";
 
                 Response<List<KostDto>> res = dbService.updateKost("eq." + idKost, dto).execute();
                 if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    // Log ke activity_logs
                     ActivityLogDto log = new ActivityLogDto(
                             adminId,
-                            adminName != null ? adminName : "Admin",
+                            adminName != null ? adminName : "Developer",
                             "VERIFIKASI_KOST",
-                            "Kost #" + idKost + " diubah status verifikasi menjadi " + status.getDisplayName() + (catatanRevisi != null && !catatanRevisi.isEmpty() ? " (" + catatanRevisi + ")" : ""),
+                            "Kost \"" + res.body().get(0).namaKost + "\" diubah menjadi " + status.getDisplayName()
+                                    + (catatanRevisi != null && !catatanRevisi.isEmpty() ? " (" + catatanRevisi + ")" : ""),
                             "KOST",
                             idKost
                     );
@@ -772,11 +783,13 @@ public class KostRepository {
                     } catch (Exception ignored) {}
 
                     mainHandler.post(() -> callback.onSuccess(true));
+                } else if (res.isSuccessful()) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
                 } else {
-                    postError(callback, "Gagal memperbarui verifikasi kost");
+                    postError(callback, ErrorMessages.fromResponse("updateKostVerification", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Kesalahan verifikasi kost: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("updateKostVerification", e));
             }
         });
     }
@@ -798,21 +811,23 @@ public class KostRepository {
                     int tersedia = 0;
                     int penuh = 0;
                     int pending = 0;
+                    int approved = 0;
                     for (KostDto k : res.body()) {
                         if ("TERSEDIA".equalsIgnoreCase(k.status)) tersedia++;
                         if ("PENUH".equalsIgnoreCase(k.status)) penuh++;
                         if ("PENDING".equalsIgnoreCase(k.verificationStatus) || "REVISION_REQUIRED".equalsIgnoreCase(k.verificationStatus)) pending++;
+                        if ("APPROVED".equalsIgnoreCase(k.verificationStatus)) approved++;
                     }
-                    AdminStats stats = new AdminStats(total, tersedia, penuh, pending, getMasterFasilitas().size());
+                    AdminStats stats = new AdminStats(total, tersedia, penuh, pending, Fasilitas.getMaster().size());
                     stats.kostList.addAll(res.body());
                     stats.kostAktif = tersedia;
-                    stats.kostTerverifikasi = total - pending;
+                    stats.kostTerverifikasi = approved;
                     mainHandler.post(() -> callback.onSuccess(stats));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new AdminStats(0, 0, 0, 0, 0)));
+                    postError(callback, ErrorMessages.fromResponse("getAdminStats", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat statistik admin: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getAdminStats", e));
             }
         });
     }
@@ -831,47 +846,52 @@ public class KostRepository {
                     int revisi = 0;
                     int tersedia = 0;
                     int terisi = 0;
+                    int tanpaData = 0;
                     for (KostDto k : res.body()) {
                         if ("APPROVED".equalsIgnoreCase(k.verificationStatus)) {
-                            if ("TERSEDIA".equalsIgnoreCase(k.status)) aktif++;
+                            if (!"TIDAK_AKTIF".equalsIgnoreCase(k.status)) aktif++;
                         } else if ("PENDING".equalsIgnoreCase(k.verificationStatus)) {
                             pending++;
                         } else if ("REVISION_REQUIRED".equalsIgnoreCase(k.verificationStatus)) {
                             revisi++;
                         }
-                        if (k.kamarTersedia != null) tersedia += k.kamarTersedia;
-                        if (k.totalKamar != null && k.kamarTersedia != null) {
+                        if (k.totalKamar != null && k.kamarTersedia != null && k.totalKamar > 0) {
+                            tersedia += k.kamarTersedia;
                             terisi += Math.max(0, k.totalKamar - k.kamarTersedia);
+                        } else {
+                            tanpaData++;
                         }
                     }
                     PemilikStats stats = new PemilikStats(total, aktif, pending, revisi, tersedia, terisi);
+                    stats.kostTanpaDataKamar = tanpaData;
                     stats.kostList.addAll(res.body());
-
-                    if (!res.body().isEmpty()) {
-                        StringBuilder inFilter = new StringBuilder("(");
-                        for (int i = 0; i < res.body().size(); i++) {
-                            inFilter.append(res.body().get(i).id);
-                            if (i < res.body().size() - 1) inFilter.append(",");
-                        }
-                        inFilter.append(")");
-                        try {
-                            Map<String, String> favFilter = new HashMap<>();
-                            favFilter.put("kost_id", "in." + inFilter.toString());
-                            Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "id").execute();
-                            if (favRes.isSuccessful() && favRes.body() != null) {
-                                stats.totalFavorit = favRes.body().size();
-                            }
-                        } catch (Exception ignored) {}
-                    }
+                    stats.totalFavorit = fetchOwnerFavoriteCount();
 
                     mainHandler.post(() -> callback.onSuccess(stats));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new PemilikStats(0, 0, 0, 0, 0, 0)));
+                    postError(callback, ErrorMessages.fromResponse("getPemilikStats", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat statistik pemilik: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("getPemilikStats", e));
             }
         });
+    }
+
+    /**
+     * Jumlah pencari yang memfavoritkan kost milik pemilik ini. Tabel favorites hanya bisa
+     * dibaca pemiliknya sendiri, jadi angka ini diambil lewat fungsi SQL owner_favorite_count.
+     */
+    private int fetchOwnerFavoriteCount() {
+        try {
+            Response<ResponseBody> res = dbService.rpc("owner_favorite_count", new HashMap<>()).execute();
+            if (res.isSuccessful() && res.body() != null) {
+                String raw = res.body().string().trim();
+                return Integer.parseInt(raw.replaceAll("[^0-9]", "").isEmpty() ? "0" : raw.replaceAll("[^0-9]", ""));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "owner_favorite_count belum tersedia: " + e.getMessage());
+        }
+        return 0;
     }
 
     public void getPemilikStats(int legacyId, DataCallback<PemilikStats> callback) {
@@ -891,41 +911,12 @@ public class KostRepository {
     }
 
     public static List<Fasilitas> getMasterFasilitas() {
-        List<Fasilitas> list = new ArrayList<>();
-        list.add(new Fasilitas(1, "WiFi Cepat"));
-        list.add(new Fasilitas(2, "Parkir Motor"));
-        list.add(new Fasilitas(3, "Parkir Mobil"));
-        list.add(new Fasilitas(4, "AC Dingin"));
-        list.add(new Fasilitas(5, "Kamar Mandi Dalam"));
-        list.add(new Fasilitas(6, "Kasur Springbed"));
-        list.add(new Fasilitas(7, "Lemari Pakaian"));
-        list.add(new Fasilitas(8, "Meja & Kursi Belajar"));
-        list.add(new Fasilitas(9, "Dapur Bersama"));
-        list.add(new Fasilitas(10, "Listrik Termasuk"));
-        list.add(new Fasilitas(11, "Akses 24 Jam"));
-        list.add(new Fasilitas(12, "CCTV & Keamanan"));
-        return list;
-    }
-
-    private static String getFasilitasNameById(int id) {
-        for (Fasilitas f : getMasterFasilitas()) {
-            if (f.getIdFasilitas() == id) return f.getNamaFasilitas();
-        }
-        return "Fasilitas #" + id;
+        return Fasilitas.getMaster();
     }
 
     public static List<Wilayah> getMasterWilayah() {
         List<Wilayah> list = new ArrayList<>();
         list.add(new Wilayah(1, "Bukit Raya", "Simpang Tiga", "Pekanbaru"));
-        list.add(new Wilayah(2, "Bukit Raya", "Tangerang Selatan", "Pekanbaru"));
-        list.add(new Wilayah(3, "Tampan / Binawidya", "Tuah Karya", "Pekanbaru"));
-        list.add(new Wilayah(4, "Tampan / Binawidya", "Simpang Baru", "Pekanbaru"));
-        list.add(new Wilayah(5, "Marpoyan Damai", "Sidomulyo Timur", "Pekanbaru"));
-        list.add(new Wilayah(6, "Marpoyan Damai", "Wonorejo", "Pekanbaru"));
-        list.add(new Wilayah(7, "Sukajadi", "Kampung Melayu", "Pekanbaru"));
-        list.add(new Wilayah(8, "Payung Sekaki", "Labuh Baru", "Pekanbaru"));
-        list.add(new Wilayah(9, "Tenayan Raya", "Rejosari", "Pekanbaru"));
-        list.add(new Wilayah(10, "Rumbai", "Limbungan", "Pekanbaru"));
         return list;
     }
 
@@ -964,11 +955,12 @@ public class KostRepository {
         k.setKecamatan(dto.kecamatan);
         k.setKelurahan(dto.kelurahan);
         k.setUkuranKamar(dto.ukuranKamar);
-        k.setTotalKamar(dto.totalKamar != null ? dto.totalKamar : 10);
-        k.setKamarTersedia(dto.kamarTersedia != null ? dto.kamarTersedia : 3);
-        // Sanitasi thumbnail dan image URLs agar URI lokal content:// atau file:// tidak merusak Glide
+        // Jangan mengarang jumlah kamar: null berarti pemilik belum mengisi
+        k.setTotalKamar(dto.totalKamar != null ? dto.totalKamar : 0);
+        k.setKamarTersedia(dto.kamarTersedia != null ? dto.kamarTersedia : Kost.ROOMS_UNKNOWN);
+        // URI lokal (content:// atau file://) tidak bisa dibuka di perangkat lain
         String validThumb = dto.thumbnailUrl;
-        if (validThumb != null && (validThumb.startsWith("content://") || validThumb.startsWith("file://"))) {
+        if (validThumb != null && !(validThumb.startsWith("http://") || validThumb.startsWith("https://"))) {
             validThumb = null;
         }
         List<String> validImages = new ArrayList<>();
@@ -985,6 +977,12 @@ public class KostRepository {
         k.setThumbnailUrl(validThumb);
         k.setImageUrls(validImages);
         k.setFasilitas(dto.fasilitas);
+        k.setDeposit(dto.deposit);
+        k.setMinimalSewaBulan(dto.minimalSewaBulan);
+        k.setBiayaTambahan(dto.biayaTambahan);
+        k.setAturan(dto.aturan);
+        k.setRatingAvg(dto.ratingAvg != null ? dto.ratingAvg : 0);
+        k.setRatingCount(dto.ratingCount != null ? dto.ratingCount : 0);
         k.setCreatedAt(dto.createdAt);
         k.setUpdatedAt(dto.updatedAt);
         return k;
@@ -1003,6 +1001,7 @@ public class KostRepository {
         dto.latitude = kost.getLatitude();
         dto.longitude = kost.getLongitude();
         dto.status = kost.getStatus() != null ? kost.getStatus().name() : "TERSEDIA";
+        // Status verifikasi final ditentukan trigger di server; nilai ini hanya permintaan
         dto.verificationStatus = kost.getVerificationStatus() != null ? kost.getVerificationStatus().name() : "PENDING";
         dto.catatanRevisi = kost.getCatatanRevisi();
         dto.provinsi = kost.getProvinsi();
@@ -1011,10 +1010,14 @@ public class KostRepository {
         dto.kelurahan = kost.getKelurahan();
         dto.ukuranKamar = kost.getUkuranKamar();
         dto.totalKamar = kost.getTotalKamar();
-        dto.kamarTersedia = kost.getKamarTersedia();
+        dto.kamarTersedia = kost.hasRoomInfo() ? kost.getKamarTersedia() : null;
         dto.thumbnailUrl = kost.getThumbnailUrl();
         dto.imageUrls = kost.getImageUrls();
         dto.fasilitas = kost.getFasilitas();
+        dto.deposit = kost.getDeposit();
+        dto.minimalSewaBulan = kost.getMinimalSewaBulan();
+        dto.biayaTambahan = kost.getBiayaTambahan();
+        dto.aturan = kost.getAturan().isEmpty() ? null : kost.getAturan();
         return dto;
     }
 
@@ -1038,10 +1041,14 @@ public class KostRepository {
         dto.kelurahan = kost.getKelurahan();
         dto.ukuranKamar = kost.getUkuranKamar();
         dto.totalKamar = kost.getTotalKamar();
-        dto.kamarTersedia = kost.getKamarTersedia();
+        dto.kamarTersedia = kost.hasRoomInfo() ? kost.getKamarTersedia() : null;
         dto.thumbnailUrl = kost.getThumbnailUrl();
         dto.imageUrls = kost.getImageUrls();
         dto.fasilitas = kost.getFasilitas();
+        dto.deposit = kost.getDeposit();
+        dto.minimalSewaBulan = kost.getMinimalSewaBulan();
+        dto.biayaTambahan = kost.getBiayaTambahan();
+        dto.aturan = kost.getAturan(); // daftar kosong = hapus semua aturan
         return dto;
     }
 

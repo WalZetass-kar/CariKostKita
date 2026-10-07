@@ -32,7 +32,7 @@
     <string name="empty_kost_title">Kost Tidak Ditemukan</string>
     <string name="empty_kost_desc">Coba sesuaikan kata kunci pencarian atau ubah kriteria filter Anda.</string>
     <string name="empty_favorite_title">Belum Ada Kost Favorit</string>
-    <string name="empty_favorite_desc">Simpan kost yang Anda minati dengan menekan ikon hati pada kartu properti.</string>
+    <string name="empty_favorite_desc">Ketuk ikon hati di kartu kost untuk menyimpannya di sini, supaya mudah dibandingkan nanti.</string>
     <string name="empty_chat_title">Belum Ada Percakapan</string>
     <string name="empty_chat_desc">Percakapan dengan pemilik kost akan muncul di sini setelah Anda memulai pesan.</string>
     <string name="empty_map_title">Tidak Ada Kost di Area Ini</string>
@@ -43,4 +43,9 @@
     <string name="admin_tambah_kost">Tambah Kost</string>
     <string name="admin_add_kost">Tambah Kost</string>
     <string name="admin_kelola_fasilitas">Kelola Fasilitas</string>
+    <!-- Ganti dengan alamat email dukungan yang benar-benar aktif sebelum rilis -->
+    <string name="support_email">support@carikostkita.com</string>
+    <!-- URL publik Kebijakan Privasi & Syarat Layanan (wajib untuk Play Store). Kosong = tampilkan ringkasan di aplikasi -->
+    <string name="privacy_policy_url"></string>
+    <string name="terms_url"></string>
 </resources>

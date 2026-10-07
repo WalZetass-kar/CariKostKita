@@ -52,6 +52,14 @@ public class ChatBubbleAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         notifyDataSetChanged();
     }
 
+    public void removeMessage(ChatMessage message) {
+        int index = messageList.indexOf(message);
+        if (index >= 0) {
+            messageList.remove(index);
+            notifyItemRemoved(index);
+        }
+    }
+
     public void addMessage(ChatMessage message) {
         this.messageList.add(message);
         notifyItemInserted(messageList.size() - 1);

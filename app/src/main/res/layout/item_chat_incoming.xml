@@ -37,7 +37,7 @@
             android:fontFamily="sans-serif"
             android:text="14:30"
             android:textColor="@color/text_muted"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
 </LinearLayout>

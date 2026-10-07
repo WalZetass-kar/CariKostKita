@@ -17,6 +17,7 @@ import java.util.List;
 public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.ViewHolder> {
 
     public interface OnUserActionListener {
+        default void onChangeRole(User user, int position) {}
         void onToggleStatus(User user, int position);
         void onDeleteUser(User user, int position);
     }
@@ -51,8 +52,12 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.View
         holder.tvPhone.setText(user.getNoHp() != null && !user.getNoHp().isEmpty() ? user.getNoHp() : "No HP tidak diisi");
 
         // Role Badge
-        if (user.getRole() == Role.ADMIN) {
-            holder.tvRole.setText("Developer");
+        if (user.getRole() == Role.MODERATOR) {
+            holder.tvRole.setText("Moderator");
+            holder.tvRole.setBackgroundResource(R.drawable.bg_badge_putri);
+            holder.tvRole.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.badge_putri));
+        } else if (user.getRole() == Role.ADMIN) {
+            holder.tvRole.setText("Super Admin");
             holder.tvRole.setBackgroundResource(R.drawable.bg_badge_putra);
             holder.tvRole.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.badge_putra));
         } else if (user.getRole() == Role.PEMILIK_KOST) {
@@ -82,8 +87,13 @@ public class AdminUserAdapter extends RecyclerView.Adapter<AdminUserAdapter.View
             holder.btnToggleStatus.setStrokeColorResource(R.color.primary);
         }
 
-        // Prevent suspending/deleting developer accounts
-        if (user.getRole() == Role.ADMIN) {
+        // Peran: ketuk badge untuk mengubah (hanya Super Admin; dicek lagi di server)
+        holder.tvRole.setOnClickListener(v -> {
+            if (listener != null) listener.onChangeRole(user, position);
+        });
+
+        // Akun staf tidak bisa ditangguhkan/dihapus dari daftar ini
+        if (user.getRole() != null && user.getRole().isDeveloper()) {
             holder.btnToggleStatus.setVisibility(View.GONE);
             holder.btnDeleteUser.setVisibility(View.GONE);
         } else {

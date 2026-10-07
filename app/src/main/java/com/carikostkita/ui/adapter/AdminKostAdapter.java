@@ -18,6 +18,8 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
     public interface OnAdminKostClickListener {
         void onEditClick(Kost kost);
         void onToggleStatusClick(Kost kost, int position);
+        /** Kost ditolak / perlu revisi diajukan ulang ke antrean moderasi. */
+        default void onResubmitClick(Kost kost, int position) {}
     }
 
     private final List<Kost> kostList;
@@ -120,7 +122,13 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
                     tvVerifStatus.setText("Ditolak");
                     tvVerifStatus.setBackgroundResource(R.drawable.bg_badge_penuh);
                     tvVerifStatus.setTextColor(itemView.getContext().getColor(R.color.status_penuh));
-                    if (tvRevisiNote != null) tvRevisiNote.setVisibility(View.GONE);
+                    if (tvRevisiNote != null) {
+                        String note = kost.getCatatanRevisi();
+                        tvRevisiNote.setVisibility(View.VISIBLE);
+                        tvRevisiNote.setText(note != null && !note.trim().isEmpty()
+                                ? "Alasan penolakan: " + note.trim() + "\nPerbaiki lewat Edit, lalu ajukan ulang."
+                                : "Kost ditolak. Perbaiki lewat Edit, lalu ajukan ulang.");
+                    }
                 } else {
                     tvVerifStatus.setText("Menunggu Verifikasi");
                     tvVerifStatus.setBackgroundResource(R.drawable.bg_badge_putra);
@@ -133,9 +141,19 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
                 if (listener != null) listener.onEditClick(kost);
             });
 
-            btnToggleStatus.setOnClickListener(v -> {
-                if (listener != null) listener.onToggleStatusClick(kost, position);
-            });
+            boolean ownerMode = itemView.getContext() instanceof com.carikostkita.ui.admin.PemilikMainActivity;
+            boolean needsResubmit = ownerMode && kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REJECTED
+                    || kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REVISION_REQUIRED;
+            if (needsResubmit) {
+                btnToggleStatus.setText("Ajukan ulang");
+                btnToggleStatus.setOnClickListener(v -> {
+                    if (listener != null) listener.onResubmitClick(kost, position);
+                });
+            } else {
+                btnToggleStatus.setOnClickListener(v -> {
+                    if (listener != null) listener.onToggleStatusClick(kost, position);
+                });
+            }
         }
     }
 }

@@ -14,7 +14,10 @@ public class CariKostApp extends Application {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
 
         // Inisialisasi Supabase Client & Session
-        SupabaseClient.getInstance();
+        SupabaseClient.init(this);
+        com.carikostkita.util.CrashReporter.install(this);
+        com.carikostkita.notifications.AppNotifications.createChannels(this);
+        com.carikostkita.notifications.NotificationJobService.schedule(this);
         new SessionManager(this);
 
         // Inisialisasi OSMDroid OpenStreetMap

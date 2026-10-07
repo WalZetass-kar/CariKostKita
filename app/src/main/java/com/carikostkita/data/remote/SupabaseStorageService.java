@@ -31,6 +31,14 @@ public interface SupabaseStorageService {
             @retrofit2.http.Body okhttp3.RequestBody file
     );
 
+    /** URL bertanda tangan sementara untuk file di bucket privat. */
+    @POST("storage/v1/object/sign/{bucket}/{path}")
+    Call<com.google.gson.JsonObject> createSignedUrl(
+            @Path("bucket") String bucket,
+            @Path(value = "path", encoded = true) String path,
+            @retrofit2.http.Body java.util.Map<String, Object> body
+    );
+
     @DELETE("storage/v1/object/{bucket}/{path}")
     Call<ResponseBody> deleteFile(
             @Path("bucket") String bucket,

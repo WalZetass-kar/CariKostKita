@@ -18,6 +18,7 @@ import com.carikostkita.data.remote.dto.ReadUpdateDto;
 import com.carikostkita.data.remote.dto.RefreshRequest;
 import com.carikostkita.data.remote.dto.UserDto;
 import android.text.TextUtils;
+import com.carikostkita.util.ErrorMessages;
 import com.carikostkita.util.SessionManager;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -71,6 +72,15 @@ public class ChatRepository {
     }
 
     public void getOrCreateConversation(String idKost, String idPencari, String idPemilik, DataCallback<ChatConversation> callback) {
+        getOrCreateConversation(idKost, idPencari, idPemilik, true, callback);
+    }
+
+    /**
+     * Cari percakapan pencari-pemilik untuk kost ini. Bila createIfMissing false dan belum
+     * ada, callback menerima null — percakapan baru dibuat saat pesan pertama dikirim.
+     */
+    public void getOrCreateConversation(String idKost, String idPencari, String idPemilik, boolean createIfMissing,
+                                        DataCallback<ChatConversation> callback) {
         executor.execute(() -> {
             try {
                 ensureValidAuthToken();
@@ -123,6 +133,14 @@ public class ChatRepository {
                     mainHandler.post(() -> callback.onSuccess(mapDtoToConversation(res.body().get(0))));
                     return;
                 }
+                if (!res.isSuccessful()) {
+                    postError(callback, ErrorMessages.fromResponse("findChat", res));
+                    return;
+                }
+                if (!createIfMissing) {
+                    mainHandler.post(() -> callback.onSuccess(null));
+                    return;
+                }
 
                 // Ambil nama pencari & nama pemilik
                 String namaPencari = "Pencari Kost";
@@ -143,8 +161,7 @@ public class ChatRepository {
                 newChat.ownerId = resolvedOwnerId;
                 newChat.namaKost = namaKost;
                 newChat.thumbnailUrl = thumb;
-                newChat.lastMessage = "Percakapan dimulai";
-
+                
                 Response<List<ChatDto>> createRes = dbService.insertChat(newChat).execute();
                 if (createRes.isSuccessful() && createRes.body() != null && !createRes.body().isEmpty()) {
                     ChatConversation conv = mapDtoToConversation(createRes.body().get(0));
@@ -164,17 +181,11 @@ public class ChatRepository {
                         }
                     }
 
-                    String userMsg = "Gagal membuat percakapan chat di server";
-                    if (errStr.contains("42501")) {
-                        userMsg = "Izin database ditolak (42501): Kebijakan RLS membatasi pembuatan chat. Jalankan script SQL perbaikan di Supabase Dashboard.";
-                    } else if (createRes.code() == 401 || createRes.code() == 403) {
-                        userMsg = "Sesi akun Anda telah berakhir. Silakan login kembali.";
-                    }
-                    postError(callback, userMsg);
+                    postError(callback, ErrorMessages.fromCode("insertChat", createRes.code(), errStr));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Exception membuat chat: " + e.getMessage(), e);
-                postError(callback, "Gagal membuat percakapan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal membuat percakapan", e));
             }
         });
     }
@@ -195,7 +206,7 @@ public class ChatRepository {
                     postError(callback, "Percakapan tidak ditemukan");
                 }
             } catch (Exception e) {
-                postError(callback, "Error memuat percakapan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error memuat percakapan", e));
             }
         });
     }
@@ -267,10 +278,10 @@ public class ChatRepository {
                     }
                     mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("getConversations", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat percakapan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memuat percakapan", e));
             }
         });
     }
@@ -326,10 +337,10 @@ public class ChatRepository {
                     }
                     mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    postError(callback, ErrorMessages.fromResponse("getMessages", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat pesan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memuat pesan", e));
             }
         });
     }
@@ -356,39 +367,34 @@ public class ChatRepository {
                             false
                     );
 
-                    // Update last message & unread count pada percakapan
+                    // Trigger on_message_inserted di database memperbarui last_message dan unread
+                    // secara atomik. Fallback ini hanya berjalan bila trigger belum dipasang.
                     try {
-                        Response<List<ChatDto>> cRes = dbService.getChats(Collections.singletonMap("id", "eq." + idConversation), "pencari_id,owner_id,unread_pencari,unread_owner", null).execute();
-                        ChatUpdateDto updateDto = new ChatUpdateDto();
-                        updateDto.lastMessage = message;
-                        updateDto.lastMessageAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(new Date());
-
+                        Response<List<ChatDto>> cRes = dbService.getChats(Collections.singletonMap("id", "eq." + idConversation),
+                                "pencari_id,owner_id,unread_pencari,unread_owner,last_message", null).execute();
                         if (cRes.isSuccessful() && cRes.body() != null && !cRes.body().isEmpty()) {
                             ChatDto currentChat = cRes.body().get(0);
-                            if (idSender.equals(currentChat.pencariId)) {
-                                int currentUnread = currentChat.unreadOwner != null ? currentChat.unreadOwner : 0;
-                                updateDto.unreadOwner = currentUnread + 1;
-                            } else if (idSender.equals(currentChat.ownerId)) {
-                                int currentUnread = currentChat.unreadPencari != null ? currentChat.unreadPencari : 0;
-                                updateDto.unreadPencari = currentUnread + 1;
+                            if (!message.equals(currentChat.lastMessage)) {
+                                ChatUpdateDto updateDto = new ChatUpdateDto();
+                                updateDto.lastMessage = message;
+                                updateDto.lastMessageAt = created.createdAt;
+                                if (idSender.equals(currentChat.pencariId)) {
+                                    updateDto.unreadOwner = (currentChat.unreadOwner != null ? currentChat.unreadOwner : 0) + 1;
+                                } else if (idSender.equals(currentChat.ownerId)) {
+                                    updateDto.unreadPencari = (currentChat.unreadPencari != null ? currentChat.unreadPencari : 0) + 1;
+                                }
+                                dbService.updateChat("eq." + idConversation, updateDto).execute();
                             }
                         }
-                        dbService.updateChat("eq." + idConversation, updateDto).execute();
                     } catch (Exception ignored) {}
 
                     mainHandler.post(() -> callback.onSuccess(msg));
                 } else {
-                    String err = res.errorBody() != null ? res.errorBody().string() : "";
-                    Log.e(TAG, "Gagal mengirim pesan: code=" + res.code() + ", error=" + err);
-                    String userMsg = "Gagal mengirim pesan ke server";
-                    if (err.contains("42501")) {
-                        userMsg = "Izin database ditolak (42501): RLS membatasi pengiriman pesan.";
-                    }
-                    postError(callback, userMsg);
+                    postError(callback, ErrorMessages.fromResponse("sendMessage", res));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Exception sendMessage: " + e.getMessage(), e);
-                postError(callback, "Kesalahan pengiriman pesan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Kesalahan pengiriman pesan", e));
             }
         });
     }

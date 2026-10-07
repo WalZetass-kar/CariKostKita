@@ -44,7 +44,7 @@
                 android:fontFamily="sans-serif"
                 android:text="14:31"
                 android:textColor="@color/on_primary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
 
             <ImageView
                 android:id="@+id/iv_chat_outgoing_status"

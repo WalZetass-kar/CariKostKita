@@ -1,317 +1,503 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Bottom sheet pengajuan verifikasi Pemilik Kost -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:fillViewport="true">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_bottom_sheet"
+    android:orientation="vertical">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_dialog_rounded"
         android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="26dp"
-        android:paddingBottom="24dp">
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp">
 
-        <!-- Header Icon Badge -->
+        <!-- Band bermotif -->
         <FrameLayout
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_gravity="center_horizontal"
-            android:background="@drawable/bg_fav_circle">
+            android:id="@+id/pengajuan_band"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_sheet_band">
 
             <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:contentDescription="Pemilik Kost"
-                android:src="@drawable/ic_avatar_owner"
-                app:tint="@color/primary" />
-        </FrameLayout>
+                android:layout_width="120dp"
+                android:layout_height="104dp"
+                android:layout_gravity="top|end"
+                android:importantForAccessibility="no"
+                android:src="@drawable/il_header_ornament" />
 
-        <!-- Title & Subtitle -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="14dp"
-            android:text="Pengajuan Pemilik Kost"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center"
-            android:lineSpacingExtra="2dp"
-            android:text="Bergabung sebagai pemilik kost untuk mengiklankan kamar dan menjangkau ribuan mahasiswa &amp; pencari kost."
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
-        <!-- Benefit Highlights Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/soft_blue"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/border"
-            app:strokeWidth="1dp">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_gravity="bottom"
+                android:importantForAccessibility="no"
+                android:scaleType="fitXY"
+                android:src="@drawable/il_header_skyline" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="34dp">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_check"
-                        app:tint="@color/primary" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Iklankan kamar kost secara gratis &amp; terverifikasi"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
+                        android:accessibilityHeading="true"
+                        android:text="Jadi Pemilik Kost"
+                        android:textColor="@color/white"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_check"
-                        app:tint="@color/primary" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Chat &amp; terhubung langsung dengan calon penyewa"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="4dp"
+                        android:text="Pasang kost dan terima pertanyaan langsung dari calon penyewa."
+                        android:textColor="#E6FFFFFF"
+                        android:textSize="13sp" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_check"
-                        app:tint="@color/primary" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Dashboard pengelolaan ketersediaan kamar yang praktis"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="72dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/il_owner_badge" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
 
-        <!-- Form Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Nama Properti Kost *"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+        <include
+            android:id="@+id/pengajuan_benefit_1"
+            layout="@layout/item_value_row" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_pengajuan_nama_kost"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        <include
+            android:id="@+id/pengajuan_benefit_2"
+            layout="@layout/item_value_row" />
+
+        <include
+            android:id="@+id/pengajuan_benefit_3"
+            layout="@layout/item_value_row" />
+
+        <!-- Alur pengajuan -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            app:boxBackgroundColor="@color/surface"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp">
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_skeleton_card"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:paddingVertical="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_step_active"
+                    android:gravity="center"
+                    android:text="1"
+                    android:textColor="@color/on_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Isi data"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_step_idle"
+                    android:gravity="center"
+                    android:text="2"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Ditinjau tim"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_step_idle"
+                    android:gravity="center"
+                    android:text="3"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Mulai pasang kost"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            style="@style/Text.Section.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="20dp"
+            android:text="DATA PROPERTI" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Nama kost *"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
+            app:placeholderText="Contoh: Kost Putri Griya Asri">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_pengajuan_nama_kost"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Mis: Kost Putri Griya Asri"
                 android:inputType="textCapWords"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="15sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Alamat / Lokasi Properti *"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_pengajuan_alamat"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            app:boxBackgroundColor="@color/surface"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp">
+            android:layout_marginTop="12dp"
+            android:hint="Alamat kost *"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
+            app:placeholderText="Jalan, nomor, kecamatan">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_pengajuan_alamat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Mis: Jl. HR Soebrantas No. 45, Tampan"
-                android:inputType="textCapSentences"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:inputType="textPostalAddress|textCapSentences"
+                android:minLines="2"
+                android:gravity="top"
+                android:textSize="15sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Nomor WhatsApp Aktif *"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_pengajuan_whatsapp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            app:boxBackgroundColor="@color/surface"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp"
-            app:prefixText="+62 "
-            app:prefixTextColor="@color/text_primary">
+            android:layout_marginTop="12dp"
+            android:hint="Nomor WhatsApp aktif *"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
+            app:placeholderText="81234567890"
+            app:prefixText="+62"
+            app:helperText="Dipakai tim untuk konfirmasi data">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_pengajuan_whatsapp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="81234567890"
                 android:inputType="phone"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="15sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Catatan Pengajuan (Opsional)"
-            android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_pengajuan_catatan"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            app:boxBackgroundColor="@color/surface"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusTopStart="12dp">
+            android:layout_marginTop="12dp"
+            android:hint="Catatan (opsional)"
+            app:boxCornerRadiusBottomEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp"
+            app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusTopStart="14dp"
+            app:placeholderText="Jumlah kamar, link Google Maps, dll.">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_pengajuan_catatan"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Tuliskan informasi tambahan jika ada..."
-                android:inputType="textMultiLine"
-                android:lines="2"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:inputType="textMultiLine|textCapSentences"
+                android:minLines="2"
+                android:gravity="top"
+                android:textSize="15sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Loading Indicator -->
-        <ProgressBar
-            android:id="@+id/pb_pengajuan_loading"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_marginTop="16dp"
-            android:indeterminate="true"
-            android:indeterminateTint="@color/primary"
-            android:visibility="gone" />
+        <TextView
+            style="@style/Text.Section.Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="20dp"
+            android:text="DOKUMEN VERIFIKASI" />
 
-        <!-- Action Buttons -->
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="4dp"
+            android:text="Disimpan di penyimpanan privat dan hanya dilihat tim verifikasi."
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_pengajuan_batal"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        <LinearLayout
+            android:id="@+id/doc_ktp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_skeleton_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="64dp"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <ImageView
+                android:id="@+id/doc_ktp_icon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_icon_bubble_gold"
+                android:importantForAccessibility="no"
+                android:padding="10dp"
+                android:src="@drawable/ic_camera"
+                app:tint="@color/primary" />
+
+            <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="6dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
                 android:layout_weight="1"
-                android:text="Batal"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                app:cornerRadius="12dp"
-                app:strokeColor="@color/border" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Foto KTP *"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/doc_ktp_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ketuk untuk memilih foto"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/doc_selfie"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_skeleton_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="64dp"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <ImageView
+                android:id="@+id/doc_selfie_icon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_icon_bubble_gold"
+                android:importantForAccessibility="no"
+                android:padding="10dp"
+                android:src="@drawable/ic_camera"
+                app:tint="@color/primary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Selfie sambil memegang KTP *"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/doc_selfie_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ketuk untuk memilih foto"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/doc_kepemilikan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_skeleton_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="64dp"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <ImageView
+                android:id="@+id/doc_kepemilikan_icon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_icon_bubble_gold"
+                android:importantForAccessibility="no"
+                android:padding="10dp"
+                android:src="@drawable/ic_camera"
+                app:tint="@color/primary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bukti kepemilikan / surat kuasa"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/doc_kepemilikan_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Disarankan: sertifikat, PBB, atau surat kuasa kelola"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:drawableStart="@drawable/ic_chip_verified"
+            android:drawablePadding="8dp"
+            android:drawableTint="@color/text_muted"
+            android:text="Akun tetap bisa dipakai mencari kost selama pengajuan ditinjau."
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
+    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Tombol tetap di bawah, tidak tertutup keyboard -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_pengajuan_batal"
+            style="@style/Button.CariKost.Outlined"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Nanti saja" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1.4">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_pengajuan_kirim"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1.6"
-                android:fontFamily="sans-serif-medium"
-                android:text="Kirim Pengajuan"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                app:backgroundTint="@color/primary"
-                app:cornerRadius="12dp"
-                android:elevation="0dp" />
-        </LinearLayout>
+                style="@style/Button.CariKost.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Kirim Pengajuan" />
 
+            <ProgressBar
+                android:id="@+id/pb_pengajuan_loading"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:elevation="10dp"
+                android:indeterminateTint="@color/on_primary"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</LinearLayout>

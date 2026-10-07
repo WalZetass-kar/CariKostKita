@@ -47,7 +47,7 @@
                     android:paddingVertical="2dp"
                     android:text="CAMPUR"
                     android:textColor="@color/badge_campur"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -110,7 +110,7 @@
                     android:layout_height="wrap_content"
                     android:text="3 Kamar Kosong"
                     android:textColor="@color/status_tersedia"
-                    android:textSize="10sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Header halaman bermotif: gradient maroon + ornamen + siluet deretan kost.
+     Judul & subjudul diisi lewat PageHeader.bind(). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/page_header_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_header_curved">
+
+    <ImageView
+        android:layout_width="140dp"
+        android:layout_height="120dp"
+        android:layout_gravity="top|end"
+        android:importantForAccessibility="no"
+        android:src="@drawable/il_header_ornament" />
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_gravity="bottom"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/il_header_skyline" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="34dp">
+
+        <TextView
+            android:id="@+id/tv_page_header_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_page_header_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#E6FFFFFF"
+            android:textSize="13sp" />
+
+        <View
+            android:layout_width="32dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_headline_accent" />
+    </LinearLayout>
+</FrameLayout>

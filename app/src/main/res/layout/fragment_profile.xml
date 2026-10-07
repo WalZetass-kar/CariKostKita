@@ -13,32 +13,9 @@
         android:orientation="vertical"
         android:paddingBottom="96dp">
 
-        <!-- Header Section with Warm Pastel Gradient -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_header_curved"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="28dp"
-            android:paddingBottom="42dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Profil Saya"
-                android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:text="Kelola akun, status peran, dan preferensi aplikasi"
-                android:textColor="#E0FFFFFF"
-                android:textSize="13sp" />
-        </LinearLayout>
+        <include
+            android:id="@+id/header_profile"
+            layout="@layout/view_page_header" />
 
         <!-- Skeleton Profile (Minimum 200ms) -->
         <include
@@ -96,7 +73,7 @@
                                 android:layout_width="16dp"
                                 android:layout_height="16dp"
                                 android:layout_gravity="center"
-                                android:contentDescription="Ubah Foto"
+                                android:importantForAccessibility="no"
                                 android:src="@drawable/ic_camera"
                                 app:tint="@color/primary" />
                         </FrameLayout>
@@ -261,172 +238,110 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Account Security & Settings Card (Single list card with radius 18dp) -->
+            <TextView
+                style="@style/Text.Section.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="20dp"
+                android:text="AKUN" />
+
             <com.google.android.material.card.MaterialCardView
+                style="@style/Card.CariKost.Flush"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0.5dp"
-                app:strokeColor="@color/border"
-                app:strokeWidth="1dp">
+                android:layout_marginTop="8dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <!-- Favorit Saya Item -->
-                    <LinearLayout
+                    <include
                         android:id="@+id/item_my_favorites"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="Favorit"
-                            android:src="@drawable/ic_nav_favorite"
-                            app:tint="@color/primary" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="14dp"
-                            android:layout_weight="1"
-                            android:text="Kost Favorit Tersimpan"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="Arrow"
-                            android:src="@drawable/ic_chevron_right"
-                            app:tint="@color/text_muted" />
-                    </LinearLayout>
+                        layout="@layout/item_setting_row" />
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="@color/divider" />
+                        android:layout_marginStart="72dp"
+                        android:background="@color/border_subtle" />
 
-                    <!-- Ganti Kata Sandi Item -->
-                    <LinearLayout
+                    <include
+                        android:id="@+id/item_my_surveys"
+                        layout="@layout/item_setting_row" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="72dp"
+                        android:background="@color/border_subtle" />
+
+                    <include
                         android:id="@+id/item_change_password"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="Password"
-                            android:src="@drawable/ic_lock"
-                            app:tint="@color/text_primary" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="14dp"
-                            android:layout_weight="1"
-                            android:text="Keamanan &amp; Ganti Kata Sandi"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:contentDescription="Arrow"
-                            android:src="@drawable/ic_chevron_right"
-                            app:tint="@color/text_muted" />
-                    </LinearLayout>
+                        layout="@layout/item_setting_row" />
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="@color/divider" />
+                        android:layout_marginStart="72dp"
+                        android:background="@color/border_subtle" />
 
-                    <!-- Notifikasi Item -->
-                    <LinearLayout
+                    <include
+                        android:id="@+id/item_delete_account"
+                        layout="@layout/item_setting_row" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                style="@style/Text.Section.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="20dp"
+                android:text="PREFERENSI" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.CariKost.Flush"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <include
                         android:id="@+id/item_notification_settings"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="16dp">
+                        layout="@layout/item_setting_row" />
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="Notifikasi"
-                            android:src="@drawable/ic_info"
-                            app:tint="@color/text_primary" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="14dp"
-                            android:layout_weight="1"
-                            android:text="Notifikasi Chat &amp; Aktivitas"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+            <TextView
+                style="@style/Text.Section.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="20dp"
+                android:text="BANTUAN" />
 
-                        <TextView
-                            android:id="@+id/tv_notification_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Aktif"
-                            android:textColor="@color/status_tersedia"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Card.CariKost.Flush"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/divider" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                    <!-- Tentang Aplikasi Item -->
-                    <LinearLayout
+                    <include
                         android:id="@+id/item_about_app"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tentang CariKostKita"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:lineSpacingExtra="2dp"
-                            android:text="CariKostKita Mobile v1.0.0\nWilayah Operasional: Seluruh Indonesia\nPlatform: Native Android Java"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                        layout="@layout/item_setting_row" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -436,8 +351,8 @@
                 android:id="@+id/btn_logout"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="20dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
                 android:text="Keluar dari Akun"
                 android:textColor="@color/status_penuh"
                 android:textSize="14sp"

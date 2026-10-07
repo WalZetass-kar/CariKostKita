@@ -198,11 +198,17 @@ public class SessionManager {
         return getUserRole() == Role.PEMILIK_KOST;
     }
 
+    /** Staf moderasi (Super Admin atau Moderator). */
     public boolean isDeveloper() {
-        return getUserRole() == Role.ADMIN;
+        return getUserRole().isDeveloper();
     }
 
     public boolean isAdmin() {
+        return isDeveloper();
+    }
+
+    /** Hanya Super Admin: hapus akun, angkat/cabut moderator. */
+    public boolean isSuperAdmin() {
         return getUserRole() == Role.ADMIN;
     }
 
@@ -227,6 +233,18 @@ public class SessionManager {
     public void setOnboardingCompleted(boolean completed) {
         editor.putBoolean(KEY_ONBOARDING_COMPLETED, completed);
         editor.putBoolean(KEY_IS_FIRST_TIME_LAUNCH, !completed);
+        editor.apply();
+    }
+
+    // --- Preferensi notifikasi (disimpan per perangkat, tetap ada setelah logout) ---
+    private static final String KEY_NOTIF_CHAT = "notif_chat_enabled";
+
+    public boolean isChatNotificationEnabled() {
+        return pref.getBoolean(KEY_NOTIF_CHAT, true);
+    }
+
+    public void setChatNotificationEnabled(boolean enabled) {
+        editor.putBoolean(KEY_NOTIF_CHAT, enabled);
         editor.apply();
     }
 
@@ -295,6 +313,7 @@ public class SessionManager {
     public void logout() {
         boolean onboardingDone = isOnboardingCompleted();
         boolean askedLoc = hasAskedLocationPermission();
+        boolean notifChat = isChatNotificationEnabled();
         String city = getUserSelectedCity();
         String district = getUserSelectedDistrict();
         double lat = getUserSelectedLat();
@@ -308,6 +327,7 @@ public class SessionManager {
         editor.putBoolean(KEY_ONBOARDING_COMPLETED, onboardingDone);
         editor.putBoolean(KEY_IS_FIRST_TIME_LAUNCH, !onboardingDone);
         editor.putBoolean("key_loc_permission_asked", askedLoc);
+        editor.putBoolean(KEY_NOTIF_CHAT, notifChat);
         if (!locDisplay.isEmpty()) {
             editor.putString("key_loc_city", city);
             editor.putString("key_loc_district", district);

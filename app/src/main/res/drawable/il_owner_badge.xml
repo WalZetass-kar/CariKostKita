@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ilustrasi pengajuan pemilik: rumah dengan lencana centang emas -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="88dp" android:height="80dp"
+    android:viewportWidth="88" android:viewportHeight="80">
+    <path android:fillColor="#26FFFFFF" android:pathData="M44,42 m-36,0 a36,36 0 1,0 72,0 a36,36 0 1,0 -72,0" />
+    <path android:fillColor="@color/primary_soft" android:pathData="M22,68 L22,40 L44,22 L66,40 L66,68 Z" />
+    <path android:fillColor="@color/white" android:pathData="M17,42 L44,19 L71,42 L66,45 L44,27 L22,45 Z" />
+    <path android:fillColor="@color/primary" android:pathData="M38,68 L38,54 L50,54 L50,68 Z" />
+    <path android:fillColor="@color/accent_gold" android:pathData="M66,56 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0" />
+    <path android:strokeColor="@color/primary_dark" android:strokeWidth="3" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M60,56 L64.5,60.5 L72,52" />
+</vector>

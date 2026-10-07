@@ -134,7 +134,7 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
             }
 
             // Ketersediaan & Efek Penuh (Opacity 0.6 + Grayscale)
-            boolean isPenuh = (kost.getStatus() == StatusKost.PENUH || kost.getKamarTersedia() <= 0);
+            boolean isPenuh = !kost.isAvailable();
             if (isPenuh) {
                 if (cardRoot != null) cardRoot.setAlpha(0.6f);
                 ColorMatrix cm = new ColorMatrix();
@@ -146,7 +146,7 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
             } else {
                 if (cardRoot != null) cardRoot.setAlpha(1.0f);
                 ivThumbnail.clearColorFilter();
-                tvStatus.setText(kost.getKamarTersedia() + " kamar");
+                tvStatus.setText(kost.hasRoomInfo() ? kost.getKamarTersedia() + " kamar" : "Tersedia");
                 tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
                 tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
             }

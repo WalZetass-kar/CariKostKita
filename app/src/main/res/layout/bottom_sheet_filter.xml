@@ -2,183 +2,270 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@drawable/bg_bottom_sheet"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:orientation="vertical">
 
-    <!-- Header Filter & Reset -->
+    <!-- Pegangan & judul -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_skeleton_pill" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="8dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/filter_title"
+            android:accessibilityHeading="true"
+            android:text="Filter Pencarian"
             android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_filter_reset"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="@string/action_reset"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="Reset"
             android:textColor="@color/primary"
             android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <View
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="12dp"
-        android:background="@color/border" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never">
 
-    <!-- Tipe Kost Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/filter_tipe"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <RadioGroup
-        android:id="@+id/rg_filter_tipe"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <RadioButton
-            android:id="@+id/rb_tipe_semua"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="Semua" />
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="16dp">
 
-        <RadioButton
-            android:id="@+id/rb_tipe_putri"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Putri" />
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Urutkan"
+                android:textSize="15sp" />
 
-        <RadioButton
-            android:id="@+id/rb_tipe_putra"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Putra" />
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cg_filter_sort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="4dp"
+                app:selectionRequired="true"
+                app:singleSelection="true" />
 
-        <RadioButton
-            android:id="@+id/rb_tipe_campur"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Campur" />
-    </RadioGroup>
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="Tipe kost"
+                android:textSize="15sp" />
 
-    <!-- Rentang Harga Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/filter_harga"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cg_filter_tipe"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="4dp"
+                app:selectionRequired="true"
+                app:singleSelection="true" />
 
-    <RadioGroup
-        android:id="@+id/rg_filter_harga"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical">
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="Harga per bulan"
+                android:textSize="15sp" />
 
-        <RadioButton
-            android:id="@+id/rb_harga_semua"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="Semua Rentang Harga" />
+            <TextView
+                android:id="@+id/tv_filter_price_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
-        <RadioButton
-            android:id="@+id/rb_harga_dibawah_700"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Di bawah Rp 700.000 / bln" />
+            <com.google.android.material.slider.RangeSlider
+                android:id="@+id/rs_filter_price"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contentDescription="Rentang harga per bulan"
+                android:stepSize="100000"
+                android:valueFrom="0"
+                android:valueTo="5000000"
+                app:labelBehavior="gone"
+                app:thumbColor="@color/primary"
+                app:trackColorActive="@color/primary"
+                app:trackColorInactive="@color/border_subtle" />
 
-        <RadioButton
-            android:id="@+id/rb_harga_700_1jt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Rp 700.000 - Rp 1.000.000 / bln" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-        <RadioButton
-            android:id="@+id/rb_harga_diatas_1jt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Di atas Rp 1.000.000 / bln" />
-    </RadioGroup>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Rp 0"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
 
-    <!-- Fasilitas Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/filter_fasilitas"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Rp 5 jt+"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="Ketersediaan"
+                android:textSize="15sp" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/sw_filter_available"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:minHeight="48dp"
+                android:text="Hanya yang masih ada kamar kosong"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="Jarak dari lokasimu"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_filter_distance_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cg_filter_distance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="4dp"
+                app:selectionRequired="true"
+                app:singleSelection="true" />
+
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="Area (kecamatan)"
+                android:textSize="15sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_filter_area"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Semua area"
+                app:boxCornerRadiusBottomEnd="14dp"
+                app:boxCornerRadiusBottomStart="14dp"
+                app:boxCornerRadiusTopEnd="14dp"
+                app:boxCornerRadiusTopStart="14dp"
+                app:endIconMode="clear_text"
+                app:startIconDrawable="@drawable/ic_location_pin"
+                app:startIconTint="@color/primary">
+
+                <AutoCompleteTextView
+                    android:id="@+id/act_filter_area"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:completionThreshold="1"
+                    android:inputType="text"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                style="@style/Text.Section.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="Fasilitas"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Kost harus punya semua yang dipilih"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/cg_filter_fasilitas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="4dp"
+                app:selectionRequired="false"
+                app:singleSelection="false" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Tombol tetap di bawah -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical">
+        android:background="@color/surface"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp">
 
-        <CheckBox
-            android:id="@+id/cb_fasilitas_wifi"
-            android:layout_width="wrap_content"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_filter_apply"
+            style="@style/Button.CariKost.Primary"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="WiFi Cepat" />
-
-        <CheckBox
-            android:id="@+id/cb_fasilitas_ac"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="AC" />
-
-        <CheckBox
-            android:id="@+id/cb_fasilitas_km_dalam"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Kamar Mandi Dalam" />
-
-        <CheckBox
-            android:id="@+id/cb_fasilitas_parkir"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Parkir Motor / Mobil" />
+            android:text="Tampilkan hasil" />
     </LinearLayout>
-
-    <!-- Tombol Apply -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_filter_apply"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginTop="24dp"
-        android:backgroundTint="@color/primary"
-        android:text="@string/action_apply"
-        android:textColor="@color/on_primary"
-        android:textSize="16sp"
-        app:cornerRadius="12dp" />
-
 </LinearLayout>

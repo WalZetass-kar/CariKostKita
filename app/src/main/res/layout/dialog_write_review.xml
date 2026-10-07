@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="8dp">
+
+    <RatingBar
+        android:id="@+id/rb_review"
+        style="?android:attr/ratingBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:contentDescription="Rating 1 sampai 5 bintang"
+        android:numStars="5"
+        android:progressTint="@color/accent_gold"
+        android:stepSize="1" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="Ceritakan pengalamanmu (opsional)"
+        app:counterEnabled="true"
+        app:counterMaxLength="500">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_review"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:inputType="textMultiLine|textCapSentences"
+            android:maxLength="500"
+            android:minLines="3" />
+    </com.google.android.material.textfield.TextInputLayout>
+</LinearLayout>

@@ -22,6 +22,7 @@ public class VerificationAdapter extends RecyclerView.Adapter<VerificationAdapte
         void onApprove(User user, int position);
         void onRequireRevision(User user, int position);
         void onReject(User user, int position);
+        default void onViewDocuments(User user) {}
     }
 
     private final List<User> userList = new ArrayList<>();
@@ -105,14 +106,22 @@ public class VerificationAdapter extends RecyclerView.Adapter<VerificationAdapte
             holder.tvCatatan.setVisibility(View.VISIBLE);
         }
 
-        String createdAt = user.getCreatedAt();
-        if (createdAt != null && !createdAt.isEmpty()) {
-            holder.tvTime.setText("Diajukan: " + formatTimestamp(createdAt));
-            holder.tvTime.setVisibility(View.VISIBLE);
-        } else {
+        // Umur antrean untuk SLA moderasi (target maks. 24 jam)
+        String since = user.getPengajuanAt() != null ? user.getPengajuanAt() : user.getCreatedAt();
+        long hours = hoursSince(since);
+        holder.tvTime.setVisibility(View.VISIBLE);
+        if (hours < 0) {
             holder.tvTime.setText("Diajukan calon pemilik");
-            holder.tvTime.setVisibility(View.VISIBLE);
+        } else {
+            String age = hours < 1 ? "kurang dari 1 jam" : hours < 24 ? hours + " jam" : (hours / 24) + " hari";
+            holder.tvTime.setText((hours >= 24 ? "Lewat SLA • menunggu " : "Menunggu ") + age);
+            holder.tvTime.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.getContext(),
+                    hours >= 24 ? R.color.status_penuh : R.color.text_secondary));
         }
+        View btnDocs = holder.itemView.findViewById(R.id.btn_verif_docs);
+        if (btnDocs != null) btnDocs.setOnClickListener(v -> {
+            if (listener != null) listener.onViewDocuments(user);
+        });
 
         boolean isProcessing = user.getUid() != null && processingUserIds.contains(user.getUid());
         if (isProcessing) {
@@ -144,6 +153,19 @@ public class VerificationAdapter extends RecyclerView.Adapter<VerificationAdapte
                 listener.onReject(user, holder.getAdapterPosition());
             }
         });
+    }
+
+    /** Jam sejak waktu ISO (UTC), atau -1 bila tidak terbaca. */
+    static long hoursSince(String iso) {
+        if (iso == null || iso.length() < 19) return -1;
+        try {
+            java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+            f.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date d = f.parse(iso.substring(0, 19));
+            return d == null ? -1 : Math.max(0, (System.currentTimeMillis() - d.getTime()) / 3600000L);
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     private String formatTimestamp(String isoString) {

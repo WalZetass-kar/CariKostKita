@@ -38,6 +38,13 @@ public class AppDialogHelper {
     }
 
     public static void showInput(Context context, String title, String message, String hint, String initialText, String positiveText, OnInputConfirmListener onConfirm) {
+        showInput(context, title, message, hint, initialText, positiveText,
+                android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, onConfirm);
+    }
+
+    /** Dialog isian dengan tipe input tertentu (mis. email atau kata sandi). */
+    public static void showInput(Context context, String title, String message, String hint, String initialText, String positiveText, int inputType, OnInputConfirmListener onConfirm) {
+        boolean isPassword = (inputType & android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD) != 0;
         Dialog dialog = new Dialog(context);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
@@ -78,6 +85,7 @@ public class AppDialogHelper {
 
         if (etInput != null) {
             etInput.setVisibility(View.VISIBLE);
+            etInput.setInputType(inputType);
             if (hint != null) etInput.setHint(hint);
             if (initialText != null) {
                 etInput.setText(initialText);
@@ -88,7 +96,8 @@ public class AppDialogHelper {
         btnNegative.setText("Batal");
         btnNegative.setOnClickListener(v -> dialog.dismiss());
         btnPositive.setOnClickListener(v -> {
-            String input = etInput != null ? etInput.getText().toString().trim() : "";
+            String raw = etInput != null ? etInput.getText().toString() : "";
+            String input = isPassword ? raw : raw.trim();
             dialog.dismiss();
             if (onConfirm != null) {
                 onConfirm.onConfirm(input);

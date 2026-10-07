@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ilustrasi empty state Favorit: rumah kost dengan hati, latar lingkaran krem -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp" android:height="140dp"
+    android:viewportWidth="160" android:viewportHeight="140">
+    <path android:fillColor="@color/primary_soft"
+        android:pathData="M80,70 m-62,0 a62,62 0 1,0 124,0 a62,62 0 1,0 -124,0" />
+    <path android:fillColor="#33E0B15A"
+        android:pathData="M30,32 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 M134,46 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 M124,112 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+    <!-- tanah -->
+    <path android:fillColor="#1F6D0808" android:pathData="M28,112 L132,112 L132,116 L28,116 Z" />
+    <!-- rumah -->
+    <path android:fillColor="@color/surface" android:strokeColor="@color/primary" android:strokeWidth="3"
+        android:strokeLineJoin="round" android:pathData="M48,112 L48,66 L80,40 L112,66 L112,112 Z" />
+    <path android:fillColor="@color/primary" android:pathData="M42,68 L80,36 L118,68 L112,72 L80,46 L48,72 Z" />
+    <path android:fillColor="@color/primary_soft" android:strokeColor="@color/primary" android:strokeWidth="2.5"
+        android:pathData="M72,112 L72,90 L88,90 L88,112 Z" />
+    <path android:fillColor="#59E0B15A" android:pathData="M56,76 L68,76 L68,86 L56,86 Z M92,76 L104,76 L104,86 L92,86 Z" />
+    <!-- hati emas -->
+    <path android:fillColor="@color/accent_gold"
+        android:pathData="M118,34 C118,28 110,25 106,31 C102,25 94,28 94,34 C94,41 106,48 106,48 C106,48 118,41 118,34 Z" />
+</vector>

@@ -8,7 +8,7 @@
     android:layout_marginVertical="4dp"
     app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
+    app:cardElevation="0dp"
     app:strokeColor="@color/border_subtle"
     app:strokeWidth="1dp">
 
@@ -53,7 +53,7 @@
                     android:layout_marginTop="4dp"
                     android:text="Foto belum tersedia"
                     android:textColor="@color/placeholder_text"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <!-- Category Badge Top-Left -->
@@ -68,7 +68,7 @@
                 android:paddingVertical="3dp"
                 android:text="PUTRI"
                 android:textColor="@color/badge_putri"
-                android:textSize="9sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <!-- Floating Favorite Heart Button Top-Right -->
@@ -151,7 +151,7 @@
                 android:maxLines="1"
                 android:text="AC • WiFi • K. Mandi"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
 
             <!-- Price & Availability Row -->
             <LinearLayout
@@ -183,7 +183,7 @@
                     android:paddingVertical="2dp"
                     android:text="2 kamar"
                     android:textColor="@color/status_tersedia"
-                    android:textSize="9sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 

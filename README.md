@@ -25,11 +25,37 @@ CariKostKita adalah aplikasi pencarian kost berbasis **Android (Mobile Native)**
 - **Libraries**: ViewBinding, Retrofit / Volley (Networking), Glide / Picasso (Image Loading)
 
 ## Setup & Menjalankan Aplikasi
-1. Buka project di Android Studio.
-2. Pastikan Android SDK (API 24 s/d 34) dan JDK 17 terkonfigurasi.
-3. Import database MySQL dengan `database_schema.sql` dan `database_seed.sql` pada server lokal/backend.
-4. Sesuaikan konfigurasi baseUrl/koneksi database pada class konfigurasi Android.
-5. Sync Gradle dan jalankan pada Android Emulator atau perangkat fisik Android.
+1. Buka project di Android Studio (Android SDK API 24–34, JDK 17).
+2. Isi `local.properties` dengan `SUPABASE_URL` dan `SUPABASE_ANON_KEY` project Supabase kamu.
+3. Di Supabase Dashboard → SQL Editor, jalankan berurutan:
+   1. **`supabase/migrations/20261005_security_hardening.sql`**: RLS, trigger moderasi, trigger chat, `owner_favorite_count`, `admin_delete_user`.
+   2. **`supabase/migrations/20261006_industry_features.sql`**: peran Moderator, blokir & lapor pengguna, hapus akun sendiri,
+      dokumen verifikasi (bucket privat), rincian biaya & aturan, jadwal survei, ulasan, analitik, laporan crash, rate limit.
+
+   Jangan jalankan `supabase_update_queries.sql` (usang).
+4. Di Supabase → Authentication → URL Configuration, tambahkan Redirect URL
+   `carikostkita://reset-callback` (reset kata sandi) dan `carikostkita://login-callback`.
+5. Sync Gradle dan jalankan di emulator atau perangkat fisik.
+
+### Tes
+- Unit test: `./gradlew testDebugUnitTest`
+- Tes keamanan database (butuh PostgreSQL lokal): `PGHOST=127.0.0.1 PGUSER=postgres ./supabase/tests/run.sh`
+- Semuanya juga dijalankan otomatis oleh GitHub Actions (`.github/workflows/android.yml`).
+
+Checklist rilis, backup, dan aksesibilitas: `docs/operasional/checklist-rilis.md`. Draf Kebijakan Privasi, Syarat Layanan,
+dan panduan Data Safety: `docs/legal/`.
+
+### Build rilis
+Buat `keystore.properties` di root project (tidak di-commit):
+```
+storeFile=/path/ke/carikostkita-release.jks
+storePassword=...
+keyAlias=carikostkita
+keyPassword=...
+```
+Tanpa file ini, `assembleRelease` menghasilkan APK tanpa tanda tangan. Build rilis memakai R8 (minify + shrink resources).
+
+> `database_schema.sql` dan `database_seed.sql` adalah skema MySQL versi awal dan tidak lagi dipakai aplikasi.
 
 ## Dokumentasi
 - `01_PRD.md` — Product Requirements Document (Mobile)

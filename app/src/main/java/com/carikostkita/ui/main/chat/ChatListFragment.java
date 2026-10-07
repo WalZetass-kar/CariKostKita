@@ -57,40 +57,55 @@ public class ChatListFragment extends Fragment {
         layoutSkeleton = view.findViewById(R.id.skeleton_chat_list);
         layoutEmpty = view.findViewById(R.id.layout_chat_list_empty);
 
-        TextView tvEmptyTitle = view.findViewById(R.id.tv_chat_empty_title);
-        TextView tvEmptyDesc = view.findViewById(R.id.tv_chat_empty_desc);
-        View btnCariKost = view.findViewById(R.id.btn_chat_empty_cari_kost);
+        tvEmptyTitle = view.findViewById(R.id.tv_chat_empty_title);
+        tvEmptyDesc = view.findViewById(R.id.tv_chat_empty_desc);
+        ivEmptyIcon = view.findViewById(R.id.iv_chat_empty_icon);
+        btnEmptyAction = view.findViewById(R.id.btn_chat_empty_cari_kost);
 
-        boolean isOwner = sessionManager.isPemilikKost();
-        if (isOwner) {
-            if (tvEmptyTitle != null) tvEmptyTitle.setText("Kotak Masuk Kosong");
-            if (tvEmptyDesc != null) tvEmptyDesc.setText("Pesan dari calon penyewa akan muncul di sini.");
-            if (btnCariKost != null) btnCariKost.setVisibility(View.GONE);
-        } else {
-            if (tvEmptyTitle != null) tvEmptyTitle.setText("Belum Ada Percakapan");
-            if (tvEmptyDesc != null) tvEmptyDesc.setText("Temukan kost impianmu dan hubungi pemilik langsung dari halaman kost!");
-            if (btnCariKost != null) {
-                btnCariKost.setVisibility(View.VISIBLE);
-                btnCariKost.setOnClickListener(v -> {
-                    if (getActivity() instanceof com.carikostkita.ui.main.MainActivity) {
-                        ((com.carikostkita.ui.main.MainActivity) getActivity()).navigateToSearch();
-                    }
-                });
-            }
-        }
+        com.carikostkita.util.PageHeader.bind(view, "Pesan", "Tanya langsung ke pemilik kost");
+        swipeRefresh.setColorSchemeResources(R.color.primary);
 
         setupRecyclerView();
         setupRealtime();
 
-        swipeRefresh.setOnRefreshListener(this::loadConversations);
+        swipeRefresh.setOnRefreshListener(() -> loadConversations(false));
+    }
+
+    private TextView tvEmptyTitle;
+    private TextView tvEmptyDesc;
+    private android.widget.ImageView ivEmptyIcon;
+    private TextView btnEmptyAction;
+    private boolean hasLoadedOnce = false;
+
+    private void showEmpty(String title, String desc, int icon, String action, View.OnClickListener onAction) {
+        rvConversations.setVisibility(View.GONE);
+        layoutEmpty.setVisibility(View.VISIBLE);
+        if (tvEmptyTitle != null) tvEmptyTitle.setText(title);
+        if (tvEmptyDesc != null) tvEmptyDesc.setText(desc);
+        if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(icon);
+        if (btnEmptyAction != null) {
+            btnEmptyAction.setText(action);
+            btnEmptyAction.setOnClickListener(onAction);
+        }
+    }
+
+    private void showNoConversations() {
+        showEmpty("Belum Ada Percakapan",
+                "Buka halaman kost yang kamu suka, lalu ketuk \"Chat Pemilik\" untuk bertanya soal kamar, harga, atau jadwal survei.",
+                R.drawable.ic_nav_chat, "Cari Kost", v -> {
+                    if (getActivity() instanceof com.carikostkita.ui.main.MainActivity) {
+                        ((com.carikostkita.ui.main.MainActivity) getActivity()).navigateToSearch();
+                    }
+                });
     }
 
     private void setupRealtime() {
         realtimeClient = new SupabaseRealtimeClient();
-        realtimeClient.setChatUpdateListener(this::loadConversations);
+        // Event realtime memuat ulang daftar tanpa skeleton agar tidak berkedip
+        realtimeClient.setChatUpdateListener(() -> loadConversations(false));
         realtimeClient.setListener(msg -> {
             if (isAdded()) {
-                loadConversations();
+                loadConversations(false);
             }
         });
     }
@@ -98,10 +113,10 @@ public class ChatListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (realtimeClient != null) {
+        if (realtimeClient != null && sessionManager.isLoggedIn()) {
             realtimeClient.connect(null);
         }
-        loadConversations();
+        loadConversations(!hasLoadedOnce);
     }
 
     @Override
@@ -127,6 +142,7 @@ public class ChatListFragment extends Fragment {
             intent.putExtra("conversation_id", conversation.getIdConversation());
             intent.putExtra("kost_id", conversation.getIdKost());
             intent.putExtra("id_pemilik", conversation.getIdPemilik());
+            intent.putExtra("id_pencari", conversation.getIdPencari());
             intent.putExtra("nama_kost", conversation.getNamaKost());
             intent.putExtra("foto_kost", conversation.getFotoKost());
             intent.putExtra("avatar_counterpart", conversation.getAvatarLawan());
@@ -143,16 +159,19 @@ public class ChatListFragment extends Fragment {
         rvConversations.setAdapter(adapter);
     }
 
-    private void loadConversations() {
+    private void loadConversations(boolean showSkeleton) {
         String userUid = sessionManager.getUserUid();
         if (userUid == null || userUid.isEmpty()) {
             swipeRefresh.setRefreshing(false);
-            layoutEmpty.setVisibility(View.VISIBLE);
+            showEmpty("Chat dengan Pemilik Kost",
+                    "Masuk untuk bertanya langsung ke pemilik dan menyimpan riwayat percakapanmu.",
+                    R.drawable.ic_nav_chat, "Masuk / Daftar",
+                    v -> com.carikostkita.util.AuthPrompt.openLogin(requireContext()));
             return;
         }
 
         long startTime = com.carikostkita.util.SkeletonHelper.markStart();
-        if (!swipeRefresh.isRefreshing()) {
+        if (showSkeleton && !swipeRefresh.isRefreshing()) {
             if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);
             if (pbLoading != null) pbLoading.setVisibility(View.GONE);
             rvConversations.setVisibility(View.GONE);
@@ -166,11 +185,11 @@ public class ChatListFragment extends Fragment {
                     if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
                     if (pbLoading != null) pbLoading.setVisibility(View.GONE);
                     swipeRefresh.setRefreshing(false);
+                    hasLoadedOnce = true;
                     adapter.setConversations(data);
 
                     if (data.isEmpty()) {
-                        layoutEmpty.setVisibility(View.VISIBLE);
-                        rvConversations.setVisibility(View.GONE);
+                        showNoConversations();
                     } else {
                         layoutEmpty.setVisibility(View.GONE);
                         rvConversations.setVisibility(View.VISIBLE);
@@ -185,7 +204,14 @@ public class ChatListFragment extends Fragment {
                     if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
                     if (pbLoading != null) pbLoading.setVisibility(View.GONE);
                     swipeRefresh.setRefreshing(false);
-                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    if (adapter.getItemCount() > 0) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                    } else {
+                        boolean offline = com.carikostkita.util.ErrorMessages.isOffline(message);
+                        showEmpty(offline ? "Kamu Sedang Offline" : "Gagal Memuat Pesan", message,
+                                offline ? R.drawable.ic_error_circle : R.drawable.ic_warning,
+                                "Coba Lagi", v -> loadConversations(true));
+                    }
                 });
             }
         });

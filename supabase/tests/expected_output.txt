@@ -1,0 +1,81 @@
+--- T1 pencari membuat kost (harus DITOLAK)
+ERROR:  new row violates row-level security policy for table "kosts"
+--- T2 pemilik insert kost sebagai APPROVED (harus jadi PENDING)
+ PENDING
+--- T3 pemilik menyetujui kost pending sendiri (harus tetap PENDING)
+ PENDING
+--- T4 ubah harga kost approved (harus tetap APPROVED)
+ APPROVED
+--- T5 pemilik insert kost atas nama owner lain (harus DITOLAK)
+ERROR:  new row violates row-level security policy for table "kosts"
+--- T6 owner lain mengubah kost (harus 0 baris)
+ rows=0
+--- T7 tamu (anon) hanya melihat kost APPROVED
+ Kost Approved
+--- T8 penyerang menyisipkan pesan ke chat orang lain (harus DITOLAK)
+ERROR:  new row violates row-level security policy for table "messages"
+--- T9 pencari kirim pesan sah -> last_message & unread_owner naik
+ last=Masih ada kamar? unread_owner=1
+--- T10 pemilik mengubah ISI pesan pencari (isi harus tetap), boleh set is_read
+ Masih ada kamar? | read=true
+--- T11 user menaikkan role sendiri jadi developer (harus tetap user)
+ user | Attacker2
+--- T12 user mengajukan diri jadi pemilik (PENDING boleh)
+ PENDING
+--- T13 user mencoba langsung APPROVED (harus tetap PENDING)
+ PENDING
+--- T14 penyerang melihat data pencari lain (harus kosong)
+ seen=0
+--- T15 penyerang menghapus foto milik pencari (harus 0 baris)
+ rows=0
+--- T16 upload ke folder orang lain (harus DITOLAK), ke folder sendiri OK
+ERROR:  new row violates row-level security policy for table "objects"
+ uploaded 00000000-0000-0000-0000-0000000000e1/ok.jpg
+--- T17 penyerang memanggil admin_delete_user (harus DITOLAK)
+ERROR:  forbidden
+--- T18 pemilik melihat lawan chat (pencari) = 1, owner_favorite_count
+ seeker_visible=1
+ favorites=1
+--- T19 developer menyetujui kost & menghapus akun penyerang
+ APPROVED
+ attacker_auth_rows=0
+--- T20 pemilik ganti nama kost approved (harus kembali PENDING)
+ PENDING
+--- U1 moderator menyetujui pemilik (user->owner) OK
+ owner
+--- U2 moderator mengangkat diri/orang jadi developer (harus tetap)
+ owner
+--- U3 moderator menghapus akun lewat admin_delete_user (harus DITOLAK)
+ERROR:  forbidden
+--- U4 pemilik memblokir pencari, pencari kirim pesan (harus DITOLAK)
+ blocked
+ERROR:  new row violates row-level security policy for table "messages"
+--- U5 pencari minta survei (OK), ulas sebelum SELESAI (harus DITOLAK)
+ MENUNGGU
+ERROR:  new row violates row-level security policy for table "reviews"
+--- U6 pencari mengubah sendiri status jadi SELESAI (harus DITOLAK)
+ERROR:  perubahan status survei tidak diizinkan
+--- U7 pemilik konfirmasi lalu selesai (OK)
+ DIKONFIRMASI
+ SELESAI
+--- U8 pencari menulis ulasan setelah SELESAI (OK) -> rating kost terbarui
+      4
+ rating_avg=4.00 count=1
+--- U9 penyerang ulas tanpa survei (harus DITOLAK)
+ERROR:  new row violates row-level security policy for table "reviews"
+--- U10 dokumen verifikasi orang lain tidak terbaca (0), staf bisa
+ attacker_sees=0
+ moderator_sees=1
+--- U11 event analitik & statistik pemilik
+--- U12 anon tidak bisa membaca event (0)
+ERROR:  permission denied for table app_events
+ Kost Approved Baru dilihat=1 survei=1
+--- U13 pemilik memanggil admin_funnel (harus DITOLAK)
+ERROR:  forbidden
+--- U14 rate limit: pesan ke-21 dalam 1 menit (harus DITOLAK)
+ERROR:  rate limit: terlalu banyak pesan
+--- U15 pemilik ajukan ulang kost ditolak (OK -> PENDING)
+ status=PENDING
+--- U16 pengguna menghapus akunnya sendiri
+ profile_rows=0
+ auth_rows=0

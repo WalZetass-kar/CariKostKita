@@ -29,6 +29,9 @@ public class UserDto {
     @SerializedName("verification_status")
     public String verificationStatus;
 
+    @SerializedName("pengajuan_at")
+    public String pengajuanAt;
+
     @SerializedName("pengajuan_catatan")
     public String pengajuanCatatan;
 

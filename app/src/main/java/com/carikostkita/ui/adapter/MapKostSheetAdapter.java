@@ -91,8 +91,8 @@ public class MapKostSheetAdapter extends RecyclerView.Adapter<MapKostSheetAdapte
             }
         }
 
-        if (kost.getKamarTersedia() > 0) {
-            holder.tvRooms.setText(kost.getKamarTersedia() + " Kamar Kosong");
+        if (kost.isAvailable()) {
+            holder.tvRooms.setText(kost.hasRoomInfo() ? kost.getKamarTersedia() + " Kamar Kosong" : "Tersedia");
         } else {
             holder.tvRooms.setText("Kamar Penuh");
         }

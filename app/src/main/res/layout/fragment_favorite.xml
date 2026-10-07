@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout 
+    
     android:id="@+id/swipe_refresh_fav"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -10,58 +15,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Modern Header Section -->
-        <LinearLayout
+        <include
             android:id="@+id/header_fav"
+            layout="@layout/view_page_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/surface"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="16dp"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:id="@+id/tv_fav_header"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Kost Favorit"
-                android:textColor="@color/text_primary"
-                android:textSize="24sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Daftar kost yang telah kamu simpan"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
-        </LinearLayout>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <View
             android:id="@+id/divider_fav"
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/border"
-            app:layout_constraintTop_toBottomOf="@+id/header_fav" />
-
-        <!-- Skeleton Loading Container -->
-        <LinearLayout
-            android:id="@+id/skeleton_favorite"
-            android:layout_width="0dp"
             android:layout_height="0dp"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="12dp"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/divider_fav">
-            <include layout="@layout/layout_skeleton_cards_list" />
-        </LinearLayout>
+            app:layout_constraintTop_toBottomOf="@+id/header_fav" />
 
         <ProgressBar
             android:id="@+id/pb_fav_loading"
@@ -74,62 +39,192 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/divider_fav" />
 
-        <!-- Clean Modern Empty State -->
-        <LinearLayout
+        <!-- Empty state hidup: ilustrasi + rekomendasi + tips (bisa digulir) -->
+        <androidx.core.widget.NestedScrollView
             android:id="@+id/layout_fav_empty"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="36dp"
+            android:layout_height="0dp"
+            android:clipToPadding="false"
+            android:paddingBottom="104dp"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/divider_fav">
 
-            <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_fav_circle">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingTop="20dp">
 
                 <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="Empty Favorite"
-                    android:src="@drawable/ic_nav_favorite"
-                    app:tint="@color/primary" />
-            </FrameLayout>
+                    android:id="@+id/iv_fav_empty_illustration"
+                    android:layout_width="160dp"
+                    android:layout_height="140dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/il_empty_favorite" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/empty_favorite_title"
-                android:textColor="@color/text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                <FrameLayout
+                    android:id="@+id/frame_fav_empty_icon"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:background="@drawable/bg_fav_circle"
+                    android:visibility="gone">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="@string/empty_favorite_desc"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                    <ImageView
+                        android:id="@+id/iv_fav_empty_icon"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_warning"
+                        app:tint="@color/primary" />
+                </FrameLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_fav_explore"
-                android:layout_width="wrap_content"
-                android:layout_height="48dp"
-                android:layout_marginTop="20dp"
-                android:backgroundTint="@color/primary"
-                android:text="Jelajahi Kost Sekarang"
-                android:textColor="@color/on_primary"
-                app:cornerRadius="12dp" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_fav_empty_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="32dp"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center"
+                    android:text="@string/empty_favorite_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_fav_empty_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="32dp"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/empty_favorite_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_fav_explore"
+                    style="@style/Button.CariKost.Primary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:paddingHorizontal="28dp"
+                    android:text="Jelajahi Kost" />
+
+                <!-- Rekomendasi -->
+                <LinearLayout
+                    android:id="@+id/layout_fav_suggestions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="28dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="20dp">
+
+                        <View
+                            android:layout_width="4dp"
+                            android:layout_height="18dp"
+                            android:background="@drawable/bg_headline_accent" />
+
+                        <TextView
+                            style="@style/Text.Section.Title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="Mungkin kamu suka" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="34dp"
+                        android:layout_marginTop="2dp"
+                        android:text="Ketuk ikon hati untuk menyimpan"
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_fav_suggestions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:clipToPadding="false"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="6dp" />
+                </LinearLayout>
+
+                <!-- Tips membandingkan -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_fav_tips"
+                    style="@style/Card.CariKost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tips membandingkan kost"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:drawableStart="@drawable/ic_chip_verified"
+                            android:drawablePadding="10dp"
+                            android:drawableTint="@color/accent_gold"
+                            android:text="Simpan 3–5 kost dulu, lalu bandingkan harga per bulan dan jaraknya."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:drawableStart="@drawable/ic_chip_verified"
+                            android:drawablePadding="10dp"
+                            android:drawableTint="@color/accent_gold"
+                            android:text="Cek fasilitas yang termasuk harga: listrik, air, WiFi, parkir."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:drawableStart="@drawable/ic_chip_verified"
+                            android:drawablePadding="10dp"
+                            android:drawableTint="@color/accent_gold"
+                            android:text="Tanyakan jadwal survei lewat chat sebelum membayar apa pun."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
         <!-- Recycler View -->
         <androidx.recyclerview.widget.RecyclerView
@@ -138,11 +233,36 @@
             android:layout_height="0dp"
             android:clipToPadding="false"
             android:paddingTop="8dp"
-            android:paddingBottom="24dp"
+            android:paddingBottom="104dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/divider_fav" />
 
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/btn_fav_compare"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="104dp"
+            android:contentDescription="Bandingkan kost favorit"
+            android:text="Bandingkan"
+            android:textColor="@color/on_primary"
+            android:visibility="gone"
+            app:backgroundTint="@color/primary"
+            app:icon="@drawable/ic_filter"
+            app:iconTint="@color/on_primary"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Skeleton satu halaman penuh (shimmer), menutupi seluruh layar saat pemuatan pertama -->
+    <include
+        android:id="@+id/skeleton_favorite"
+        layout="@layout/layout_skeleton_favorite_full"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+</FrameLayout>

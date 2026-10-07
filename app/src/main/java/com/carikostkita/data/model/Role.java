@@ -3,7 +3,10 @@ package com.carikostkita.data.model;
 public enum Role {
     USER,
     PEMILIK_KOST,
-    ADMIN;
+    /** Super Admin (developer). */
+    ADMIN,
+    /** Staf moderasi: memverifikasi & menangguhkan, tidak bisa menghapus akun atau mengangkat staf. */
+    MODERATOR;
 
     public static Role fromString(String roleStr) {
         if (roleStr == null) return USER;
@@ -15,6 +18,8 @@ public enum Role {
             case "developer":
             case "admin":
                 return ADMIN;
+            case "moderator":
+                return MODERATOR;
             case "user":
             default:
                 try {
@@ -31,6 +36,8 @@ public enum Role {
                 return "owner";
             case ADMIN:
                 return "developer";
+            case MODERATOR:
+                return "moderator";
             case USER:
             default:
                 return "user";
@@ -41,11 +48,16 @@ public enum Role {
         return this == PEMILIK_KOST;
     }
 
+    /** Staf (Super Admin atau Moderator): akses dashboard moderasi. */
     public boolean isDeveloper() {
-        return this == ADMIN;
+        return this == ADMIN || this == MODERATOR;
     }
 
     public boolean isAdmin() {
+        return isDeveloper();
+    }
+
+    public boolean isSuperAdmin() {
         return this == ADMIN;
     }
 
@@ -54,7 +66,9 @@ public enum Role {
             case PEMILIK_KOST:
                 return "Pemilik Kost";
             case ADMIN:
-                return "Developer";
+                return "Super Admin";
+            case MODERATOR:
+                return "Moderator";
             case USER:
             default:
                 return "Pencari Kost";

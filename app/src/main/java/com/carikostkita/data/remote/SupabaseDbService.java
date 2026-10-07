@@ -169,4 +169,47 @@ public interface SupabaseDbService {
 
     @POST("rest/v1/activity_logs")
     Call<ResponseBody> insertLog(@Body ActivityLogDto body);
+
+    // ==================== TABEL GENERIK (fitur baru: survei, ulasan, blokir, event) ====================
+
+    @GET("rest/v1/{table}")
+    Call<List<com.google.gson.JsonObject>> select(
+            @retrofit2.http.Path("table") String table,
+            @QueryMap(encoded = true) Map<String, String> filters,
+            @Query("select") String select,
+            @Query("order") String order
+    );
+
+    @POST("rest/v1/{table}")
+    Call<List<com.google.gson.JsonObject>> insert(
+            @retrofit2.http.Path("table") String table,
+            @Body Object body
+    );
+
+    @PATCH("rest/v1/{table}")
+    Call<List<com.google.gson.JsonObject>> patch(
+            @retrofit2.http.Path("table") String table,
+            @QueryMap(encoded = true) Map<String, String> filters,
+            @Body Object body
+    );
+
+    @DELETE("rest/v1/{table}")
+    Call<ResponseBody> remove(
+            @retrofit2.http.Path("table") String table,
+            @QueryMap(encoded = true) Map<String, String> filters
+    );
+
+    // ==================== RPC (fungsi SQL di supabase/migrations) ====================
+
+    @POST("rest/v1/rpc/{fn}")
+    Call<List<com.google.gson.JsonObject>> rpcRows(
+            @retrofit2.http.Path("fn") String functionName,
+            @Body Map<String, Object> params
+    );
+
+    @POST("rest/v1/rpc/{fn}")
+    Call<ResponseBody> rpc(
+            @retrofit2.http.Path("fn") String functionName,
+            @Body Map<String, Object> params
+    );
 }

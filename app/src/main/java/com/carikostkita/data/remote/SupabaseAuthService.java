@@ -41,6 +41,13 @@ public interface SupabaseAuthService {
     @POST("auth/v1/token?grant_type=id_token")
     Call<AuthResponse> signInWithGoogleIdToken(@Body IdTokenRequest body);
 
+    /** Kirim email reset kata sandi */
+    @POST("auth/v1/recover")
+    Call<ResponseBody> recoverPassword(
+            @Body java.util.Map<String, String> body,
+            @retrofit2.http.Query("redirect_to") String redirectTo
+    );
+
     /** Ambil user profile dari Supabase Auth (/auth/v1/user) */
     @retrofit2.http.GET("auth/v1/user")
     Call<AuthResponse.AuthUser> getCurrentAuthUser();

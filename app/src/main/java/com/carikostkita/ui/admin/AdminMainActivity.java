@@ -79,6 +79,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         VERIFIKASI,
         DATA,
         LAPORAN,
+        LOG,
         PROFIL
     }
 
@@ -97,6 +98,7 @@ public class AdminMainActivity extends AppCompatActivity implements
     private View containerVerifikasi;
     private View containerData;
     private View containerLaporan;
+    private View containerLog;
     private View containerProfil;
     private ExtendedFloatingActionButton fabAddKost;
 
@@ -169,11 +171,11 @@ public class AdminMainActivity extends AppCompatActivity implements
     private View badgeNavVerif;
     private GestureDetector swipeGestureDetector;
 
-    // Bottom Navigation Views
-    private final View[] navTabs = new View[5];
-    private final LinearLayout[] navPills = new LinearLayout[5];
-    private final ImageView[] navIcons = new ImageView[5];
-    private final TextView[] navLabels = new TextView[5];
+    // Bottom Navigation Views (6 Tabs)
+    private final View[] navTabs = new View[6];
+    private final LinearLayout[] navPills = new LinearLayout[6];
+    private final ImageView[] navIcons = new ImageView[6];
+    private final TextView[] navLabels = new TextView[6];
 
     // Repositories
     private KostRepository kostRepository;
@@ -216,6 +218,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_admin_main);
 
         initViews();
+        com.carikostkita.notifications.AppNotifications.onAppOpened(this);
         setupBottomNav();
         setupAdapters();
         loadAllStats();
@@ -236,6 +239,16 @@ public class AdminMainActivity extends AppCompatActivity implements
     }
 
     private void initViews() {
+        View headerBanner = findViewById(R.id.header_admin_banner);
+        if (headerBanner != null) headerBanner.setClipToOutline(true);
+        android.widget.EditText etSearch = findViewById(R.id.et_admin_data_search);
+        if (etSearch != null) etSearch.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(android.text.Editable e) { applyDataSearch(); }
+        });
+        View btnExport = findViewById(R.id.btn_admin_export_logs);
+        if (btnExport != null) btnExport.setOnClickListener(v -> exportLogsCsv());
         tvHeaderSub = findViewById(R.id.tv_admin_header_sub);
         tvHeaderTitle = findViewById(R.id.tv_admin_header_title);
         pbLoading = findViewById(R.id.pb_admin_loading);
@@ -255,6 +268,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         containerVerifikasi = findViewById(R.id.container_admin_verifikasi);
         containerData = findViewById(R.id.container_admin_data);
         containerLaporan = findViewById(R.id.container_admin_laporan);
+        containerLog = findViewById(R.id.container_admin_log);
         containerProfil = findViewById(R.id.container_admin_profil);
         fabAddKost = findViewById(R.id.fab_admin_add_kost);
 
@@ -314,6 +328,8 @@ public class AdminMainActivity extends AppCompatActivity implements
             });
         }
         if (btnQuickAddKost != null) {
+            // Developer memoderasi, bukan memiliki listing (kost harus dimiliki pemilik terverifikasi)
+            btnQuickAddKost.setVisibility(View.GONE);
             btnQuickAddKost.setOnClickListener(v -> {
                 startActivity(new Intent(this, AdminKostFormActivity.class));
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
@@ -323,7 +339,7 @@ public class AdminMainActivity extends AppCompatActivity implements
             btnQuickData.setOnClickListener(v -> switchTab(TabAdmin.DATA));
         }
         if (btnViewAllLogs != null) {
-            btnViewAllLogs.setOnClickListener(v -> switchTab(TabAdmin.PROFIL));
+            btnViewAllLogs.setOnClickListener(v -> switchTab(TabAdmin.LOG));
         }
 
         // Verifikasi Tab
@@ -388,8 +404,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         // FAB Tambah Kost
         fabAddKost.setOnClickListener(v -> {
             Intent intent = new Intent(this, AdminKostFormActivity.class);
-            intent.putExtra("owner_id", sessionManager.getUserId());
-            startActivity(intent);
+                        startActivity(intent);
         });
 
         itemAdminChangePassword.setOnClickListener(v -> showChangePasswordDialog());
@@ -404,16 +419,6 @@ public class AdminMainActivity extends AppCompatActivity implements
         }
 
         ivAdminProfileAvatar = findViewById(R.id.iv_admin_profile_avatar);
-        badgeDrawerVerif = findViewById(R.id.badge_drawer_admin_verif);
-
-        View itemAdminProfileLogs = findViewById(R.id.item_admin_profile_logs);
-        if (itemAdminProfileLogs != null) {
-            itemAdminProfileLogs.setOnClickListener(v -> {
-                if (rvLogs != null) {
-                    rvLogs.getParent().requestChildFocus(rvLogs, rvLogs);
-                }
-            });
-        }
 
         setupSwipeNavigation();
     }
@@ -422,43 +427,11 @@ public class AdminMainActivity extends AppCompatActivity implements
         if (drawerLayout == null) return;
         updateDrawerProfile();
 
-        View itemDash = findViewById(R.id.item_drawer_admin_dashboard);
-        View itemVerif = findViewById(R.id.item_drawer_admin_verifikasi);
-        View itemKost = findViewById(R.id.item_drawer_admin_kost);
-        View itemLaporan = findViewById(R.id.item_drawer_admin_laporan);
         View itemFasilitas = findViewById(R.id.item_drawer_admin_fasilitas);
-        View itemAddKost = findViewById(R.id.item_drawer_admin_add_kost);
         View itemEditProf = findViewById(R.id.item_drawer_admin_edit_profile);
         View itemChangePass = findViewById(R.id.item_drawer_admin_change_password);
         View btnLogoutDrawer = findViewById(R.id.btn_drawer_admin_logout);
 
-        if (itemDash != null) {
-            itemDash.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                switchTab(TabAdmin.DASHBOARD);
-            });
-        }
-        if (itemVerif != null) {
-            itemVerif.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                switchTab(TabAdmin.VERIFIKASI);
-            });
-        }
-        if (itemKost != null) {
-            itemKost.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                switchTab(TabAdmin.DATA);
-                isDataKostActive = true;
-                updateDataChips();
-                loadDataMasterContent();
-            });
-        }
-        if (itemLaporan != null) {
-            itemLaporan.setOnClickListener(v -> {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                switchTab(TabAdmin.LAPORAN);
-            });
-        }
         if (itemFasilitas != null) {
             itemFasilitas.setOnClickListener(v -> {
                 drawerLayout.closeDrawer(GravityCompat.START);
@@ -466,13 +439,22 @@ public class AdminMainActivity extends AppCompatActivity implements
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
-        if (itemAddKost != null) {
-            itemAddKost.setOnClickListener(v -> {
+        View itemUsers = findViewById(R.id.item_drawer_admin_users);
+        View itemOwners = findViewById(R.id.item_drawer_admin_owners);
+        if (itemUsers != null) {
+            itemUsers.setOnClickListener(v -> {
                 drawerLayout.closeDrawer(GravityCompat.START);
-                Intent intent = new Intent(this, AdminKostFormActivity.class);
-                intent.putExtra("owner_id", sessionManager.getUserId());
-                startActivity(intent);
-                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+                dataMasterSubTab = 1;
+                isDataKostActive = false;
+                switchTab(TabAdmin.DATA);
+            });
+        }
+        if (itemOwners != null) {
+            itemOwners.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                dataMasterSubTab = 2;
+                isDataKostActive = false;
+                switchTab(TabAdmin.DATA);
             });
         }
         if (itemEditProf != null) {
@@ -555,25 +537,29 @@ public class AdminMainActivity extends AppCompatActivity implements
         navTabs[1] = bottomNav.findViewById(R.id.tab_admin_nav_verif);
         navTabs[2] = bottomNav.findViewById(R.id.tab_admin_nav_data);
         navTabs[3] = bottomNav.findViewById(R.id.tab_admin_nav_laporan);
-        navTabs[4] = bottomNav.findViewById(R.id.tab_admin_nav_profil);
+        navTabs[4] = bottomNav.findViewById(R.id.tab_admin_nav_log);
+        navTabs[5] = bottomNav.findViewById(R.id.tab_admin_nav_profil);
 
         navPills[0] = bottomNav.findViewById(R.id.pill_admin_dashboard);
         navPills[1] = bottomNav.findViewById(R.id.pill_admin_verif);
         navPills[2] = bottomNav.findViewById(R.id.pill_admin_data);
         navPills[3] = bottomNav.findViewById(R.id.pill_admin_laporan);
-        navPills[4] = bottomNav.findViewById(R.id.pill_admin_profil);
+        navPills[4] = bottomNav.findViewById(R.id.pill_admin_log);
+        navPills[5] = bottomNav.findViewById(R.id.pill_admin_profil);
 
         navIcons[0] = bottomNav.findViewById(R.id.iv_admin_nav_dashboard);
         navIcons[1] = bottomNav.findViewById(R.id.iv_admin_nav_verif);
         navIcons[2] = bottomNav.findViewById(R.id.iv_admin_nav_data);
         navIcons[3] = bottomNav.findViewById(R.id.iv_admin_nav_laporan);
-        navIcons[4] = bottomNav.findViewById(R.id.iv_admin_nav_profil);
+        navIcons[4] = bottomNav.findViewById(R.id.iv_admin_nav_log);
+        navIcons[5] = bottomNav.findViewById(R.id.iv_admin_nav_profil);
 
         navLabels[0] = bottomNav.findViewById(R.id.tv_admin_nav_dashboard);
         navLabels[1] = bottomNav.findViewById(R.id.tv_admin_nav_verif);
         navLabels[2] = bottomNav.findViewById(R.id.tv_admin_nav_data);
         navLabels[3] = bottomNav.findViewById(R.id.tv_admin_nav_laporan);
-        navLabels[4] = bottomNav.findViewById(R.id.tv_admin_nav_profil);
+        navLabels[4] = bottomNav.findViewById(R.id.tv_admin_nav_log);
+        navLabels[5] = bottomNav.findViewById(R.id.tv_admin_nav_profil);
 
         badgeNavVerif = bottomNav.findViewById(R.id.badge_unread_admin_verif);
 
@@ -581,7 +567,19 @@ public class AdminMainActivity extends AppCompatActivity implements
         navTabs[1].setOnClickListener(v -> switchTab(TabAdmin.VERIFIKASI));
         navTabs[2].setOnClickListener(v -> switchTab(TabAdmin.DATA));
         navTabs[3].setOnClickListener(v -> switchTab(TabAdmin.LAPORAN));
-        navTabs[4].setOnClickListener(v -> switchTab(TabAdmin.PROFIL));
+        navTabs[4].setOnClickListener(v -> switchTab(TabAdmin.LOG));
+        navTabs[5].setOnClickListener(v -> switchTab(TabAdmin.PROFIL));
+
+        // Maksimal 5 tab: Log aktivitas dibuka dari kartu "Aktivitas Terbaru" di Dashboard
+        if (navTabs[4] != null) navTabs[4].setVisibility(View.GONE);
+    }
+
+    private static boolean isSeekerRole(String role) {
+        return role == null || "user".equalsIgnoreCase(role) || "pencari".equalsIgnoreCase(role);
+    }
+
+    private static boolean isOwnerRole(String role) {
+        return "owner".equalsIgnoreCase(role) || "pemilik".equalsIgnoreCase(role) || "pemilik_kost".equalsIgnoreCase(role);
     }
 
     private void updateVerifBadges(int pendingCount) {
@@ -679,6 +677,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         containerVerifikasi.setVisibility(View.GONE);
         containerData.setVisibility(View.GONE);
         containerLaporan.setVisibility(View.GONE);
+        if (containerLog != null) containerLog.setVisibility(View.GONE);
         containerProfil.setVisibility(View.GONE);
         fabAddKost.setVisibility(View.GONE);
 
@@ -695,7 +694,7 @@ public class AdminMainActivity extends AppCompatActivity implements
 
         int colorSecondary = ContextCompat.getColor(this, R.color.text_secondary);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             if (i == tabIndex) {
                 if (navTabs[i] != null) {
                     navTabs[i].setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1.8f));
@@ -750,12 +749,18 @@ public class AdminMainActivity extends AppCompatActivity implements
                 loadReportsData();
                 break;
 
+            case LOG:
+                tvHeaderSub.setText("Audit &amp; Forensik");
+                tvHeaderTitle.setText("Log Aktivitas Sistem");
+                animateContainerIn(containerLog);
+                loadAuditLogs();
+                break;
+
             case PROFIL:
                 tvHeaderSub.setText("Akun Administratif");
                 tvHeaderTitle.setText("Profil Super Admin");
                 animateContainerIn(containerProfil);
                 populateProfileData();
-                loadAuditLogs();
                 break;
         }
     }
@@ -774,8 +779,11 @@ public class AdminMainActivity extends AppCompatActivity implements
             case LAPORAN:
                 loadReportsData();
                 break;
-            case PROFIL:
+            case LOG:
                 loadAuditLogs();
+                break;
+            case PROFIL:
+                populateProfileData();
                 break;
         }
     }
@@ -903,14 +911,14 @@ public class AdminMainActivity extends AppCompatActivity implements
             int count = 0;
             if (currentAdminChartMetric == AdminChartMetric.TOTAL_PENCARI) {
                 for (UserDto u : cachedAdminUsers) {
-                    if ("pencari".equalsIgnoreCase(u.role)) {
+                    if (isSeekerRole(u.role)) {
                         long t = parseIsoDate(u.createdAt);
                         if (t <= bucketTime) count++;
                     }
                 }
             } else if (currentAdminChartMetric == AdminChartMetric.TOTAL_PEMILIK) {
                 for (UserDto u : cachedAdminUsers) {
-                    if ("pemilik".equalsIgnoreCase(u.role)) {
+                    if (isOwnerRole(u.role)) {
                         long t = parseIsoDate(u.createdAt);
                         if (t <= bucketTime) count++;
                     }
@@ -971,7 +979,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                 ivIcon.setImageResource(R.drawable.ic_nav_home);
                 tvTitle.setText("Total Properti Kost");
                 tvValue.setText(String.valueOf(cachedAdminKosts.size()));
-                tvDesc.setText("Jumlah akumulatif seluruh properti kost yang terdaftar dalam basis data PostgreSQL Supabase.");
+                tvDesc.setText("Jumlah seluruh properti kost yang terdaftar, termasuk yang masih menunggu verifikasi.");
                 int aktif = 0, pending = 0;
                 for (KostDto k : cachedAdminKosts) {
                     if ("TERSEDIA".equalsIgnoreCase(k.status)) aktif++;
@@ -994,7 +1002,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                 tvTitle.setText("Total Akun Pencari");
                 int countPencari = 0;
                 for (UserDto u : cachedAdminUsers) {
-                    if ("pencari".equalsIgnoreCase(u.role)) countPencari++;
+                    if (isSeekerRole(u.role)) countPencari++;
                 }
                 tvValue.setText(String.valueOf(countPencari));
                 tvDesc.setText("Jumlah pengguna terdaftar dengan peran Pencari Kost yang aktif mencari hunian.");
@@ -1015,7 +1023,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                 tvTitle.setText("Total Akun Pemilik");
                 int countPemilik = 0;
                 for (UserDto u : cachedAdminUsers) {
-                    if ("pemilik".equalsIgnoreCase(u.role)) countPemilik++;
+                    if (isOwnerRole(u.role)) countPemilik++;
                 }
                 tvValue.setText(String.valueOf(countPemilik));
                 tvDesc.setText("Mitra pemilik properti kost yang mengelola dan mempublikasikan kamar di CariKostKita.");
@@ -1099,10 +1107,130 @@ public class AdminMainActivity extends AppCompatActivity implements
         dialog.show();
     }
 
+    private List<User> lastUsers = new ArrayList<>();
+    private List<User> lastOwners = new ArrayList<>();
+    private List<SystemActivityLog> lastLogs = new ArrayList<>();
+
+    /** Filter daftar pengguna / pemilik berdasarkan teks pencarian (nama, email, peran, no HP). */
+    private void applyDataSearch() {
+        android.widget.EditText et = findViewById(R.id.et_admin_data_search);
+        String q = et != null && et.getText() != null ? et.getText().toString().trim().toLowerCase(Locale.ROOT) : "";
+        List<User> source = dataMasterSubTab == 2 ? lastOwners : lastUsers;
+        if (dataMasterSubTab == 0) return;
+        List<User> filtered = new ArrayList<>();
+        for (User u : source) {
+            String hay = ((u.getNama() != null ? u.getNama() : "") + " " + (u.getEmail() != null ? u.getEmail() : "") + " "
+                    + (u.getNoHp() != null ? u.getNoHp() : "") + " " + (u.getRole() != null ? u.getRole().getDisplayName() : ""))
+                    .toLowerCase(Locale.ROOT);
+            if (q.isEmpty() || hay.contains(q)) filtered.add(u);
+        }
+        if (dataMasterSubTab == 2) ownerAdapter.submitList(filtered);
+        else userAdapter.submitList(filtered);
+        tvDataCount.setText(filtered.size() + (q.isEmpty() ? "" : " cocok dari " + source.size()) + (dataMasterSubTab == 2 ? " pemilik" : " pengguna"));
+    }
+
+    /** Ekspor log audit yang sudah dimuat sebagai CSV lewat menu bagikan. */
+    private void exportLogsCsv() {
+        if (lastLogs.isEmpty()) {
+            Toast.makeText(this, "Buka tab Log dulu agar data termuat", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StringBuilder csv = new StringBuilder("waktu,aktor,aksi,target,target_id,deskripsi\n");
+        for (SystemActivityLog l : lastLogs) {
+            csv.append(csvCell(l.getCreatedAt())).append(',').append(csvCell(l.getActorName())).append(',')
+                    .append(csvCell(l.getActionType())).append(',').append(csvCell(l.getTargetType())).append(',')
+                    .append(csvCell(l.getTargetId())).append(',').append(csvCell(l.getDescription())).append('\n');
+        }
+        try {
+            java.io.File dir = new java.io.File(getCacheDir(), "exports");
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdirs();
+            java.io.File file = new java.io.File(dir, "audit-log-" + new SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(new Date()) + ".csv");
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+                out.write(csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
+            Intent share = new Intent(Intent.ACTION_SEND).setType("text/csv").putExtra(Intent.EXTRA_STREAM, uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(share, "Ekspor log audit"));
+            activityLogRepository.logActivity(sessionManager.getUserUid(), "EXPORT_LOGS", "Mengekspor " + lastLogs.size() + " baris log audit", "log", null);
+        } catch (Exception e) {
+            Toast.makeText(this, "Ekspor gagal. Coba lagi.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private static String csvCell(String v) {
+        if (v == null) return "";
+        return "\"" + v.replace("\"", "\"\"").replace("\n", " ") + "\"";
+    }
+
+    /** Funnel produk & jumlah crash 7 hari untuk kartu kesehatan di dashboard. */
+    private void loadHealthCard() {
+        TextView funnel = findViewById(R.id.tv_admin_funnel);
+        TextView crash = findViewById(R.id.tv_admin_crash);
+        com.carikostkita.data.repository.AnalyticsRepository analytics = new com.carikostkita.data.repository.AnalyticsRepository(this);
+        analytics.adminFunnel(30, new DataCallback<java.util.Map<String, Long>>() {
+            @Override
+            public void onSuccess(java.util.Map<String, Long> data) {
+                if (funnel == null) return;
+                String[][] labels = {{"search", "Pencarian"}, {"view_detail", "Buka detail"}, {"favorite_add", "Simpan favorit"},
+                        {"chat_start", "Mulai chat"}, {"survey_request", "Ajukan survei"}};
+                StringBuilder sb = new StringBuilder();
+                long top = Math.max(1, data.get("search") != null ? data.get("search") : 1);
+                for (String[] l : labels) {
+                    long n = data.get(l[0]) != null ? data.get(l[0]) : 0;
+                    sb.append(String.format(Locale.US, "%-15s %6d  %3d%%%n", l[1], n, Math.round(n * 100.0 / top)));
+                }
+                funnel.setText(sb.toString().trim());
+            }
+
+            @Override
+            public void onError(String message) {
+                if (funnel != null) funnel.setText("Funnel belum tersedia: jalankan migrasi SQL fitur industri.");
+            }
+        });
+        analytics.recentCrashCount(new DataCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer n) {
+                if (crash == null) return;
+                crash.setText(n == 0 ? "Tidak ada crash dalam 7 hari terakhir" : n + " laporan crash dalam 7 hari terakhir");
+                crash.setTextColor(ContextCompat.getColor(AdminMainActivity.this, n == 0 ? R.color.status_tersedia : R.color.status_penuh));
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+    }
+
+    private boolean adminStatsLoadedOnce = false;
+    private long adminSkeletonStart = 0;
+
+    /** Skeleton penuh menggantikan isi dashboard hanya pada pemuatan pertama. */
+    private void setDashboardSkeleton(boolean show) {
+        View skeleton = findViewById(R.id.skeleton_admin_dashboard);
+        if (skeleton == null || containerDashboard == null) return;
+        if (show) {
+            adminSkeletonStart = com.carikostkita.util.SkeletonHelper.markStart();
+            skeleton.setVisibility(View.VISIBLE);
+            containerDashboard.setVisibility(View.GONE);
+        } else {
+            com.carikostkita.util.SkeletonHelper.complete(adminSkeletonStart, () -> {
+                if (isFinishing() || isDestroyed()) return;
+                skeleton.setVisibility(View.GONE);
+                if (currentTab == TabAdmin.DASHBOARD) containerDashboard.setVisibility(View.VISIBLE);
+            });
+        }
+    }
+
     private void loadAllStats() {
+        if (!adminStatsLoadedOnce && currentTab == TabAdmin.DASHBOARD) setDashboardSkeleton(true);
         kostRepository.getAdminStats(new DataCallback<KostRepository.AdminStats>() {
             @Override
             public void onSuccess(KostRepository.AdminStats stats) {
+                if (!adminStatsLoadedOnce) {
+                    adminStatsLoadedOnce = true;
+                    setDashboardSkeleton(false);
+                }
                 if (tvStatTotal != null) tvStatTotal.setText(String.valueOf(stats.totalKost));
                 if (tvStatKostAktif != null) tvStatKostAktif.setText(String.valueOf(stats.kostAktif));
                 if (tvStatAntreanKost != null) tvStatAntreanKost.setText(String.valueOf(stats.totalPending));
@@ -1118,7 +1246,13 @@ public class AdminMainActivity extends AppCompatActivity implements
                 updateDashboardModerationAlert();
             }
             @Override
-            public void onError(String message) {}
+            public void onError(String message) {
+                if (!adminStatsLoadedOnce) {
+                    adminStatsLoadedOnce = true;
+                    setDashboardSkeleton(false);
+                }
+                Toast.makeText(AdminMainActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
         });
 
         userRepository.getUserStats(new DataCallback<UserRepository.UserStats>() {
@@ -1154,6 +1288,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         });
 
         loadDashboardRecentLogs();
+        loadHealthCard();
     }
 
     private void updateDashboardModerationAlert() {
@@ -1336,12 +1471,13 @@ public class AdminMainActivity extends AppCompatActivity implements
                 @Override
                 public void onSuccess(List<User> list) {
                     pbLoading.setVisibility(View.GONE);
+                    lastUsers = list;
                     tvDataCount.setText(list.size() + " pengguna");
                     if (list.isEmpty()) {
                         layoutDataEmpty.setVisibility(View.VISIBLE);
                     } else {
                         rvData.setVisibility(View.VISIBLE);
-                        userAdapter.submitList(list);
+                        applyDataSearch();
                     }
                 }
 
@@ -1359,12 +1495,13 @@ public class AdminMainActivity extends AppCompatActivity implements
                 @Override
                 public void onSuccess(List<User> list) {
                     pbLoading.setVisibility(View.GONE);
+                    lastOwners = list;
                     tvDataCount.setText(list.size() + " pemilik");
                     if (list.isEmpty()) {
                         layoutDataEmpty.setVisibility(View.VISIBLE);
                     } else {
                         rvData.setVisibility(View.VISIBLE);
-                        ownerAdapter.submitList(list);
+                        applyDataSearch();
                     }
                 }
 
@@ -1415,6 +1552,7 @@ public class AdminMainActivity extends AppCompatActivity implements
             @Override
             public void onSuccess(List<SystemActivityLog> list) {
                 if (list != null) {
+                    lastLogs = list;
                     logAdapter.submitList(list);
                 }
             }
@@ -1473,12 +1611,8 @@ public class AdminMainActivity extends AppCompatActivity implements
 
     @Override
     public void onRequireRevision(User user, int position) {
-        AppDialogHelper.showInput(this,
-                "Minta Perbaikan / Revisi",
-                "Tuliskan catatan perbaikan yang harus dilengkapi oleh " + user.getNama() + ":",
-                "Contoh: Mohon lengkapi nomor WhatsApp aktif dan patokan kost.",
-                "",
-                "Kirim Permintaan",
+        com.carikostkita.util.ModerationReasons.pick(this, "Minta Perbaikan: " + user.getNama(),
+                com.carikostkita.util.ModerationReasons.OWNER_REVISION, "Kirim Permintaan",
                 revisionNote -> {
                     if (revisionNote.isEmpty()) {
                         Toast.makeText(this, "Catatan perbaikan wajib diisi", Toast.LENGTH_SHORT).show();
@@ -1523,13 +1657,11 @@ public class AdminMainActivity extends AppCompatActivity implements
 
     @Override
     public void onReject(User user, int position) {
-        AppDialogHelper.showDanger(this,
-                "Tolak Pengajuan",
-                "Tolak permohonan verifikasi pemilik kost untuk akun \"" + user.getNama() + "\"? Akun akan tetap aktif sebagai Pencari Kost biasa.",
-                "Tolak Pengajuan",
-                () -> {
+        com.carikostkita.util.ModerationReasons.pick(this, "Tolak Pengajuan: " + user.getNama(),
+                com.carikostkita.util.ModerationReasons.OWNER_REJECT, "Tolak Pengajuan",
+                rejectReason -> {
                     verifPemilikAdapter.setProcessing(user.getUid(), true);
-                    userRepository.rejectOwnerVerification(user.getUid(), "Persyaratan belum lengkap atau data kost tidak valid.", new DataCallback<Boolean>() {
+                    userRepository.rejectOwnerVerification(user.getUid(), rejectReason, new DataCallback<Boolean>() {
                         @Override
                         public void onSuccess(Boolean success) {
                             verifPemilikAdapter.setProcessing(user.getUid(), false);
@@ -1545,7 +1677,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                             }
 
                             activityLogRepository.logActivity(sessionManager.getUserUid(), "REJECT_OWNER",
-                                    "Admin menolak pengajuan pemilik kost akun " + user.getNama(),
+                                    "Menolak pengajuan pemilik " + user.getNama() + ": " + rejectReason,
                                     "user", user.getUid());
                             Toast.makeText(AdminMainActivity.this, "Pengajuan pemilik telah ditolak", Toast.LENGTH_SHORT).show();
                             loadAllStats();
@@ -1591,7 +1723,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                     kostRepository.updateStatus(kost.getIdKost(), nextStatus, new DataCallback<Boolean>() {
                         @Override
                         public void onSuccess(Boolean success) {
-                            activityLogRepository.logActivity(sessionManager.getUserId(), "UPDATE_KOST_STATUS",
+                            activityLogRepository.logActivity(sessionManager.getUserUid(), "UPDATE_KOST_STATUS",
                                     "Status kost '" + kost.getNamaKost() + "' diubah menjadi " + nextStatus.getDisplayName(),
                                     "kost", kost.getIdKost());
                             kost.setStatus(nextStatus);
@@ -1606,6 +1738,31 @@ public class AdminMainActivity extends AppCompatActivity implements
                         }
                     });
                 });
+    }
+
+    /**
+     * Deteksi kemungkinan listing duplikat: foto sampul sama, nama + kota sama,
+     * atau titik peta berjarak < 30 m dari kost lain milik pemilik berbeda.
+     */
+    private String findPossibleDuplicates(Kost kost) {
+        List<String> hits = new ArrayList<>();
+        String name = kost.getNamaKost() != null ? kost.getNamaKost().trim().toLowerCase(Locale.ROOT) : "";
+        for (KostDto other : cachedAdminKosts) {
+            if (other.id == null || other.id.equals(kost.getId())) continue;
+            boolean samePhoto = kost.getThumbnailUrl() != null && kost.getThumbnailUrl().equals(other.thumbnailUrl);
+            boolean sameName = !name.isEmpty() && other.namaKost != null && name.equals(other.namaKost.trim().toLowerCase(Locale.ROOT))
+                    && kost.getKota() != null && kost.getKota().equalsIgnoreCase(other.kota);
+            boolean samePlace = kost.hasCoordinates() && other.latitude != null && other.longitude != null
+                    && other.latitude != 0 && com.carikostkita.util.GeoUtil.distanceKm(kost.getLatitude(), kost.getLongitude(),
+                    other.latitude, other.longitude) < 0.03
+                    && (kost.getOwnerId() == null || !kost.getOwnerId().equals(other.ownerId));
+            if (samePhoto || sameName || samePlace) {
+                hits.add("\"" + other.namaKost + "\" (" + (samePhoto ? "foto sama" : sameName ? "nama & kota sama" : "lokasi < 30 m") + ")");
+            }
+        }
+        if (hits.isEmpty()) return null;
+        return "Kemungkinan duplikat: " + android.text.TextUtils.join(", ", hits.subList(0, Math.min(3, hits.size())))
+                + ". Periksa sebelum menyetujui.";
     }
 
     private void showKostModerationDialog(Kost kost) {
@@ -1623,13 +1780,19 @@ public class AdminMainActivity extends AppCompatActivity implements
 
         tvName.setText(kost.getNamaKost());
         tvDesc.setText((kost.getAlamat() != null ? kost.getAlamat() : "") + " • " + FormatUtil.formatRupiah(kost.getHarga()));
+        TextView tvDup = view.findViewById(R.id.tv_dialog_kost_duplicate);
+        String dup = findPossibleDuplicates(kost);
+        if (tvDup != null && dup != null) {
+            tvDup.setText(dup);
+            tvDup.setVisibility(View.VISIBLE);
+        }
 
         btnApprove.setOnClickListener(v -> {
             dialog.dismiss();
             kostRepository.updateVerificationStatus(kost.getIdKost(), KostVerificationStatus.APPROVED, null, new DataCallback<Boolean>() {
                 @Override
                 public void onSuccess(Boolean result) {
-                    activityLogRepository.logActivity(sessionManager.getUserId(), "APPROVE_KOST",
+                    activityLogRepository.logActivity(sessionManager.getUserUid(), "APPROVE_KOST",
                             "Admin menyetujui publikasi properti kost: " + kost.getNamaKost(),
                             "kost", kost.getIdKost());
                     AppDialogHelper.showSuccess(AdminMainActivity.this, "Kost Disetujui",
@@ -1649,12 +1812,8 @@ public class AdminMainActivity extends AppCompatActivity implements
 
         btnRevision.setOnClickListener(v -> {
             dialog.dismiss();
-            AppDialogHelper.showInput(this,
-                    "Minta Perbaikan Kost",
-                    "Tuliskan catatan perbaikan data/foto untuk pemilik kost \"" + kost.getNamaKost() + "\":",
-                    "Contoh: Mohon lengkapi foto kamar mandi dan patokan jalan.",
-                    "",
-                    "Kirim Catatan",
+            com.carikostkita.util.ModerationReasons.pick(this, "Minta Perbaikan Kost",
+                    com.carikostkita.util.ModerationReasons.KOST_REVISION, "Kirim Catatan",
                     revisionNote -> {
                         if (revisionNote.isEmpty()) {
                             Toast.makeText(this, "Catatan perbaikan wajib diisi", Toast.LENGTH_SHORT).show();
@@ -1663,7 +1822,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                         kostRepository.updateVerificationStatus(kost.getIdKost(), KostVerificationStatus.REVISION_REQUIRED, revisionNote, new DataCallback<Boolean>() {
                             @Override
                             public void onSuccess(Boolean result) {
-                                activityLogRepository.logActivity(sessionManager.getUserId(), "REVISION_KOST",
+                                activityLogRepository.logActivity(sessionManager.getUserUid(), "REVISION_KOST",
                                         "Admin meminta revisi properti kost: " + kost.getNamaKost() + " - " + revisionNote,
                                         "kost", kost.getIdKost());
                                 AppDialogHelper.showSuccess(AdminMainActivity.this, "Permintaan Terkirim",
@@ -1684,16 +1843,14 @@ public class AdminMainActivity extends AppCompatActivity implements
 
         btnReject.setOnClickListener(v -> {
             dialog.dismiss();
-            AppDialogHelper.showDanger(this,
-                    "Tolak Properti Kost",
-                    "Apakah Anda yakin ingin menolak publikasi properti \"" + kost.getNamaKost() + "\"?",
-                    "Tolak",
-                    () -> {
-                        kostRepository.updateVerificationStatus(kost.getIdKost(), KostVerificationStatus.REJECTED, "Properti tidak memenuhi standar CariKostKita.", new DataCallback<Boolean>() {
+            com.carikostkita.util.ModerationReasons.pick(this, "Tolak Properti Kost",
+                    com.carikostkita.util.ModerationReasons.KOST_REJECT, "Tolak Kost",
+                    reason -> {
+                        kostRepository.updateVerificationStatus(kost.getIdKost(), KostVerificationStatus.REJECTED, reason, new DataCallback<Boolean>() {
                             @Override
                             public void onSuccess(Boolean result) {
-                                activityLogRepository.logActivity(sessionManager.getUserId(), "REJECT_KOST",
-                                        "Admin menolak publikasi kost: " + kost.getNamaKost(),
+                                activityLogRepository.logActivity(sessionManager.getUserUid(), "REJECT_KOST",
+                                        "Menolak kost " + kost.getNamaKost() + ": " + reason,
                                         "kost", kost.getIdKost());
                                 Toast.makeText(AdminMainActivity.this, "Properti kost ditolak", Toast.LENGTH_SHORT).show();
                                 loadAllStats();
@@ -1726,16 +1883,14 @@ public class AdminMainActivity extends AppCompatActivity implements
     public void onToggleStatus(User user, int position) {
         boolean currentlyActive = user.isActive();
         if (currentlyActive) {
-            AppDialogHelper.showDanger(this,
-                    "Tangguhkan Akun",
-                    "Tangguhkan akun \"" + user.getNama() + "\" (" + user.getEmail() + ")? Pengguna tidak akan dapat masuk ke sistem.",
-                    "Tangguhkan",
-                    () -> {
+            com.carikostkita.util.ModerationReasons.pick(this, "Tangguhkan " + user.getNama(),
+                    com.carikostkita.util.ModerationReasons.USER_SUSPEND, "Tangguhkan",
+                    suspendReason -> {
                         userRepository.setUserActiveStatus(user.getUid(), false, new DataCallback<Boolean>() {
                             @Override
                             public void onSuccess(Boolean result) {
                                 activityLogRepository.logActivity(sessionManager.getUserUid(), "SUSPEND_USER",
-                                        "Admin menangguhkan akun " + user.getNama() + " (" + user.getEmail() + ")",
+                                        "Menangguhkan " + user.getNama() + " (" + user.getEmail() + "): " + suspendReason,
                                         "user", user.getUid());
                                 user.setActive(false);
                                 userAdapter.notifyItemChanged(position);
@@ -1774,9 +1929,97 @@ public class AdminMainActivity extends AppCompatActivity implements
         }
     }
 
+    /** Dokumen verifikasi dibuka lewat URL bertanda tangan (berlaku 10 menit). */
+    @Override
+    public void onViewDocuments(User user) {
+        com.carikostkita.data.repository.VerificationRepository repo = new com.carikostkita.data.repository.VerificationRepository(this);
+        repo.docPaths(user.getUid(), new DataCallback<String[]>() {
+            @Override
+            public void onSuccess(String[] paths) {
+                String[] labels = {"Foto KTP", "Selfie dengan KTP", "Bukti kepemilikan / kuasa"};
+                List<String> names = new ArrayList<>();
+                List<String> available = new ArrayList<>();
+                for (int i = 0; i < paths.length; i++) {
+                    if (paths[i] != null) {
+                        names.add(labels[i]);
+                        available.add(paths[i]);
+                    }
+                }
+                if (available.isEmpty()) {
+                    AppDialogHelper.showInfo(AdminMainActivity.this, "Belum Ada Dokumen",
+                            user.getNama() + " belum mengunggah dokumen verifikasi. Minta perbaikan agar dokumen dilengkapi.");
+                    return;
+                }
+                new MaterialAlertDialogBuilder(AdminMainActivity.this)
+                        .setTitle("Dokumen " + user.getNama())
+                        .setItems(names.toArray(new String[0]), (d, which) -> repo.signedUrl(available.get(which), new DataCallback<String>() {
+                            @Override
+                            public void onSuccess(String url) {
+                                android.widget.ImageView iv = new android.widget.ImageView(AdminMainActivity.this);
+                                iv.setAdjustViewBounds(true);
+                                int pad = (int) (12 * getResources().getDisplayMetrics().density);
+                                iv.setPadding(pad, pad, pad, pad);
+                                com.bumptech.glide.Glide.with(AdminMainActivity.this).load(url)
+                                        .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).into(iv);
+                                new MaterialAlertDialogBuilder(AdminMainActivity.this)
+                                        .setTitle(names.get(which)).setView(iv).setPositiveButton("Tutup", null).show();
+                            }
+
+                            @Override
+                            public void onError(String message) {
+                                Toast.makeText(AdminMainActivity.this, message, Toast.LENGTH_SHORT).show();
+                            }
+                        }))
+                        .show();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(AdminMainActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /** Super Admin mengangkat atau mencabut Moderator (dicek lagi oleh trigger server). */
+    @Override
+    public void onChangeRole(User user, int position) {
+        if (!sessionManager.isSuperAdmin()) return;
+        if (user.getUid() != null && user.getUid().equals(sessionManager.getUserUid())) return;
+        com.carikostkita.data.model.Role current = user.getRole();
+        if (current == com.carikostkita.data.model.Role.ADMIN || current == com.carikostkita.data.model.Role.PEMILIK_KOST) {
+            Toast.makeText(this, current == com.carikostkita.data.model.Role.PEMILIK_KOST
+                    ? "Peran pemilik diatur lewat verifikasi pemilik" : "Peran Super Admin tidak bisa diubah di sini", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        boolean promote = current != com.carikostkita.data.model.Role.MODERATOR;
+        AppDialogHelper.showConfirm(this,
+                promote ? "Jadikan Moderator?" : "Cabut Peran Moderator?",
+                promote ? user.getNama() + " akan bisa memverifikasi kost/pemilik dan menangguhkan akun, tetapi tidak bisa menghapus akun."
+                        : user.getNama() + " akan kembali menjadi Pencari Kost.",
+                promote ? "Jadikan Moderator" : "Cabut",
+                () -> userRepository.setRole(user.getUid(), promote ? "moderator" : "user", new DataCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean ok) {
+                        activityLogRepository.logActivity(sessionManager.getUserUid(), promote ? "GRANT_MODERATOR" : "REVOKE_MODERATOR",
+                                (promote ? "Mengangkat moderator: " : "Mencabut moderator: ") + user.getNama(), "user", user.getUid());
+                        user.setRole(promote ? com.carikostkita.data.model.Role.MODERATOR : com.carikostkita.data.model.Role.USER);
+                        userAdapter.notifyItemChanged(position);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(AdminMainActivity.this, message, Toast.LENGTH_SHORT).show();
+                    }
+                }));
+    }
+
     @Override
     public void onDeleteUser(User user, int position) {
         if (user == null) return;
+        if (!sessionManager.isSuperAdmin()) {
+            AppDialogHelper.showInfo(this, "Khusus Super Admin", "Moderator dapat menangguhkan akun, tetapi penghapusan permanen hanya oleh Super Admin.");
+            return;
+        }
         if (user.getRole() == com.carikostkita.data.model.Role.ADMIN) {
             Toast.makeText(this, "Akun Developer tidak dapat dihapus", Toast.LENGTH_SHORT).show();
             return;
@@ -1823,7 +2066,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                     reportRepository.updateReportStatus(report.getIdReport(), ReportStatus.SELESAI, new DataCallback<Boolean>() {
                         @Override
                         public void onSuccess(Boolean result) {
-                            activityLogRepository.logActivity(sessionManager.getUserId(), "RESOLVE_REPORT",
+                            activityLogRepository.logActivity(sessionManager.getUserUid(), "RESOLVE_REPORT",
                                     "Admin menyelesaikan laporan #" + report.getIdReport() + " untuk kost " + report.getNamaKost(),
                                     "report", report.getIdReport());
                             Toast.makeText(AdminMainActivity.this, "Laporan ditandai selesai", Toast.LENGTH_SHORT).show();
@@ -1849,7 +2092,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                     reportRepository.updateReportStatus(report.getIdReport(), ReportStatus.DITOLAK, new DataCallback<Boolean>() {
                         @Override
                         public void onSuccess(Boolean result) {
-                            activityLogRepository.logActivity(sessionManager.getUserId(), "DISMISS_REPORT",
+                            activityLogRepository.logActivity(sessionManager.getUserUid(), "DISMISS_REPORT",
                                     "Admin menolak laporan #" + report.getIdReport(),
                                     "report", report.getIdReport());
                             Toast.makeText(AdminMainActivity.this, "Laporan ditolak", Toast.LENGTH_SHORT).show();
@@ -1907,6 +2150,10 @@ public class AdminMainActivity extends AppCompatActivity implements
 
     @Override
     public void onDeleteOwner(User user, int position) {
+        if (!sessionManager.isSuperAdmin()) {
+            AppDialogHelper.showInfo(this, "Khusus Super Admin", "Penghapusan akun permanen hanya bisa dilakukan Super Admin.");
+            return;
+        }
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Hapus Akun Pemilik")
                 .setIcon(R.drawable.ic_delete)

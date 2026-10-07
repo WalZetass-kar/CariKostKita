@@ -16,6 +16,15 @@ public class User implements Serializable {
     private boolean isActive;
     private String authProvider; // "EMAIL" or "GOOGLE"
     private String createdAt;
+    private String pengajuanAt;
+
+    public String getPengajuanAt() {
+        return pengajuanAt;
+    }
+
+    public void setPengajuanAt(String pengajuanAt) {
+        this.pengajuanAt = pengajuanAt;
+    }
 
     public User() {
         this.role = Role.USER;

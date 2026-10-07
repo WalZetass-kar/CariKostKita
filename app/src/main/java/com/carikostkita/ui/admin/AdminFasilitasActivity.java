@@ -1,6 +1,7 @@
 package com.carikostkita.ui.admin;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -51,6 +52,10 @@ public class AdminFasilitasActivity extends AppCompatActivity {
         rvFasilitas.setLayoutManager(new LinearLayoutManager(this));
         rvFasilitas.setAdapter(adapter);
 
+        // Daftar fasilitas dipakai bersama oleh form, filter, dan peta (Fasilitas.getMaster()).
+        // Menambah fasilitas baru perlu rilis aplikasi, jadi halaman ini hanya untuk melihat.
+        View boxAdd = findViewById(R.id.box_add_fasilitas);
+        if (boxAdd != null) boxAdd.setVisibility(View.GONE);
         btnTambah.setOnClickListener(v -> handleTambahFasilitas());
 
         loadFasilitas();
@@ -79,10 +84,6 @@ public class AdminFasilitasActivity extends AppCompatActivity {
             return;
         }
 
-        int newId = currentList.size() + 1;
-        currentList.add(new Fasilitas(newId, nama));
-        adapter.submitList(new ArrayList<>(currentList));
-        etNamaFasilitas.setText("");
-        Toast.makeText(this, "Fasilitas berhasil ditambahkan", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Fasilitas standar diatur di aplikasi dan belum bisa ditambah dari sini.", Toast.LENGTH_LONG).show();
     }
 }

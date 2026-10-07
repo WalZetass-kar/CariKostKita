@@ -1,4 +1,12 @@
 -- =========================================================================
+-- USANG — JANGAN DIJALANKAN LAGI.
+-- Script ini berisi kebijakan RLS lama yang terlalu longgar (pencari bisa membuat
+-- kost, pemilik bisa menyetujui kost sendiri, pesan chat bisa disisipkan).
+-- Gunakan: supabase/migrations/20261005_security_hardening.sql
+-- Menjalankan file ini SETELAH migrasi baru akan membuka kembali celah tersebut.
+-- =========================================================================
+
+-- =========================================================================
 -- CARIKOSTKITA: SUPABASE FIX & UPDATE SCRIPT (ANTI-GAGAL)
 -- Jalankan SELURUH script ini di Supabase Dashboard -> SQL Editor -> Run
 -- =========================================================================

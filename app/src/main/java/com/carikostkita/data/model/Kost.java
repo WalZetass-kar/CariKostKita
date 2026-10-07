@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Locale;
 
 public class Kost implements Serializable {
+    /** Penanda jumlah kamar belum diisi pemilik (jangan ditampilkan sebagai angka). */
+    public static final int ROOMS_UNKNOWN = -1;
+
     private String id;
     private String ownerId;
     private String namaKost;
@@ -54,15 +57,12 @@ public class Kost implements Serializable {
     public Kost() {
         this.tipeKost = TipeKost.CAMPUR;
         this.status = StatusKost.TERSEDIA;
-        this.verificationStatus = KostVerificationStatus.APPROVED;
+        this.verificationStatus = KostVerificationStatus.PENDING;
         this.catatanRevisi = "";
         this.locationVerification = "VALID";
         this.patokan = "";
-        this.provinsi = "Riau";
-        this.kota = "Pekanbaru";
-        this.ukuranKamar = "3x4 m";
-        this.totalKamar = 10;
-        this.kamarTersedia = 3;
+        this.totalKamar = 0;
+        this.kamarTersedia = ROOMS_UNKNOWN;
         this.imageUrls = new ArrayList<>();
         this.fasilitas = new ArrayList<>();
         this.listFasilitas = new ArrayList<>();
@@ -237,8 +237,9 @@ public class Kost implements Serializable {
         this.kota = kota;
     }
 
+    /** Ukuran kamar yang diisi pemilik, atau null bila belum diisi. */
     public String getUkuranKamar() {
-        return (ukuranKamar != null && !ukuranKamar.isEmpty()) ? ukuranKamar : "3x4 m";
+        return (ukuranKamar != null && !ukuranKamar.trim().isEmpty()) ? ukuranKamar.trim() : null;
     }
 
     public void setUkuranKamar(String ukuranKamar) {
@@ -246,7 +247,7 @@ public class Kost implements Serializable {
     }
 
     public int getTotalKamar() {
-        return Math.max(1, totalKamar);
+        return Math.max(0, totalKamar);
     }
 
     public void setTotalKamar(int totalKamar) {
@@ -263,6 +264,41 @@ public class Kost implements Serializable {
 
     public int getKamarTerisi() {
         return Math.max(0, getTotalKamar() - getKamarTersedia());
+    }
+
+    /** True bila pemilik sudah mengisi jumlah kamar kosong. */
+    public boolean hasRoomInfo() {
+        return kamarTersedia >= 0;
+    }
+
+    /** Kost bisa disewa: status Tersedia dan (jumlah kamar belum diisi atau masih ada). */
+    public boolean isAvailable() {
+        if (status != StatusKost.TERSEDIA) return false;
+        return !hasRoomInfo() || kamarTersedia > 0;
+    }
+
+    /** Label ketersediaan untuk kartu: "3 kamar kosong", "Tersedia", "Penuh", atau "Nonaktif". */
+    public String getAvailabilityLabel() {
+        if (status == StatusKost.TIDAK_AKTIF) return "Nonaktif";
+        if (!isAvailable()) return "Penuh";
+        if (hasRoomInfo()) return kamarTersedia + " kamar kosong";
+        return "Tersedia";
+    }
+
+    public boolean hasCoordinates() {
+        return latitude != 0 && longitude != 0;
+    }
+
+    /** Alamat lengkap: jalan & nomor, lalu kelurahan, kecamatan, kota, provinsi. */
+    public String getFullAddress() {
+        StringBuilder sb = new StringBuilder();
+        if (alamat != null && !alamat.trim().isEmpty()) sb.append(alamat.trim());
+        String area = getFullLocation();
+        if (area != null && !area.isEmpty() && !area.equals(alamat)) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(area);
+        }
+        return sb.toString();
     }
 
     public String getKelurahan() {
@@ -329,9 +365,8 @@ public class Kost implements Serializable {
         if (listFasilitas == null || listFasilitas.isEmpty()) {
             listFasilitas = new ArrayList<>();
             if (fasilitas != null) {
-                int idCounter = 1;
                 for (String fName : fasilitas) {
-                    listFasilitas.add(new Fasilitas(idCounter++, fName));
+                    listFasilitas.add(new Fasilitas(Fasilitas.idForName(fName), fName));
                 }
             }
         }
@@ -415,5 +450,38 @@ public class Kost implements Serializable {
             return alamat;
         }
         return sb.toString();
+    }
+
+    // ===== Rincian biaya, aturan, dan rating =====
+    /** Daftar aturan standar agar bisa dipakai sebagai label yang konsisten. */
+    public static final String[] ATURAN_MASTER = {
+            "Jam malam 22.00", "Tamu tidak boleh menginap", "Dilarang merokok di kamar",
+            "Boleh bawa hewan peliharaan", "Pasutri diperbolehkan", "Khusus mahasiswa", "Khusus pekerja"
+    };
+
+    private Integer deposit;
+    private Integer minimalSewaBulan;
+    private String biayaTambahan;
+    private List<String> aturan;
+    private double ratingAvg;
+    private int ratingCount;
+
+    public Integer getDeposit() { return deposit; }
+    public void setDeposit(Integer deposit) { this.deposit = deposit; }
+    public Integer getMinimalSewaBulan() { return minimalSewaBulan; }
+    public void setMinimalSewaBulan(Integer minimalSewaBulan) { this.minimalSewaBulan = minimalSewaBulan; }
+    public String getBiayaTambahan() { return biayaTambahan; }
+    public void setBiayaTambahan(String biayaTambahan) { this.biayaTambahan = biayaTambahan; }
+    public List<String> getAturan() { return aturan != null ? aturan : new ArrayList<>(); }
+    public void setAturan(List<String> aturan) { this.aturan = aturan; }
+    public double getRatingAvg() { return ratingAvg; }
+    public void setRatingAvg(double ratingAvg) { this.ratingAvg = ratingAvg; }
+    public int getRatingCount() { return ratingCount; }
+    public void setRatingCount(int ratingCount) { this.ratingCount = ratingCount; }
+
+    /** "★ 4,5 (12)" atau null bila belum ada ulasan. */
+    public String getRatingLabel() {
+        if (ratingCount <= 0) return null;
+        return String.format(new Locale("in", "ID"), "★ %.1f (%d)", ratingAvg, ratingCount);
     }
 }

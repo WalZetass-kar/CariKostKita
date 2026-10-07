@@ -16,6 +16,7 @@ import com.carikostkita.data.remote.dto.SignUpRequest;
 import com.carikostkita.data.remote.dto.UpdatePasswordRequest;
 import com.carikostkita.data.remote.dto.UserDto;
 import com.carikostkita.data.remote.dto.UserUpdateDto;
+import com.carikostkita.util.ErrorMessages;
 import com.carikostkita.util.SessionManager;
 import android.util.Base64;
 import com.google.gson.JsonObject;
@@ -42,6 +43,10 @@ import okhttp3.ResponseBody;
 import retrofit2.Response;
 
 public class UserRepository {
+    /** Dikirim lewat onError saat akun dibuat tapi email harus dikonfirmasi dulu. */
+    public static final String EMAIL_CONFIRMATION_REQUIRED =
+            "Akun berhasil dibuat. Buka email kamu dan ketuk tautan konfirmasi, lalu masuk dengan email dan kata sandi.";
+    public static final String RESET_REDIRECT_URL = "carikostkita://reset-callback";
     private final SupabaseAuthService authService;
     private final SupabaseDbService dbService;
     private final SupabaseStorageService storageService;
@@ -103,7 +108,7 @@ public class UserRepository {
                 fetchUserProfile(auth.user.id, auth, callback);
 
             } catch (Exception e) {
-                postError(callback, "Kesalahan jaringan login: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Kesalahan jaringan login", e));
             }
         });
     }
@@ -128,7 +133,7 @@ public class UserRepository {
                 fetchUserProfile(auth.user.id, auth, callback);
 
             } catch (Exception e) {
-                postError(callback, "Kesalahan Google sign-in: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Kesalahan Google sign-in", e));
             }
         });
     }
@@ -193,65 +198,7 @@ public class UserRepository {
                     mainHandler.post(() -> callback.onSuccess(user));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memproses sesi login: " + e.getMessage());
-            }
-        });
-    }
-
-    public void loginWithGoogle(String email, String name, String avatar, DataCallback<User> callback) {
-        login(email, "GoogleAuth123!", new DataCallback<User>() {
-            @Override
-            public void onSuccess(User data) {
-                mainHandler.post(() -> callback.onSuccess(data));
-            }
-
-            @Override
-            public void onError(String message) {
-                registerGoogleUser(name != null ? name : "Pengguna Google", email, avatar, callback);
-            }
-        });
-    }
-
-    private void registerGoogleUser(String nama, String email, String avatar, DataCallback<User> callback) {
-        executor.execute(() -> {
-            try {
-                Response<AuthResponse> res = authService.signUp(new SignUpRequest(email.trim().toLowerCase(), "GoogleAuth123!", nama.trim())).execute();
-                if (!res.isSuccessful() || res.body() == null) {
-                    String errorMsg = parseSupabaseError(res, "Gagal mendaftar akun Google");
-                    if (errorMsg.toLowerCase().contains("sudah terdaftar") || errorMsg.toLowerCase().contains("already")) {
-                        postError(callback, "Email " + email + " sudah terdaftar dengan kata sandi. Silakan masuk menggunakan form Email & Kata Sandi di atas.");
-                    } else {
-                        postError(callback, errorMsg);
-                    }
-                    return;
-                }
-
-                AuthResponse auth = res.body();
-                if (auth.accessToken != null && !auth.accessToken.isEmpty()) {
-                    sessionManager.saveTokens(auth.accessToken, auth.refreshToken, auth.expiresIn);
-                }
-
-                String uid = auth.user != null ? auth.user.id : null;
-                if (uid != null) {
-                    UserDto newProfile = new UserDto();
-                    newProfile.id = uid;
-                    newProfile.nama = nama.trim();
-                    newProfile.email = email.trim().toLowerCase();
-                    newProfile.role = "user";
-                    newProfile.avatarUrl = avatar != null && !avatar.isEmpty() ? avatar : "avatar_male";
-                    newProfile.authProvider = "GOOGLE";
-
-                    try {
-                        dbService.createUser(newProfile).execute();
-                    } catch (Exception ignored) {}
-
-                    fetchUserProfile(uid, auth, callback);
-                } else {
-                    User basic = new User("", nama, email, Role.USER, "");
-                    mainHandler.post(() -> callback.onSuccess(basic));
-                }
-            } catch (Exception e) {
-                postError(callback, "Gagal memproses pendaftaran Google: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memproses sesi login", e));
             }
         });
     }
@@ -289,7 +236,7 @@ public class UserRepository {
 
                 AuthResponse auth = res.body();
                 if (auth.accessToken == null || auth.accessToken.isEmpty()) {
-                    postError(callback, "Pendaftaran berhasil terkirim! Silakan periksa inbox email Anda untuk konfirmasi, atau nonaktifkan 'Confirm email' di Supabase Dashboard agar bisa langsung masuk.");
+                    postError(callback, EMAIL_CONFIRMATION_REQUIRED);
                     return;
                 }
 
@@ -305,7 +252,8 @@ public class UserRepository {
                             newProfile.id = uid;
                             newProfile.nama = nama.trim();
                             newProfile.email = email.trim().toLowerCase();
-                            newProfile.role = role != null ? role.name().toLowerCase() : "user";
+                            // Pendaftaran mandiri selalu Pencari Kost; peran lain diberikan developer
+                            newProfile.role = "user";
                             newProfile.noHp = noHp != null ? noHp.trim() : "";
                             newProfile.avatarUrl = "avatar_male";
                             newProfile.authProvider = "EMAIL";
@@ -333,52 +281,38 @@ public class UserRepository {
                 }
 
             } catch (Exception e) {
-                postError(callback, "Terjadi kesalahan registrasi: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Terjadi kesalahan registrasi", e));
             }
         });
     }
 
     private String parseSupabaseError(Response<?> response, String defaultMsg) {
         if (response == null) return defaultMsg;
+        String errorJson = "";
         try {
-            if (response.errorBody() != null) {
-                String errorJson = response.errorBody().string();
-                if (errorJson != null && !errorJson.trim().isEmpty()) {
-                    JsonObject obj = JsonParser.parseString(errorJson).getAsJsonObject();
-                    String rawMsg = null;
-                    if (obj.has("msg")) rawMsg = obj.get("msg").getAsString();
-                    else if (obj.has("message")) rawMsg = obj.get("message").getAsString();
-                    else if (obj.has("error_description")) rawMsg = obj.get("error_description").getAsString();
-                    else if (obj.has("error")) rawMsg = obj.get("error").getAsString();
-
-                    if (rawMsg != null && !rawMsg.trim().isEmpty()) {
-                        String lower = rawMsg.toLowerCase();
-                        if (lower.contains("user already registered") || lower.contains("already exists")) {
-                            return "Email ini sudah terdaftar. Silakan login atau gunakan email lain.";
-                        }
-                        if (lower.contains("invalid login credentials") || lower.contains("invalid credentials")) {
-                            return "Email atau password salah.";
-                        }
-                        if (lower.contains("email not confirmed")) {
-                            return "Email belum dikonfirmasi. Silakan periksa inbox email Anda atau nonaktifkan 'Confirm email' di Supabase Dashboard.";
-                        }
-                        if (lower.contains("database error saving new user")) {
-                            return "Gagal menyimpan akun ke database (Database error). Silakan jalankan script SQL perbaikan trigger di Supabase SQL Editor.";
-                        }
-                        if (lower.contains("password should be at least")) {
-                            return "Password minimal harus 6 karakter.";
-                        }
-                        if (lower.contains("rate limit")) {
-                            return "Terlalu banyak percobaan. Silakan tunggu beberapa menit.";
-                        }
-                        if (lower.contains("bad id token") || lower.contains("nonce")) {
-                            return "Gagal validasi token Google di Supabase. Pastikan opsi 'Skip nonce check' dicentang (aktif) di Supabase Dashboard -> Authentication -> Providers -> Google.";
-                        }
-                        return rawMsg;
-                    }
-                }
-            }
+            if (response.errorBody() != null) errorJson = response.errorBody().string();
         } catch (Exception ignored) {}
+        android.util.Log.e("UserRepository", "Auth error HTTP " + response.code() + ": " + errorJson);
+        String lower = errorJson != null ? errorJson.toLowerCase() : "";
+        if (lower.contains("already registered") || lower.contains("already exists")) {
+            return "Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.";
+        }
+        if (lower.contains("invalid login credentials") || lower.contains("invalid credentials")) {
+            return "Email atau kata sandi salah.";
+        }
+        if (lower.contains("email not confirmed")) {
+            return "Email belum dikonfirmasi. Buka email kamu dan ketuk tautan konfirmasi terlebih dahulu.";
+        }
+        if (lower.contains("password should be at least") || lower.contains("weak_password")) {
+            return "Kata sandi minimal 6 karakter.";
+        }
+        if (lower.contains("rate limit") || response.code() == 429) {
+            return "Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.";
+        }
+        if (lower.contains("same_password") || lower.contains("should be different")) {
+            return "Kata sandi baru harus berbeda dari kata sandi lama.";
+        }
+        if (response.code() >= 500) return ErrorMessages.SERVER;
         return defaultMsg;
     }
 
@@ -410,21 +344,7 @@ public class UserRepository {
                 sessionManager.createLoginSession(user, auth.accessToken, auth.refreshToken, auth.expiresIn);
                 mainHandler.post(() -> callback.onSuccess(user));
             } else {
-                // Periksa apakah sudah ada profil berdasarkan email
                 String email = (auth.user != null && auth.user.email != null) ? auth.user.email : "";
-                if (!email.isEmpty()) {
-                    try {
-                        Map<String, String> emailFilter = new HashMap<>();
-                        emailFilter.put("email", "eq." + email);
-                        Response<List<UserDto>> byEmail = dbService.getUsers(emailFilter, "*", null).execute();
-                        if (byEmail.isSuccessful() && byEmail.body() != null && !byEmail.body().isEmpty()) {
-                            User user = mapDtoToUser(byEmail.body().get(0));
-                            sessionManager.createLoginSession(user, auth.accessToken, auth.refreshToken, auth.expiresIn);
-                            mainHandler.post(() -> callback.onSuccess(user));
-                            return;
-                        }
-                    } catch (Exception ignored) {}
-                }
 
                 // Profile belum ada di public.users, buat record baru
                 String displayName = "Pengguna";
@@ -444,18 +364,20 @@ public class UserRepository {
                 newProfile.email = email;
                 newProfile.role = "user";
                 newProfile.avatarUrl = "avatar_male";
-                newProfile.authProvider = "GOOGLE";
+                String provider = auth.user != null && auth.user.appMetadata != null ? auth.user.appMetadata.provider : null;
+                newProfile.authProvider = "google".equalsIgnoreCase(provider) ? "GOOGLE" : "EMAIL";
 
                 try {
                     dbService.createUser(newProfile).execute();
                 } catch (Exception ignored) {}
 
                 User user = new User(uid, displayName, email, Role.USER, "");
+                user.setAuthProvider(newProfile.authProvider);
                 sessionManager.createLoginSession(user, auth.accessToken, auth.refreshToken, auth.expiresIn);
                 mainHandler.post(() -> callback.onSuccess(user));
             }
         } catch (Exception e) {
-            postError(callback, "Gagal memuat profil pengguna: " + e.getMessage());
+            postError(callback, ErrorMessages.fromException("fetchUserProfile", e));
         }
     }
 
@@ -474,7 +396,7 @@ public class UserRepository {
                     postError(callback, "Data pengguna tidak ditemukan");
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal mengambil data user: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal mengambil data user", e));
             }
         });
     }
@@ -504,7 +426,7 @@ public class UserRepository {
                     postError(callback, "Gagal memperbarui profil di server");
                 }
             } catch (Exception e) {
-                postError(callback, "Kesalahan update profil: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Kesalahan update profil", e));
             }
         });
     }
@@ -520,47 +442,46 @@ public class UserRepository {
                     postError(callback, "Foto profil tidak ditemukan");
                     return;
                 }
-
-                File persistentDir = new File(context.getFilesDir(), "avatars");
-                if (!persistentDir.exists()) persistentDir.mkdirs();
-
-                String ext = ".jpg";
-                String fileName = "avatar_" + UUID.randomUUID().toString() + ext;
-                File persistentFile = new File(persistentDir, fileName);
-
-                try (InputStream in = context.getContentResolver().openInputStream(imageUri);
-                     OutputStream out = new FileOutputStream(persistentFile)) {
+                byte[] bytes;
+                try (InputStream in = context.getContentResolver().openInputStream(imageUri)) {
                     if (in == null) {
-                        postError(callback, "Gagal membaca foto dari galeri");
+                        postError(callback, "Foto tidak bisa dibaca dari galeri. Coba pilih foto lain.");
                         return;
                     }
-                    byte[] buffer = new byte[8192];
-                    int read;
-                    while ((read = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, read);
-                    }
-                }
-
-                String localUri = persistentFile.toURI().toString();
-                String remoteName = "avatars/" + fileName;
-
-                try {
-                    RequestBody requestBody = RequestBody.create(MediaType.parse("image/*"), persistentFile);
-                    MultipartBody.Part part = MultipartBody.Part.createFormData("file", remoteName, requestBody);
-                    Response<StorageUploadResponse> uploadRes = storageService.uploadFile("kost-images", remoteName, part).execute();
-
-                    if (uploadRes.isSuccessful() && uploadRes.body() != null) {
-                        String publicUrl = SupabaseClient.getStoragePublicUrl("kost-images", remoteName);
-                        mainHandler.post(() -> callback.onSuccess(publicUrl));
+                    android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+                    opts.inSampleSize = 2;
+                    android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(in, null, opts);
+                    if (bmp == null) {
+                        postError(callback, "Format foto tidak didukung. Gunakan JPG atau PNG.");
                         return;
                     }
-                } catch (Exception ignored) {
-                    // Jika upload Supabase Storage gagal/bucket belum tersedia, gunakan persistent local file URI
+                    int edge = Math.max(bmp.getWidth(), bmp.getHeight());
+                    if (edge > 640) {
+                        float scale = 640f / edge;
+                        android.graphics.Bitmap scaled = android.graphics.Bitmap.createScaledBitmap(
+                                bmp, Math.round(bmp.getWidth() * scale), Math.round(bmp.getHeight() * scale), true);
+                        if (scaled != bmp) bmp.recycle();
+                        bmp = scaled;
+                    }
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                    bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out);
+                    bmp.recycle();
+                    bytes = out.toByteArray();
                 }
 
-                mainHandler.post(() -> callback.onSuccess(localUri));
+                String uid = sessionManager.getUserUid();
+                String remoteName = (uid != null ? uid : "anon") + "/avatar_" + UUID.randomUUID() + ".jpg";
+                RequestBody requestBody = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
+                Response<StorageUploadResponse> uploadRes = storageService.uploadFileBinary("kost-images", remoteName, "image/jpeg", requestBody).execute();
+                if (uploadRes.isSuccessful()) {
+                    String publicUrl = SupabaseClient.getStoragePublicUrl("kost-images", remoteName);
+                    mainHandler.post(() -> callback.onSuccess(publicUrl));
+                } else {
+                    // Jangan simpan URI lokal: pengguna lain tidak akan bisa melihat fotonya
+                    postError(callback, "Foto profil gagal diunggah. " + ErrorMessages.fromResponse("uploadAvatar", uploadRes));
+                }
             } catch (Exception e) {
-                postError(callback, "Gagal mengunggah foto profil: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("uploadAvatar", e));
             }
         });
     }
@@ -573,15 +494,113 @@ public class UserRepository {
                     return;
                 }
 
-                // Supabase Auth updatePassword requires valid active access token
+                // Akun email wajib membuktikan kata sandi lama sebelum menggantinya
+                if (!sessionManager.isGoogleAccount()) {
+                    if (oldPassword == null || oldPassword.isEmpty()) {
+                        postError(callback, "Masukkan kata sandi lama kamu");
+                        return;
+                    }
+                    Response<AuthResponse> verify = authService.signInWithPassword(
+                            new AuthRequest(sessionManager.getUserEmail(), oldPassword)).execute();
+                    if (!verify.isSuccessful() || verify.body() == null) {
+                        postError(callback, verify.code() == 400 ? "Kata sandi lama salah." : parseSupabaseError(verify, "Kata sandi lama tidak dapat diverifikasi."));
+                        return;
+                    }
+                    AuthResponse fresh = verify.body();
+                    sessionManager.saveTokens(fresh.accessToken, fresh.refreshToken, fresh.expiresIn);
+                }
+
                 Response<ResponseBody> res = authService.updatePassword(new UpdatePasswordRequest(newPassword)).execute();
                 if (res.isSuccessful()) {
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else {
-                    postError(callback, "Gagal mengubah kata sandi di Supabase");
+                    postError(callback, parseSupabaseError(res, "Gagal mengubah kata sandi. Coba lagi."));
                 }
             } catch (Exception e) {
-                postError(callback, "Kesalahan ganti kata sandi: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("changePassword", e));
+            }
+        });
+    }
+
+    /** Kirim email berisi tautan untuk mengatur ulang kata sandi. */
+    public void sendPasswordReset(String email, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                Map<String, String> body = new HashMap<>();
+                body.put("email", email.trim().toLowerCase());
+                Response<ResponseBody> res = authService.recoverPassword(body, RESET_REDIRECT_URL).execute();
+                if (res.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, parseSupabaseError(res, "Email reset tidak dapat dikirim. Coba lagi."));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("sendPasswordReset", e));
+            }
+        });
+    }
+
+    /** Atur kata sandi baru memakai sesi pemulihan dari tautan email. */
+    public void setPasswordFromRecovery(String accessToken, String refreshToken, long expiresIn,
+                                        String newPassword, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                if (newPassword == null || newPassword.length() < 6) {
+                    postError(callback, "Kata sandi baru minimal 6 karakter");
+                    return;
+                }
+                SupabaseClient.getInstance().setAccessToken(accessToken);
+                Response<ResponseBody> res = authService.updatePassword(new UpdatePasswordRequest(newPassword)).execute();
+                SupabaseClient.getInstance().setAccessToken(sessionManager.getAccessToken());
+                if (res.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, parseSupabaseError(res, "Tautan reset sudah kedaluwarsa. Minta tautan baru."));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("setPasswordFromRecovery", e));
+            }
+        });
+    }
+
+    /**
+     * Sinkronkan profil dari server saat aplikasi dibuka: memperbarui peran yang mungkin
+     * diubah developer dan mengeluarkan akun yang dinonaktifkan.
+     */
+    public void refreshCurrentUser(DataCallback<User> callback) {
+        executor.execute(() -> {
+            try {
+                String uid = sessionManager.getUserUid();
+                if (uid == null || uid.isEmpty()) {
+                    postError(callback, "Belum masuk");
+                    return;
+                }
+                Response<List<UserDto>> res = dbService.getUserById("eq." + uid, "*").execute();
+                if (res.code() == 401) {
+                    sessionManager.logout();
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
+                    User user = mapDtoToUser(res.body().get(0));
+                    if (!user.isActive()) {
+                        sessionManager.logout();
+                        postError(callback, "Akun kamu dinonaktifkan oleh tim CariKostKita.");
+                        return;
+                    }
+                    sessionManager.updateVerificationStatus(user.getVerificationStatus(), user.getRole(), user.getCatatanRevisi());
+                    sessionManager.updateProfile(user.getNama(), user.getNoHp(), user.getBio(), user.getAvatarUrl());
+                    mainHandler.post(() -> callback.onSuccess(user));
+                } else if (res.isSuccessful()) {
+                    // Profil dihapus developer
+                    sessionManager.logout();
+                    postError(callback, "Akun kamu sudah tidak terdaftar.");
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("refreshCurrentUser", res));
+                }
+            } catch (Exception e) {
+                // Offline: tetap pakai data sesi lokal
+                postError(callback, ErrorMessages.fromException("refreshCurrentUser", e));
             }
         });
     }
@@ -605,7 +624,7 @@ public class UserRepository {
                     postError(callback, "Gagal mengajukan verifikasi pemilik kost");
                 }
             } catch (Exception e) {
-                postError(callback, "Error pengajuan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error pengajuan", e));
             }
         });
     }
@@ -629,7 +648,7 @@ public class UserRepository {
                     postError(callback, "Gagal menyetujui pengajuan: 0 baris diperbarui di database.");
                 }
             } catch (Exception e) {
-                postError(callback, "Error approval: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error approval", e));
             }
         });
     }
@@ -653,7 +672,7 @@ public class UserRepository {
                     postError(callback, "Gagal menolak pengajuan di server.");
                 }
             } catch (Exception e) {
-                postError(callback, "Error rejection: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error rejection", e));
             }
         });
     }
@@ -673,7 +692,26 @@ public class UserRepository {
                     postError(callback, "Gagal meminta revisi di server.");
                 }
             } catch (Exception e) {
-                postError(callback, "Error revision: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error revision", e));
+            }
+        });
+    }
+
+    public void setRole(String uid, String role, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                UserUpdateDto dto = new UserUpdateDto();
+                dto.role = role;
+                Response<List<UserDto>> res = dbService.updateUser("eq." + uid, dto).execute();
+                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty() && role.equals(res.body().get(0).role)) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else if (res.isSuccessful()) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("setRole", res));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("setRole", e));
             }
         });
     }
@@ -691,7 +729,7 @@ public class UserRepository {
                     postError(callback, "Gagal mengubah status aktif user di server");
                 }
             } catch (Exception e) {
-                postError(callback, "Error set status: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error set status", e));
             }
         });
     }
@@ -713,7 +751,7 @@ public class UserRepository {
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat daftar pengajuan: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memuat daftar pengajuan", e));
             }
         });
     }
@@ -735,7 +773,7 @@ public class UserRepository {
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat daftar pemilik: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memuat daftar pemilik", e));
             }
         });
     }
@@ -743,14 +781,16 @@ public class UserRepository {
     public void deleteUser(String uid, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
-                Response<Void> res = dbService.deleteUser("eq." + uid).execute();
+                Map<String, Object> params = new HashMap<>();
+                params.put("target_id", uid);
+                Response<ResponseBody> res = dbService.rpc("admin_delete_user", params).execute();
                 if (res.isSuccessful()) {
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else {
-                    postError(callback, "Gagal menghapus pengguna dari database");
+                    postError(callback, ErrorMessages.fromResponse("admin_delete_user", res));
                 }
             } catch (Exception e) {
-                postError(callback, "Error hapus pengguna: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Error hapus pengguna", e));
             }
         });
     }
@@ -769,7 +809,7 @@ public class UserRepository {
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat pengguna: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memuat pengguna", e));
             }
         });
     }
@@ -797,7 +837,7 @@ public class UserRepository {
                     mainHandler.post(() -> callback.onSuccess(new UserStats(0, 0, 0)));
                 }
             } catch (Exception e) {
-                postError(callback, "Gagal memuat statistik user: " + e.getMessage());
+                postError(callback, ErrorMessages.fromException("Gagal memuat statistik user", e));
             }
         });
     }
@@ -817,6 +857,7 @@ public class UserRepository {
         u.setActive(dto.isActive != null ? dto.isActive : true);
         u.setAuthProvider(dto.authProvider != null ? dto.authProvider : "EMAIL");
         u.setCreatedAt(dto.createdAt);
+        u.setPengajuanAt(dto.pengajuanAt);
         return u;
     }
 

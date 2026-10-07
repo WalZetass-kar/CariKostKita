@@ -174,7 +174,7 @@
                 android:gravity="center"
                 android:text="Info"
                 android:textColor="@color/primary_dark"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -184,7 +184,7 @@
                 android:gravity="center"
                 android:text="Lokasi"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
 
             <TextView
                 android:layout_width="0dp"
@@ -193,7 +193,7 @@
                 android:gravity="center"
                 android:text="Fasilitas"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
 
             <TextView
                 android:layout_width="0dp"
@@ -202,7 +202,7 @@
                 android:gravity="center"
                 android:text="Foto"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
 
             <TextView
                 android:layout_width="0dp"
@@ -211,7 +211,7 @@
                 android:gravity="center"
                 android:text="Preview"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -445,6 +445,39 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- Ukuran Kamar -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Ukuran Kamar"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_form_ukuran_kamar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:helperText="Contoh: 3x4 m. Kosongkan jika tidak yakin."
+                    app:boxBackgroundColor="@color/surface"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_form_ukuran_kamar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="3x4 m"
+                        android:inputType="text"
+                        android:maxLength="20"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- WhatsApp Pengelola -->
                 <TextView
                     android:layout_width="wrap_content"
@@ -469,7 +502,7 @@
                         android:id="@+id/et_form_whatsapp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="08xxxxxxxxxx"
+                        android:hint="08xxxxxxxxxx (9–13 digit)"
                         android:inputType="phone"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
@@ -1029,7 +1062,121 @@
                         android:text="Air Bersih 24 Jam"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
+
+                    <CheckBox
+                        android:id="@+id/cb_fas_cctv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_home_search_bar"
+                        android:paddingVertical="12dp"
+                        android:paddingHorizontal="14dp"
+                        android:drawableStart="@drawable/ic_verified"
+                        android:drawablePadding="10dp"
+                        android:drawableTint="@color/primary"
+                        android:text="CCTV &amp; Keamanan"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp" />
                 </LinearLayout>
+
+                <!-- Rincian biaya & aturan: menjawab pertanyaan yang paling sering muncul di chat -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="Rincian Biaya &amp; Aturan"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Opsional, tapi mengurangi salah paham soal harga."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_form_deposit"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Deposit / uang jaminan"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:helperText="Kosongkan bila tanpa deposit"
+                    app:prefixText="Rp ">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_form_deposit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_form_min_sewa"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Minimal sewa"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:helperText="Contoh: 3 untuk minimal 3 bulan"
+                    app:suffixText="bulan">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_form_min_sewa"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_form_biaya_tambahan"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Biaya di luar harga sewa"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:helperText="Contoh: listrik token sendiri, sampah Rp 20.000/bulan">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_form_biaya_tambahan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Aturan kost"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/cg_form_aturan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:chipSpacingHorizontal="8dp" />
 
             </LinearLayout>
 

@@ -9,6 +9,18 @@ if (localPropertiesFile.exists()) {
 }
 
 String supabaseUrl = localProperties.getProperty('SUPABASE_URL') ?: (project.findProperty('SUPABASE_URL') ?: 'https://placeholder.supabase.co')
+// Kunci rilis dibaca dari keystore.properties (tidak di-commit). Contoh isi:
+//   storeFile=/path/ke/carikostkita-release.jks
+//   storePassword=...
+//   keyAlias=carikostkita
+//   keyPassword=...
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 String supabaseAnonKey = localProperties.getProperty('SUPABASE_ANON_KEY') ?: (project.findProperty('SUPABASE_ANON_KEY') ?: 'placeholder-anon-key')
 
 android {
@@ -36,6 +48,14 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasReleaseKeystore) {
+            release {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
     }
 
     buildTypes {
@@ -43,8 +63,13 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
-            minifyEnabled false
+            // Tanpa keystore.properties, APK rilis dibuat tanpa tanda tangan (tidak memakai kunci debug)
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
+            // R8: kecilkan & samarkan kode rilis; aturan keep ada di proguard-rules.pro
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -52,6 +77,11 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions {
+        // android.util.Log & sejenisnya mengembalikan nilai default di unit test JVM
+        unitTests.returnDefaultValues = true
     }
 
     buildFeatures {

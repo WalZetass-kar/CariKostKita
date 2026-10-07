@@ -16,9 +16,9 @@
     <color name="white">#FFFFFF</color>
 
     <!-- Maroon Header Gradients -->
-    <color name="header_primary_start">#6D0808</color>
-    <color name="header_primary_mid">#680808</color>
-    <color name="header_primary_end">#620808</color>
+    <color name="header_primary_start">#8E1A14</color>
+    <color name="header_primary_mid">#6D0808</color>
+    <color name="header_primary_end">#4B0606</color>
     <color name="header_pastel_start">#6D0808</color>
     <color name="header_pastel_mid">#680808</color>
     <color name="header_pastel_end">#620808</color>
@@ -42,7 +42,7 @@
     <!-- Typography (High Contrast Slate & Warm Dark Tone) -->
     <color name="text_primary">#1C1917</color>
     <color name="text_secondary">#57534E</color>
-    <color name="text_muted">#78716C</color>
+    <color name="text_muted">#6B645E</color>
     <color name="text_white">#FFFFFF</color>
 
     <!-- Category Badges (WCAG AAA Contrast) -->
@@ -100,4 +100,11 @@
     <!-- Skeleton Loading Colors (Soft Warm Tone) -->
     <color name="skeleton_base">#E6E0CC</color>
     <color name="skeleton_highlight">#F4EFE0</color>
+
+    <!-- Aksen emas hangat: dipakai hemat untuk sorotan (ornamen header, badge terverifikasi) -->
+    <color name="accent_gold">#E0B15A</color>
+    <color name="accent_gold_soft">#33E0B15A</color>
+    <color name="header_ornament">#26EEEAD7</color>
+    <color name="header_skyline">#2BEEEAD7</color>
+    <color name="header_skyline_window">#40E0B15A</color>
 </resources>

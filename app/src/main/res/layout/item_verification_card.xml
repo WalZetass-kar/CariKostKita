@@ -70,7 +70,7 @@
                     android:layout_marginTop="2dp"
                     android:text="Diajukan baru saja"
                     android:textColor="@color/text_muted"
-                    android:textSize="10.5sp" />
+                    android:textSize="11.5sp" />
             </LinearLayout>
 
             <TextView
@@ -92,11 +92,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:background="#F8FAFC"
+            android:background="@drawable/bg_icon_bubble_rect"
             android:padding="10dp"
-            android:text="Catatan: Memiliki Kost Putri 12 kamar di Jl. Kaharuddin Nasution Bukit Raya."
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_verif_docs"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginTop="4dp"
+            android:text="Lihat dokumen KTP &amp; selfie"
+            android:textColor="@color/primary"
+            app:icon="@drawable/ic_visibility"
+            app:iconTint="@color/primary" />
 
         <!-- Action Buttons -->
         <LinearLayout

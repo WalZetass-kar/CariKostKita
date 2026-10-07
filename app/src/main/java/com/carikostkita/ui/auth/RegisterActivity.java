@@ -95,6 +95,21 @@ public class RegisterActivity extends AppCompatActivity {
 
         btnRegister.setOnClickListener(v -> handleRegister());
 
+        TextView heroTitle = findViewById(R.id.tv_auth_hero_title);
+        TextView heroSub = findViewById(R.id.tv_auth_hero_subtitle);
+        if (heroTitle != null) heroTitle.setText("Mulai cari kost\nyang pas");
+        if (heroSub != null) heroSub.setText("Simpan favorit, bandingkan harga,\ndan chat pemilik tanpa perantara.");
+        View hero = findViewById(R.id.auth_hero_root);
+        if (hero != null) hero.setClipToOutline(true);
+
+        setupPasswordStrength();
+        android.widget.CheckBox cbTerms = findViewById(R.id.cb_reg_terms);
+        if (cbTerms != null) {
+            cbTerms.setOnCheckedChangeListener((b, checked) -> btnRegister.setEnabled(checked));
+        }
+        View readTerms = findViewById(R.id.tv_reg_read_terms);
+        if (readTerms != null) readTerms.setOnClickListener(v -> com.carikostkita.util.AppInfoSheets.showTerms(this));
+
         if (btnRegisterGoogle != null) {
             btnRegisterGoogle.setOnClickListener(v -> launchGoogleSignUp());
         }
@@ -102,6 +117,36 @@ public class RegisterActivity extends AppCompatActivity {
         if (btnGotoLogin != null) {
             btnGotoLogin.setOnClickListener(v -> finish());
         }
+    }
+
+    /** Meter sederhana: panjang, huruf besar-kecil, angka, dan simbol. */
+    private void setupPasswordStrength() {
+        View layout = findViewById(R.id.layout_reg_strength);
+        com.google.android.material.progressindicator.LinearProgressIndicator bar = findViewById(R.id.pi_reg_password_strength);
+        TextView label = findViewById(R.id.tv_reg_password_strength);
+        if (layout == null || bar == null || label == null) return;
+        etPassword.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+            @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+            @Override
+            public void afterTextChanged(android.text.Editable e) {
+                String pw = e.toString();
+                layout.setVisibility(pw.isEmpty() ? View.GONE : View.VISIBLE);
+                int score = 0;
+                if (pw.length() >= 8) score++;
+                if (pw.matches(".*[a-z].*") && pw.matches(".*[A-Z].*")) score++;
+                if (pw.matches(".*\\d.*")) score++;
+                if (pw.matches(".*[^A-Za-z0-9].*")) score++;
+                if (pw.length() < 6) score = 0;
+                String[] labels = {"Terlalu pendek", "Lemah", "Cukup", "Kuat", "Sangat kuat"};
+                int[] colors = {R.color.status_penuh, R.color.status_penuh, R.color.badge_campur, R.color.status_tersedia, R.color.status_tersedia};
+                int color = androidx.core.content.ContextCompat.getColor(RegisterActivity.this, colors[score]);
+                bar.setProgressCompat(Math.max(1, score), true);
+                bar.setIndicatorColor(color);
+                label.setText(labels[score]);
+                label.setTextColor(color);
+            }
+        });
     }
 
     private void clearErrors() {
@@ -118,8 +163,8 @@ public class RegisterActivity extends AppCompatActivity {
         String nama = etNama.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String phone = etPhone.getText().toString().trim();
-        String password = etPassword.getText().toString().trim();
-        String confirmPassword = etConfirmPassword != null ? etConfirmPassword.getText().toString().trim() : "";
+        String password = etPassword.getText().toString();
+        String confirmPassword = etConfirmPassword != null ? etConfirmPassword.getText().toString() : "";
 
         boolean hasError = false;
 
@@ -134,6 +179,17 @@ public class RegisterActivity extends AppCompatActivity {
         } else if (!FormatUtil.isValidEmail(email)) {
             if (tilEmail != null) tilEmail.setError("Format email tidak valid (contoh: user@email.com)");
             hasError = true;
+        }
+
+        if (!phone.isEmpty()) {
+            String digits = phone.replaceAll("[^0-9]", "");
+            if (digits.startsWith("62")) digits = "0" + digits.substring(2);
+            if (!digits.startsWith("08") || digits.length() < 9 || digits.length() > 13) {
+                if (tilPhone != null) tilPhone.setError("Gunakan nomor aktif, contoh 081234567890");
+                hasError = true;
+            } else {
+                phone = digits;
+            }
         }
 
         if (password.isEmpty()) {
@@ -174,6 +230,10 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 setLoading(false);
+                if (UserRepository.EMAIL_CONFIRMATION_REQUIRED.equals(message)) {
+                    AppDialogHelper.showSuccessDialog(RegisterActivity.this, "Konfirmasi Email Kamu", message, () -> finish());
+                    return;
+                }
                 AppDialogHelper.showError(RegisterActivity.this, "Gagal Mendaftar", message);
             }
         });
@@ -189,11 +249,11 @@ public class RegisterActivity extends AppCompatActivity {
                     Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                     startActivityForResult(signInIntent, RC_GOOGLE_SIGN_UP);
                 } catch (Exception e) {
-                    AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", e.getMessage());
+                    AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
                 }
             });
         } catch (Exception e) {
-            AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", e.getMessage());
+            AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
         }
     }
 
@@ -209,11 +269,11 @@ public class RegisterActivity extends AppCompatActivity {
                     Intent signInIntent = basicClient.getSignInIntent();
                     startActivityForResult(signInIntent, RC_GOOGLE_SIGN_UP);
                 } catch (Exception ex) {
-                    AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", ex.getMessage());
+                    AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
                 }
             });
         } catch (Exception e) {
-            AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", e.getMessage());
+            AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
         }
     }
 
@@ -242,7 +302,7 @@ public class RegisterActivity extends AppCompatActivity {
                 return;
             }
             AppDialogHelper.showError(this, "Gagal Masuk Google (" + statusCode + ")",
-                    "Tidak dapat menghubungkan akun Google: " + e.getMessage());
+                    "Akun Google belum bisa dihubungkan. Coba lagi, atau masuk memakai email dan kata sandi.");
         }
     }
 
@@ -272,29 +332,13 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Dipanggil saat Google tidak memberikan ID token. Tanpa token yang diverifikasi server
+     * kita tidak bisa membuktikan pemilik email, jadi pengguna diarahkan ke login email.
+     */
     private void registerWithGoogleProfile(GoogleSignInAccount account) {
-        userRepository.loginWithGoogle(
-                account.getEmail(),
-                account.getDisplayName(),
-                account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "",
-                new DataCallback<User>() {
-                    @Override
-                    public void onSuccess(User user) {
-                        setLoading(false);
-                        Toast.makeText(RegisterActivity.this, "Pendaftaran Google berhasil! Selamat datang, " + user.getNama(), Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-                    }
-
-                    @Override
-                    public void onError(String errorMsg) {
-                        setLoading(false);
-                        AppDialogHelper.showError(RegisterActivity.this, "Gagal Daftar Google", errorMsg);
-                    }
-                }
-        );
+        setLoading(false);
+        AppDialogHelper.showError(this, "Gagal Daftar Google", "Masuk dengan Google belum tersedia di perangkat ini. Silakan masuk memakai email dan kata sandi.");
     }
 
     private void launchCustomTabOAuth() {
@@ -318,7 +362,9 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void setLoading(boolean isLoading) {
         pbLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        btnRegister.setEnabled(!isLoading);
+        android.widget.CheckBox cbTerms = findViewById(R.id.cb_reg_terms);
+        btnRegister.setEnabled(!isLoading && (cbTerms == null || cbTerms.isChecked()));
+        btnRegister.setText(isLoading ? "" : "Daftar");
         if (btnRegisterGoogle != null) {
             btnRegisterGoogle.setEnabled(!isLoading);
         }

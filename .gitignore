@@ -13,3 +13,7 @@ app/build/
 *.apk
 *.aab
 .agents/
+
+# Kunci rilis
+keystore.properties
+*.jks

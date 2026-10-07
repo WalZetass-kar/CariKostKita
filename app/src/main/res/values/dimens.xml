@@ -19,4 +19,13 @@
     <dimen name="bottom_nav_height">68dp</dimen>
     <dimen name="kost_card_image_height">180dp</dimen>
     <dimen name="detail_slider_height">260dp</dimen>
+
+    <!-- Token kartu & tombol: satu ukuran untuk semua layar agar kartu selalu seragam -->
+    <dimen name="ck_card_radius">16dp</dimen>
+    <dimen name="ck_card_padding">16dp</dimen>
+    <dimen name="ck_card_gap">12dp</dimen>
+    <dimen name="ck_screen_gutter">16dp</dimen>
+    <dimen name="ck_button_height">52dp</dimen>
+    <dimen name="ck_icon_bubble">40dp</dimen>
+    <dimen name="ck_setting_row_min">60dp</dimen>
 </resources>

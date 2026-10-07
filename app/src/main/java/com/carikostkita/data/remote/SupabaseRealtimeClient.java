@@ -42,7 +42,13 @@ public class SupabaseRealtimeClient {
     private MessageListener listener;
     private ChatUpdateListener chatUpdateListener;
     private String currentChatId;
-    private boolean isConnected = false;
+    private volatile boolean isConnected = false;
+    /** True selama layar masih ingin tersambung; false setelah disconnect() dipanggil. */
+    private volatile boolean shouldStayConnected = false;
+    private int reconnectAttempt = 0;
+    private final Runnable reconnectRunnable = () -> {
+        if (shouldStayConnected) openSocket();
+    };
 
     public SupabaseRealtimeClient() {
         this.client = SupabaseClient.getInstance().getOkHttpClient();
@@ -60,7 +66,18 @@ public class SupabaseRealtimeClient {
 
     public synchronized void connect(String chatId) {
         this.currentChatId = chatId;
-        disconnect();
+        this.shouldStayConnected = true;
+        this.reconnectAttempt = 0;
+        mainHandler.removeCallbacks(reconnectRunnable);
+        openSocket();
+    }
+
+    public boolean isConnected() {
+        return isConnected;
+    }
+
+    private synchronized void openSocket() {
+        closeSocket();
 
         String url = BuildConfig.SUPABASE_URL
                 .replace("https://", "wss://")
@@ -75,6 +92,7 @@ public class SupabaseRealtimeClient {
             @Override
             public void onOpen(WebSocket ws, Response response) {
                 isConnected = true;
+                reconnectAttempt = 0;
                 joinChannel(ws);
                 startHeartbeat();
             }
@@ -93,12 +111,14 @@ public class SupabaseRealtimeClient {
             public void onClosed(WebSocket ws, int code, String reason) {
                 isConnected = false;
                 stopHeartbeat();
+                scheduleReconnect(ws);
             }
 
             @Override
             public void onFailure(WebSocket ws, Throwable t, Response response) {
                 isConnected = false;
                 stopHeartbeat();
+                scheduleReconnect(ws);
             }
         });
     }
@@ -128,6 +148,11 @@ public class SupabaseRealtimeClient {
 
         config.add("postgres_changes", changes);
         payload.add("config", config);
+        // Tanpa JWT pengguna, Realtime memakai peran anon dan RLS menolak semua event chat
+        String userToken = SupabaseClient.getInstance().getAccessToken();
+        if (userToken != null && !userToken.isEmpty()) {
+            payload.addProperty("access_token", userToken);
+        }
         joinMsg.add("payload", payload);
 
         joinMsg.addProperty("ref", ref);
@@ -200,12 +225,28 @@ public class SupabaseRealtimeClient {
         }
     }
 
-    public synchronized void disconnect() {
+    /** Sambung ulang dengan jeda bertahap (2s, 4s, 8s ... maks 30s) saat koneksi putus. */
+    private void scheduleReconnect(WebSocket ws) {
+        if (!shouldStayConnected || ws != webSocket) return;
+        long delay = Math.min(30_000L, 2_000L * (1L << Math.min(reconnectAttempt, 4)));
+        reconnectAttempt++;
+        mainHandler.removeCallbacks(reconnectRunnable);
+        mainHandler.postDelayed(reconnectRunnable, delay);
+    }
+
+    private synchronized void closeSocket() {
         stopHeartbeat();
         if (webSocket != null) {
-            webSocket.close(1000, "Client disconnect");
+            WebSocket old = webSocket;
             webSocket = null;
+            old.close(1000, "Client disconnect");
         }
         isConnected = false;
+    }
+
+    public synchronized void disconnect() {
+        shouldStayConnected = false;
+        mainHandler.removeCallbacks(reconnectRunnable);
+        closeSocket();
     }
 }

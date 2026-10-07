@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         setupViewPager();
         setupDoubleBackToExit();
+        if (sessionManager.isLoggedIn()) com.carikostkita.notifications.AppNotifications.onAppOpened(this);
     }
 
     private void initViews() {
@@ -164,11 +165,11 @@ public class MainActivity extends AppCompatActivity {
                         bottomNav.setChatUnreadBadge(totalUnread > 0);
                     }
                     com.carikostkita.data.model.ChatConversation latest = conversations.get(0);
-                    if (latest.getUnreadCount() > 0 && latest.getLastMessage() != null && !latest.getLastMessage().isEmpty()) {
+                    if (sessionManager.isChatNotificationEnabled() && latest.getUnreadCount() > 0 && latest.getLastMessage() != null && !latest.getLastMessage().isEmpty()) {
                         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                             if (isFinishing() || isDestroyed()) return;
                             if (viewPager != null && viewPager.getCurrentItem() == 3) return;
-                            String sender = sessionManager.isPemilikKost() ? latest.getNamaPencari() : latest.getNamaPemilik();
+                            String sender = latest.getNamaPemilik();
                             if (sender == null || sender.isEmpty()) sender = "Pemilik Kost";
                             com.carikostkita.util.NotificationBannerHelper.showMessageBanner(
                                     MainActivity.this,
@@ -186,8 +187,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void navigateToSearch() {
+        navigateToSearch(null, false);
+    }
+
+    /**
+     * Buka tab Cari, opsional dengan aksi cepat ("AVAILABLE", "SORT_CHEAPEST", tipe kost)
+     * dan fokus ke kolom pencarian.
+     */
+    public void navigateToSearch(String quickAction, boolean focusInput) {
         if (viewPager != null) {
             viewPager.setCurrentItem(1, true);
+        }
+        Fragment f = getSupportFragmentManager().findFragmentByTag("f" + 1);
+        if (f instanceof SearchFragment) {
+            ((SearchFragment) f).applyQuickAction(quickAction, focusInput);
         }
     }
 

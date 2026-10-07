@@ -66,16 +66,21 @@ public class LoginActivity extends AppCompatActivity {
         userRepository = new UserRepository(this);
         sessionManager = new SessionManager(this);
 
-        // Muat background visual halaman login (Jembatan Siak Pekanbaru)
-        ImageView ivLoginBg = findViewById(R.id.iv_login_bg);
-        if (ivLoginBg != null) {
-            String bgUrl = "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWlVcBc3cLykeucw8kEFM9FuTxjHkD71cxOKLKHnI1itd9bN_4wAtoXVi_mmwDc7D4cXZyog5ZPQ3mCwQY0zylh1icrDlzf7llZnVB1H8OKYGVJT5IOPsOb6lwCN0NQv5ZPL2Sfmbg=s680-w680-h510";
-            Glide.with(this)
-                    .load(bgUrl)
-                    .centerCrop()
-                    .placeholder(R.drawable.bg_login_pekanbaru)
-                    .error(R.drawable.bg_login_pekanbaru)
-                    .into(ivLoginBg);
+        TextView heroTitle = findViewById(R.id.tv_auth_hero_title);
+        TextView heroSub = findViewById(R.id.tv_auth_hero_subtitle);
+        if (heroTitle != null) heroTitle.setText("Selamat datang\nkembali");
+        if (heroSub != null) heroSub.setText("Lanjutkan mencari kost terverifikasi\ndan ngobrol langsung dengan pemiliknya.");
+        View hero = findViewById(R.id.auth_hero_root);
+        if (hero != null) hero.setClipToOutline(true);
+
+        View btnGuest = findViewById(R.id.btn_continue_guest);
+        if (btnGuest != null) {
+            btnGuest.setOnClickListener(v -> {
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
         }
 
         // Periksa callback OAuth via deep link saat activity pertama kali dibuat
@@ -100,6 +105,13 @@ public class LoginActivity extends AppCompatActivity {
         View btnGotoRegister = findViewById(R.id.btn_goto_register);
 
         btnLogin.setOnClickListener(v -> handleLogin());
+        etPassword.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                handleLogin();
+                return true;
+            }
+            return false;
+        });
 
         if (btnLoginGoogle != null) {
             btnLoginGoogle.setOnClickListener(v -> launchGoogleSignIn());
@@ -124,7 +136,7 @@ public class LoginActivity extends AppCompatActivity {
     private void handleLogin() {
         clearErrors();
         String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString().trim();
+        String password = etPassword.getText().toString();
 
         if (email.isEmpty()) {
             if (tilEmail != null) {
@@ -172,6 +184,10 @@ public class LoginActivity extends AppCompatActivity {
     private void handleDeepLink(Intent intent) {
         if (intent == null || intent.getData() == null) return;
         Uri uri = intent.getData();
+        if ("carikostkita".equals(uri.getScheme()) && "reset-callback".equals(uri.getHost())) {
+            handlePasswordRecovery(uri);
+            return;
+        }
         if ("carikostkita".equals(uri.getScheme()) && "login-callback".equals(uri.getHost())) {
             Map<String, String> params = new HashMap<>();
             if (uri.getFragment() != null && !uri.getFragment().isEmpty()) {
@@ -208,12 +224,9 @@ public class LoginActivity extends AppCompatActivity {
                 });
             } else if (params.containsKey("error_description")) {
                 String errorDesc = params.get("error_description");
-                if (errorDesc.contains("exchanging code")) {
-                    AppDialogHelper.showError(this, "Konfigurasi Google Belum Lengkap",
-                            "Client Secret di Dashboard Supabase belum sesuai dengan Web Client ID. Pastikan Client Secret dari Web Client dimasukkan ke Supabase Dashboard -> Authentication -> Providers -> Google.");
-                } else {
-                    AppDialogHelper.showError(this, "Login Google Dibatalkan", errorDesc);
-                }
+                android.util.Log.e("LoginActivity", "OAuth error: " + errorDesc);
+                AppDialogHelper.showError(this, "Login Google Gagal",
+                        "Masuk dengan Google sedang tidak bisa dipakai. Silakan masuk memakai email dan kata sandi.");
             } else if (params.containsKey("error")) {
                 AppDialogHelper.showError(this, "Login Google Gagal", params.get("error"));
             }
@@ -247,11 +260,11 @@ public class LoginActivity extends AppCompatActivity {
                     Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                     startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN);
                 } catch (Exception e) {
-                    AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", e.getMessage());
+                    AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
                 }
             });
         } catch (Exception e) {
-            AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", e.getMessage());
+            AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
         }
     }
 
@@ -267,11 +280,11 @@ public class LoginActivity extends AppCompatActivity {
                     Intent signInIntent = basicClient.getSignInIntent();
                     startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN);
                 } catch (Exception ex) {
-                    AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", ex.getMessage());
+                    AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
                 }
             });
         } catch (Exception e) {
-            AppDialogHelper.showError(this, "Gagal Membuka Google Sign-In", e.getMessage());
+            AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
         }
     }
 
@@ -301,7 +314,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
             AppDialogHelper.showError(this, "Gagal Masuk Google (" + statusCode + ")",
-                    "Tidak dapat menghubungkan akun Google: " + e.getMessage());
+                    "Akun Google belum bisa dihubungkan. Coba lagi, atau masuk memakai email dan kata sandi.");
         }
     }
 
@@ -327,25 +340,13 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Dipanggil saat Google tidak memberikan ID token. Tanpa token yang diverifikasi server
+     * kita tidak bisa membuktikan pemilik email, jadi pengguna diarahkan ke login email.
+     */
     private void loginWithGoogleProfile(GoogleSignInAccount account) {
-        userRepository.loginWithGoogle(
-                account.getEmail(),
-                account.getDisplayName(),
-                account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "",
-                new DataCallback<User>() {
-                    @Override
-                    public void onSuccess(User user) {
-                        setLoading(false);
-                        proceedToDashboard(user);
-                    }
-
-                    @Override
-                    public void onError(String errorMsg) {
-                        setLoading(false);
-                        AppDialogHelper.showError(LoginActivity.this, "Gagal Masuk Google", errorMsg);
-                    }
-                }
-        );
+        setLoading(false);
+        AppDialogHelper.showError(this, "Gagal Masuk Google", "Masuk dengan Google belum tersedia di perangkat ini. Silakan masuk memakai email dan kata sandi.");
     }
 
     private void launchCustomTabOAuth() {
@@ -368,14 +369,76 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void showForgotPasswordDialog() {
-        AppDialogHelper.showInfo(this, "Lupa Password?",
-                "Untuk memulihkan akun Anda, silakan hubungi Customer Support via WhatsApp admin di Pekanbaru atau masuk langsung menggunakan akun Google yang terdaftar.");
+        String prefill = etEmail != null ? etEmail.getText().toString().trim() : "";
+        AppDialogHelper.showInput(this, "Lupa Kata Sandi?",
+                "Masukkan email akunmu. Kami akan mengirim tautan untuk membuat kata sandi baru.",
+                "nama@email.com", prefill, "Kirim Tautan",
+                android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+                email -> {
+                    if (!com.carikostkita.util.FormatUtil.isValidEmail(email)) {
+                        AppDialogHelper.showError(this, "Email Tidak Valid", "Periksa kembali penulisan email kamu (contoh: nama@email.com).");
+                        return;
+                    }
+                    setLoading(true);
+                    userRepository.sendPasswordReset(email, new DataCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(Boolean data) {
+                            setLoading(false);
+                            AppDialogHelper.showSuccessDialog(LoginActivity.this, "Cek Email Kamu",
+                                    "Jika " + email + " terdaftar, tautan reset kata sandi sudah dikirim. Buka tautan itu dari HP ini untuk membuat kata sandi baru.");
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            setLoading(false);
+                            AppDialogHelper.showError(LoginActivity.this, "Gagal Mengirim Email", message);
+                        }
+                    });
+                });
+    }
+
+    /** Tautan reset dari email: carikostkita://reset-callback#access_token=...&type=recovery */
+    private void handlePasswordRecovery(Uri uri) {
+        Map<String, String> params = new HashMap<>();
+        if (uri.getFragment() != null) params.putAll(parseFragmentParams(uri.getFragment()));
+        String accessToken = params.get("access_token");
+        String refreshToken = params.get("refresh_token");
+        if (accessToken == null || accessToken.isEmpty()) {
+            AppDialogHelper.showError(this, "Tautan Tidak Valid",
+                    "Tautan reset sudah kedaluwarsa atau sudah dipakai. Minta tautan baru lewat \"Lupa kata sandi\".");
+            return;
+        }
+        long expiresIn = 3600;
+        try {
+            if (params.get("expires_in") != null) expiresIn = Long.parseLong(params.get("expires_in"));
+        } catch (Exception ignored) {}
+        final long exp = expiresIn;
+        AppDialogHelper.showInput(this, "Buat Kata Sandi Baru", "Minimal 6 karakter.",
+                "Kata sandi baru", "", "Simpan",
+                android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                newPassword -> {
+                    setLoading(true);
+                    userRepository.setPasswordFromRecovery(accessToken, refreshToken, exp, newPassword, new DataCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(Boolean data) {
+                            setLoading(false);
+                            AppDialogHelper.showSuccessDialog(LoginActivity.this, "Kata Sandi Diperbarui",
+                                    "Silakan masuk memakai kata sandi baru kamu.");
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            setLoading(false);
+                            AppDialogHelper.showError(LoginActivity.this, "Gagal Menyimpan", message);
+                        }
+                    });
+                });
     }
 
     private void proceedToDashboard(User user) {
         Toast.makeText(this, "Selamat datang, " + user.getNama(), Toast.LENGTH_SHORT).show();
         Intent intent;
-        if (user.getRole() == Role.ADMIN) {
+        if (user.getRole() != null && user.getRole().isDeveloper()) {
             intent = new Intent(this, AdminMainActivity.class);
         } else if (user.getRole() == Role.PEMILIK_KOST) {
             intent = new Intent(this, PemilikMainActivity.class);
@@ -390,6 +453,7 @@ public class LoginActivity extends AppCompatActivity {
     private void setLoading(boolean isLoading) {
         pbLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         btnLogin.setEnabled(!isLoading);
+        btnLogin.setText(isLoading ? "" : "Masuk");
         if (btnLoginGoogle != null) {
             btnLoginGoogle.setEnabled(!isLoading);
         }

@@ -1,48 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout 
+    
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
     android:orientation="vertical">
 
-    <!-- Header -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/surface"
-        android:elevation="1dp"
-        android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pesan &amp; Diskusi"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Ngobrol langsung dengan pemilik kost"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-    </LinearLayout>
+    <include
+        android:id="@+id/header_chat_list"
+        layout="@layout/view_page_header" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
-        <!-- Skeleton Loading Container -->
-        <include
-            android:id="@+id/skeleton_chat_list"
-            layout="@layout/layout_skeleton_chat"
-            android:visibility="gone" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_chat_list"
@@ -84,10 +59,11 @@
                 android:background="@drawable/bg_fav_circle">
 
                 <ImageView
+                    android:id="@+id/iv_chat_empty_icon"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_gravity="center"
-                    android:contentDescription="Empty Chat"
+                    android:importantForAccessibility="no"
                     android:src="@drawable/ic_nav_chat"
                     app:tint="@color/primary" />
             </FrameLayout>
@@ -97,6 +73,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:gravity="center"
                 android:text="Belum Ada Percakapan"
                 android:textColor="@color/text_primary"
                 android:textSize="17sp"
@@ -127,3 +104,12 @@
 
     </FrameLayout>
 </LinearLayout>
+
+    <!-- Skeleton satu halaman penuh (shimmer), menutupi seluruh layar saat pemuatan pertama -->
+    <include
+        android:id="@+id/skeleton_chat_list"
+        layout="@layout/layout_skeleton_chat_full"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+</FrameLayout>

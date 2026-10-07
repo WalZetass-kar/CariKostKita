@@ -35,7 +35,7 @@
             android:paddingVertical="2dp"
             android:text="Utama"
             android:textColor="@color/badge_putra"
-            android:textSize="9sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:visibility="gone" />
 
@@ -63,7 +63,7 @@
             android:gravity="center"
             android:text="Jadikan Utama"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
 
     </FrameLayout>

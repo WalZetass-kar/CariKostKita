@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.carikostkita.R;
+import java.util.Set;
+import java.util.HashSet;
 import com.carikostkita.data.location.IndonesiaLocationData;
 import com.carikostkita.data.location.WilayahIndonesiaService;
 import com.carikostkita.data.model.Fasilitas;
@@ -69,6 +71,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
     private TextInputEditText etDeskripsi;
     private TextInputEditText etTotalKamar, etKamarTersedia;
     private TextInputEditText etWhatsapp;
+    private TextInputEditText etUkuranKamar;
 
     // Step 2: Harga & Lokasi Views
     private TextInputEditText etHarga;
@@ -80,7 +83,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
 
     // Step 3: Fasilitas CheckBoxes
     private CheckBox cbKamarMandi, cbAc, cbWifi, cbLemari, cbKasur, cbMeja;
-    private CheckBox cbDapur, cbParkirMotor, cbParkirMobil, cbAkses24, cbListrik, cbAir;
+    private CheckBox cbDapur, cbParkirMotor, cbParkirMobil, cbAkses24, cbListrik, cbAir, cbCctv;
     private final List<CheckBox> allCheckBoxes = new ArrayList<>();
 
     // Step 4: Foto Views
@@ -108,14 +111,19 @@ public class AdminKostFormActivity extends AppCompatActivity {
 
     private double selectedLat = 0.5071;
     private double selectedLng = 101.4478;
+    /** Lokasi kost harus dipilih sendiri di peta; GPS pemilik belum tentu berada di kost. */
+    private boolean pinConfirmed = false;
 
     // Map Pin Launcher
     private final ActivityResultLauncher<Intent> mapPinLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     Intent data = result.getData();
-                    selectedLat = data.getDoubleExtra(MapPinPickerActivity.EXTRA_LAT, 0.5071);
-                    selectedLng = data.getDoubleExtra(MapPinPickerActivity.EXTRA_LNG, 101.4478);
+                    selectedLat = data.getDoubleExtra(MapPinPickerActivity.EXTRA_LAT, selectedLat);
+                    selectedLng = data.getDoubleExtra(MapPinPickerActivity.EXTRA_LNG, selectedLng);
+                    pinConfirmed = true;
+                    if (cardLocationSummary != null) cardLocationSummary.setVisibility(View.VISIBLE);
+                    if (btnOpenMap != null) btnOpenMap.setText("Ubah Titik di Peta");
                     String alamat = data.getStringExtra(MapPinPickerActivity.EXTRA_ALAMAT);
                     String kota = data.getStringExtra(MapPinPickerActivity.EXTRA_KOTA);
                     String kec = data.getStringExtra(MapPinPickerActivity.EXTRA_KECAMATAN);
@@ -173,6 +181,14 @@ public class AdminKostFormActivity extends AppCompatActivity {
         wilayahService = WilayahIndonesiaService.getInstance();
 
         editKostId = getIntent().getStringExtra("kost_id");
+
+        if (!sessionManager.isLoggedIn()
+                || (editKostId == null && !sessionManager.isPemilikKost())
+                || (editKostId != null && !sessionManager.isPemilikKost() && !sessionManager.isDeveloper())) {
+            Toast.makeText(this, "Hanya pemilik kost terverifikasi yang dapat menambahkan kost.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
 
         initViews();
         initCoordinatesFromGps();
@@ -260,6 +276,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
         etTotalKamar = findViewById(R.id.et_form_total_kamar);
         etKamarTersedia = findViewById(R.id.et_form_kamar_tersedia);
         etWhatsapp = findViewById(R.id.et_form_whatsapp);
+        etUkuranKamar = findViewById(R.id.et_form_ukuran_kamar);
     }
 
     private void setupStep2() {
@@ -307,7 +324,50 @@ public class AdminKostFormActivity extends AppCompatActivity {
             mapPinLauncher.launch(mapIntent);
         });
 
-        updateLocationSummaryUI("Kota Pekanbaru", "Pekanbaru", "Riau");
+        // Ringkasan baru tampil setelah pemilik memilih titik di peta
+        if (cardLocationSummary != null) cardLocationSummary.setVisibility(View.GONE);
+        attachRupiahFormatter(etHarga);
+    }
+
+    /** Format "1500000" menjadi "1.500.000" saat diketik agar nominal mudah dibaca. */
+    private void attachRupiahFormatter(TextInputEditText field) {
+        field.addTextChangedListener(new android.text.TextWatcher() {
+            private boolean editing = false;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(android.text.Editable e) {
+                if (editing) return;
+                String digits = e.toString().replaceAll("[^0-9]", "");
+                if (digits.length() > 12) digits = digits.substring(0, 12);
+                String formatted = digits.isEmpty() ? "" : String.format(new Locale("in", "ID"), "%,d", Long.parseLong(digits));
+                if (!formatted.equals(e.toString())) {
+                    editing = true;
+                    field.setText(formatted);
+                    field.setSelection(formatted.length());
+                    editing = false;
+                }
+            }
+        });
+    }
+
+    private static long parseRupiah(String text) {
+        String digits = text == null ? "" : text.replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) return 0;
+        try {
+            return Long.parseLong(digits);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static String digitsOnly(String text) {
+        return text == null ? "" : text.replaceAll("[^0-9]", "");
     }
 
     private void setupKotaDropdown(String provinsi) {
@@ -435,6 +495,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
         cbAkses24 = findViewById(R.id.cb_fas_akses_24);
         cbListrik = findViewById(R.id.cb_fas_listrik);
         cbAir = findViewById(R.id.cb_fas_air);
+        cbCctv = findViewById(R.id.cb_fas_cctv);
 
         allCheckBoxes.add(cbKamarMandi);
         allCheckBoxes.add(cbAc);
@@ -448,6 +509,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
         allCheckBoxes.add(cbAkses24);
         allCheckBoxes.add(cbListrik);
         allCheckBoxes.add(cbAir);
+        allCheckBoxes.add(cbCctv);
 
         // Tags corresponding to getMasterFasilitas
         cbWifi.setTag(1);
@@ -461,7 +523,30 @@ public class AdminKostFormActivity extends AppCompatActivity {
         cbDapur.setTag(9);
         cbListrik.setTag(10);
         cbAkses24.setTag(11);
-        cbAir.setTag(12);
+        cbCctv.setTag(12);
+        cbAir.setTag(13);
+
+        com.google.android.material.chip.ChipGroup cgAturan = findViewById(R.id.cg_form_aturan);
+        if (cgAturan != null) {
+            for (String rule : Kost.ATURAN_MASTER) {
+                com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(this);
+                chip.setText(rule);
+                chip.setCheckable(true);
+                chip.setChipBackgroundColor(ContextCompat.getColorStateList(this, R.color.chip_background_selector));
+                chip.setChipStrokeColor(ContextCompat.getColorStateList(this, R.color.chip_stroke_selector));
+                chip.setChipStrokeWidth(getResources().getDisplayMetrics().density);
+                chip.setTextColor(ContextCompat.getColorStateList(this, R.color.chip_text_selector));
+                cgAturan.addView(chip);
+            }
+        }
+        TextInputEditText etDeposit = findViewById(R.id.et_form_deposit);
+        if (etDeposit != null) attachRupiahFormatter(etDeposit);
+
+        // Label checkbox = nama yang disimpan & dicari, supaya tidak ada salah tafsir data
+        for (CheckBox cb : allCheckBoxes) {
+            String name = Fasilitas.nameForId((Integer) cb.getTag());
+            if (name != null) cb.setText(name);
+        }
     }
 
     private void setupStep4() {
@@ -515,13 +600,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
         String nama = etNama.getText().toString().trim();
         tvPreviewNama.setText(!nama.isEmpty() ? nama : "Nama Kost");
 
-        String hargaStr = etHarga.getText().toString().trim();
-        try {
-            double h = Double.parseDouble(hargaStr);
-            tvPreviewHarga.setText("Rp " + FormatUtil.formatRupiah(h) + " / bulan");
-        } catch (Exception e) {
-            tvPreviewHarga.setText("Rp 0 / bulan");
-        }
+        tvPreviewHarga.setText(FormatUtil.formatRupiah(parseRupiah(etHarga.getText().toString())) + " / bulan");
 
         String tipe = "PUTRI";
         if (rbPutra.isChecked()) {
@@ -539,7 +618,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
         tvPreviewTipeBadge.setText(tipe);
 
         String kosong = etKamarTersedia.getText().toString().trim();
-        tvPreviewKamarBadge.setText("Tersedia " + (!kosong.isEmpty() ? kosong : "0") + " Kamar");
+        tvPreviewKamarBadge.setText(!kosong.isEmpty() && !"0".equals(kosong) ? kosong + " kamar kosong" : "Penuh");
 
         StringBuilder sbAlamat = new StringBuilder();
         String jalan = actJalan.getText().toString().trim();
@@ -562,7 +641,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
             }
         }
         if (sbFas.length() == 0) {
-            sbFas.append("Standar Kamar Kost");
+            sbFas.append("Belum ada fasilitas dipilih");
         }
         tvPreviewFasilitas.setText(sbFas.toString());
 
@@ -728,8 +807,10 @@ public class AdminKostFormActivity extends AppCompatActivity {
             return false;
         }
 
-        if (wa.isEmpty() || wa.length() < 8) {
-            etWhatsapp.setError("Nomor WhatsApp pengelola minimal 8 digit");
+        String waDigits = digitsOnly(wa);
+        if (waDigits.startsWith("62")) waDigits = "0" + waDigits.substring(2);
+        if (waDigits.length() < 9 || waDigits.length() > 13 || !waDigits.startsWith("08")) {
+            etWhatsapp.setError("Masukkan nomor WhatsApp aktif, contoh 081234567890");
             etWhatsapp.requestFocus();
             return false;
         }
@@ -751,15 +832,10 @@ public class AdminKostFormActivity extends AppCompatActivity {
             return false;
         }
 
-        try {
-            double h = Double.parseDouble(hargaStr);
-            if (h <= 0) {
-                etHarga.setError("Harga harus lebih dari 0");
-                etHarga.requestFocus();
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            etHarga.setError("Format harga tidak valid");
+        long h = parseRupiah(hargaStr);
+        if (h < 50000) {
+            etHarga.setError("Harga sewa per bulan minimal Rp 50.000");
+            etHarga.requestFocus();
             return false;
         }
 
@@ -783,6 +859,11 @@ public class AdminKostFormActivity extends AppCompatActivity {
         if (alamat.isEmpty()) {
             etAlamat.setError("Nomor bangunan / alamat lengkap wajib diisi");
             etAlamat.requestFocus();
+            return false;
+        }
+        if (!pinConfirmed) {
+            AppDialogHelper.showInfo(this, "Tentukan Titik di Peta",
+                    "Geser peta lalu letakkan pin tepat di lokasi kost. Titik ini dipakai pencari untuk melihat jarak dan rute.");
             return false;
         }
 
@@ -825,29 +906,65 @@ public class AdminKostFormActivity extends AppCompatActivity {
                 else rbPutri.setChecked(true);
 
                 etDeskripsi.setText(kost.getDeskripsi());
-                etTotalKamar.setText(String.valueOf(kost.getTotalKamar()));
-                etKamarTersedia.setText(String.valueOf(kost.getKamarTersedia()));
+                etTotalKamar.setText(kost.getTotalKamar() > 0 ? String.valueOf(kost.getTotalKamar()) : "");
+                etKamarTersedia.setText(kost.hasRoomInfo() ? String.valueOf(kost.getKamarTersedia()) : "");
                 etWhatsapp.setText(kost.getNoWhatsapp());
+                if (etUkuranKamar != null && kost.getUkuranKamar() != null) etUkuranKamar.setText(kost.getUkuranKamar());
 
                 etHarga.setText(String.valueOf((long) kost.getHarga()));
-                if (kost.getProvinsi() != null) actProvinsi.setText(kost.getProvinsi(), false);
-                if (kost.getKota() != null) actKota.setText(kost.getKota(), false);
-                if (kost.getAlamat() != null) etAlamat.setText(kost.getAlamat());
+                if (kost.getProvinsi() != null && !kost.getProvinsi().isEmpty()) {
+                    actProvinsi.setText(kost.getProvinsi(), false);
+                    setupKotaDropdown(kost.getProvinsi());
+                }
+                if (kost.getKota() != null && !kost.getKota().isEmpty()) {
+                    actKota.setText(kost.getKota(), false);
+                    setupKecamatanDropdown(kost.getKota());
+                }
+                if (!kost.getKecamatan().isEmpty()) {
+                    actKecamatan.setText(kost.getKecamatan(), false);
+                    setupKelurahanDropdown(kost.getKecamatan());
+                }
+                if (!kost.getKelurahan().isEmpty()) actKelurahan.setText(kost.getKelurahan(), false);
+
+                // Alamat disimpan sebagai "Nama Jalan, Nomor/detail"
+                String alamat = kost.getAlamat() != null ? kost.getAlamat() : "";
+                int sep = alamat.indexOf(", ");
+                if (sep > 0) {
+                    actJalan.setText(alamat.substring(0, sep), false);
+                    etAlamat.setText(alamat.substring(sep + 2));
+                } else {
+                    actJalan.setText(alamat, false);
+                    etAlamat.setText("");
+                }
 
                 selectedLat = kost.getLatitude();
                 selectedLng = kost.getLongitude();
-                updateLocationSummaryUI(kost.getAlamat(), kost.getKota(), kost.getProvinsi());
+                pinConfirmed = kost.hasCoordinates();
+                if (pinConfirmed) {
+                    if (cardLocationSummary != null) cardLocationSummary.setVisibility(View.VISIBLE);
+                    if (btnOpenMap != null) btnOpenMap.setText("Ubah Titik di Peta");
+                    updateLocationSummaryUI(alamat, kost.getKota(), kost.getProvinsi());
+                }
 
-                // Check facilities
-                List<String> fasList = kost.getFasilitas();
-                if (fasList != null) {
-                    for (String fName : fasList) {
-                        for (CheckBox cb : allCheckBoxes) {
-                            if (cb.getText().toString().toLowerCase().contains(fName.toLowerCase())) {
-                                cb.setChecked(true);
-                            }
-                        }
-                    }
+                TextInputEditText etDep = findViewById(R.id.et_form_deposit);
+                TextInputEditText etMin = findViewById(R.id.et_form_min_sewa);
+                TextInputEditText etBiaya = findViewById(R.id.et_form_biaya_tambahan);
+                if (etDep != null && kost.getDeposit() != null) etDep.setText(String.valueOf(kost.getDeposit()));
+                if (etMin != null && kost.getMinimalSewaBulan() != null) etMin.setText(String.valueOf(kost.getMinimalSewaBulan()));
+                if (etBiaya != null && kost.getBiayaTambahan() != null) etBiaya.setText(kost.getBiayaTambahan());
+                com.google.android.material.chip.ChipGroup cgAt = findViewById(R.id.cg_form_aturan);
+                if (cgAt != null) for (int i = 0; i < cgAt.getChildCount(); i++) {
+                    com.google.android.material.chip.Chip c = (com.google.android.material.chip.Chip) cgAt.getChildAt(i);
+                    c.setChecked(kost.getAturan().contains(c.getText().toString()));
+                }
+
+                Set<String> saved = new HashSet<>();
+                for (String fName : kost.getFasilitas()) {
+                    if (fName != null) saved.add(fName.trim().toLowerCase());
+                }
+                for (CheckBox cb : allCheckBoxes) {
+                    String name = Fasilitas.nameForId((Integer) cb.getTag());
+                    cb.setChecked(name != null && saved.contains(name.toLowerCase()));
                 }
 
                 // Load photos
@@ -867,8 +984,7 @@ public class AdminKostFormActivity extends AppCompatActivity {
 
     private void submitKost() {
         String nama = etNama.getText().toString().trim();
-        String hargaStr = etHarga.getText().toString().trim();
-        double harga = Double.parseDouble(hargaStr);
+        double harga = parseRupiah(etHarga.getText().toString());
         String prov = actProvinsi.getText().toString().trim();
         String kota = actKota.getText().toString().trim();
         String kec = actKecamatan.getText().toString().trim();
@@ -877,8 +993,11 @@ public class AdminKostFormActivity extends AppCompatActivity {
         String alamatLengkap = etAlamat.getText().toString().trim();
         String deskripsi = etDeskripsi.getText().toString().trim();
         int totalKamar = Integer.parseInt(etTotalKamar.getText().toString().trim());
-        int kamarTersedia = Integer.parseInt(etKamarTersedia.getText().toString().trim());
-        String wa = etWhatsapp.getText().toString().trim();
+        String kosongStr = etKamarTersedia.getText().toString().trim();
+        int kamarTersedia = kosongStr.isEmpty() ? 0 : Integer.parseInt(kosongStr);
+        String wa = digitsOnly(etWhatsapp.getText().toString());
+        if (wa.startsWith("62")) wa = "0" + wa.substring(2);
+        String ukuran = etUkuranKamar != null && etUkuranKamar.getText() != null ? etUkuranKamar.getText().toString().trim() : "";
 
         TipeKost tipe = TipeKost.PUTRI;
         if (rbPutra.isChecked()) tipe = TipeKost.PUTRA;
@@ -899,9 +1018,10 @@ public class AdminKostFormActivity extends AppCompatActivity {
         kost.setIdWilayah(wilayahList.isEmpty() ? 1 : wilayahList.get(0).getIdWilayah());
         kost.setProvinsi(prov);
         kost.setKota(kota);
+        kost.setKecamatan(kec);
+        kost.setKelurahan(kel);
         kost.setAlamat(jalan + ", " + alamatLengkap);
-        kost.setPatokan(kec + (!kel.isEmpty() ? ", " + kel : ""));
-        kost.setUkuranKamar("3x4 m");
+        kost.setUkuranKamar(ukuran.isEmpty() ? null : ukuran);
         kost.setTotalKamar(totalKamar);
         kost.setKamarTersedia(kamarTersedia);
         kost.setHarga(harga);
@@ -912,17 +1032,33 @@ public class AdminKostFormActivity extends AppCompatActivity {
         kost.setDeskripsi(deskripsi);
         kost.setStatus(status);
 
+        TextInputEditText etDep = findViewById(R.id.et_form_deposit);
+        TextInputEditText etMin = findViewById(R.id.et_form_min_sewa);
+        TextInputEditText etBiaya = findViewById(R.id.et_form_biaya_tambahan);
+        long deposit = etDep != null ? parseRupiah(etDep.getText() != null ? etDep.getText().toString() : "") : 0;
+        kost.setDeposit(deposit > 0 ? (int) Math.min(deposit, Integer.MAX_VALUE) : null);
+        String minStr = etMin != null && etMin.getText() != null ? digitsOnly(etMin.getText().toString()) : "";
+        kost.setMinimalSewaBulan(minStr.isEmpty() ? null : Math.max(1, Math.min(24, Integer.parseInt(minStr))));
+        String biaya = etBiaya != null && etBiaya.getText() != null ? etBiaya.getText().toString().trim() : "";
+        kost.setBiayaTambahan(biaya.isEmpty() ? null : biaya);
+        java.util.List<String> rules = new ArrayList<>();
+        com.google.android.material.chip.ChipGroup cgAt = findViewById(R.id.cg_form_aturan);
+        if (cgAt != null) for (int i = 0; i < cgAt.getChildCount(); i++) {
+            com.google.android.material.chip.Chip c = (com.google.android.material.chip.Chip) cgAt.getChildAt(i);
+            if (c.isChecked()) rules.add(c.getText().toString());
+        }
+        kost.setAturan(rules);
+
         String currentUserId = sessionManager.getUserUid();
         if ((kost.getOwnerId() == null || kost.getOwnerId().isEmpty()) && currentUserId != null) {
             kost.setOwnerId(currentUserId);
         }
 
+        // Status verifikasi final ditentukan trigger server (perubahan isi listing -> review ulang)
         boolean isOwner = sessionManager.isPemilikKost() && !sessionManager.isDeveloper();
-        if (isOwner) {
+        if (editKostId == null) {
             kost.setVerificationStatus(KostVerificationStatus.PENDING);
             kost.setCatatanRevisi(null);
-        } else if (editKostId == null) {
-            kost.setVerificationStatus(KostVerificationStatus.APPROVED);
         }
 
         List<FotoKost> fotosToSave = formFotoAdapter.getFotoList();
@@ -943,59 +1079,55 @@ public class AdminKostFormActivity extends AppCompatActivity {
         btnNext.setEnabled(false);
         btnPrev.setEnabled(false);
 
-        if (editKostId == null) {
-            kostRepository.saveKostWithFotos(kost, selectedFasilitas, fotosToSave, new DataCallback<Long>() {
-                @Override
-                public void onSuccess(Long id) {
-                    pbSaving.setVisibility(View.GONE);
-                    if (isOwner) {
-                        activityLogRepository.logActivity(currentUserId, "SUBMIT_KOST",
-                                "Pemilik mengajukan kost baru: " + kost.getNamaKost(), "kost", String.valueOf(id));
-                    }
-                    showSuccessPublishDialog(isOwner);
+        DataCallback<KostRepository.SaveResult> saveCallback = new DataCallback<KostRepository.SaveResult>() {
+            @Override
+            public void onSuccess(KostRepository.SaveResult result) {
+                pbSaving.setVisibility(View.GONE);
+                if (isOwner) {
+                    activityLogRepository.logActivity(currentUserId,
+                            editKostId == null ? "SUBMIT_KOST" : "RESUBMIT_KOST",
+                            (editKostId == null ? "Pemilik mengajukan kost baru: " : "Pemilik memperbarui kost: ") + kost.getNamaKost(),
+                            "KOST", result.kostId);
                 }
+                showSuccessPublishDialog(result);
+            }
 
-                @Override
-                public void onError(String message) {
-                    pbSaving.setVisibility(View.GONE);
-                    btnNext.setEnabled(true);
-                    btnPrev.setEnabled(true);
-                    AppDialogHelper.showErrorDialog(AdminKostFormActivity.this, "Gagal Mempublikasikan", message);
-                }
-            });
+            @Override
+            public void onError(String message) {
+                pbSaving.setVisibility(View.GONE);
+                btnNext.setEnabled(true);
+                btnPrev.setEnabled(true);
+                AppDialogHelper.showErrorDialog(AdminKostFormActivity.this,
+                        editKostId == null ? "Gagal Menyimpan Kost" : "Gagal Menyimpan Perubahan", message);
+            }
+        };
+
+        if (editKostId == null) {
+            kostRepository.saveKostWithFotos(kost, selectedFasilitas, fotosToSave, saveCallback);
         } else {
             kost.setId(editKostId);
-            kostRepository.updateKostWithFotos(kost, selectedFasilitas, fotosToSave, new DataCallback<Boolean>() {
-                @Override
-                public void onSuccess(Boolean ok) {
-                    pbSaving.setVisibility(View.GONE);
-                    if (isOwner) {
-                        activityLogRepository.logActivity(currentUserId, "RESUBMIT_KOST",
-                                "Pemilik memperbarui kost: " + kost.getNamaKost(), "kost", editKostId);
-                    }
-                    showSuccessPublishDialog(isOwner);
-                }
-
-                @Override
-                public void onError(String message) {
-                    pbSaving.setVisibility(View.GONE);
-                    btnNext.setEnabled(true);
-                    btnPrev.setEnabled(true);
-                    AppDialogHelper.showErrorDialog(AdminKostFormActivity.this, "Gagal Memperbarui", message);
-                }
-            });
+            kostRepository.updateKostWithFotos(kost, selectedFasilitas, fotosToSave, saveCallback);
         }
     }
 
-    private void showSuccessPublishDialog(boolean isOwner) {
-        String title = editKostId != null ? "Perubahan Berhasil Disimpan" : "Kost Berhasil Ditambahkan";
-        String message = isOwner ?
-                "Properti kost Anda berhasil disimpan dan masuk ke antrean verifikasi Admin sebelum ditampilkan di hasil pencarian." :
-                "Data kost berhasil dipublikasikan dan langsung aktif di katalog publik.";
+    private void showSuccessPublishDialog(KostRepository.SaveResult result) {
+        String title = editKostId != null ? "Perubahan Tersimpan" : "Kost Berhasil Diajukan";
+        StringBuilder message = new StringBuilder();
+        if (result.sentToReview) {
+            message.append(editKostId != null
+                    ? "Perubahan isi listing akan ditinjau tim CariKostKita. Selama ditinjau, kost tidak tampil di pencarian."
+                    : "Kost kamu masuk antrean verifikasi. Setelah disetujui, kost langsung tampil di pencarian.");
+        } else {
+            message.append("Data terbaru sudah tampil untuk pencari kost.");
+        }
+        if (result.failedUploads > 0) {
+            message.append("\n\n").append(result.failedUploads)
+                    .append(" foto gagal diunggah. Buka Edit Kost untuk mencoba mengunggahnya lagi.");
+        }
 
         new MaterialAlertDialogBuilder(this)
                 .setTitle(title)
-                .setMessage(message)
+                .setMessage(message.toString())
                 .setCancelable(false)
                 .setPositiveButton("Selesai", (dialog, which) -> {
                     dialog.dismiss();

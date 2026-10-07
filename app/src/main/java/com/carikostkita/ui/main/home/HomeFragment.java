@@ -1,14 +1,16 @@
 package com.carikostkita.ui.main.home;
 
+import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -16,27 +18,28 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import com.bumptech.glide.Glide;
 import com.carikostkita.R;
+import com.carikostkita.data.location.IndonesiaLocationData;
+import com.carikostkita.data.location.UserLocationManager;
 import com.carikostkita.data.model.Kost;
-import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.data.repository.KostRepository;
 import com.carikostkita.ui.adapter.KostAdapter;
 import com.carikostkita.ui.adapter.KostCarouselAdapter;
 import com.carikostkita.ui.detail.DetailKostActivity;
+import com.carikostkita.ui.location.LocationPickerBottomSheet;
 import com.carikostkita.ui.main.MainActivity;
-import com.carikostkita.util.FormatUtil;
+import com.carikostkita.ui.map.MapSearchActivity;
+import com.carikostkita.util.AuthPrompt;
+import com.carikostkita.util.ErrorMessages;
+import com.carikostkita.util.GeoUtil;
 import com.carikostkita.util.SessionManager;
 import com.carikostkita.util.SkeletonHelper;
+import com.carikostkita.util.TouchFeedbackUtil;
 import com.carikostkita.util.UserAvatarHelper;
-import android.Manifest;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import com.carikostkita.data.location.UserLocationManager;
-import com.carikostkita.ui.location.LocationPickerBottomSheet;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -45,31 +48,30 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
     private SwipeRefreshLayout swipeRefresh;
     private ImageView ivAvatar;
+    private TextView tvSalam;
     private TextView tvGreeting;
-    private View btnNotification;
-    private View mockSearch;
-    private View btnFilterTrigger;
     private TextView tvLocationLabel;
+    private TextView tvSearchHint;
     private TextView tvDiscoveryAreaTitle;
     private TextView tvSectionNewTitle;
-    private TextView tvArea1Title, tvArea1Sub;
-    private TextView tvArea2Title, tvArea2Sub;
-    private TextView tvArea3Title, tvArea3Sub;
-    private TextView tvArea4Title, tvArea4Sub;
-    private String area1 = "Bukit Raya";
-    private String area2 = "Tangkerang";
-    private String area3 = "Marpoyan";
-    private String area4 = "Simpang Tiga";
+    private final TextView[] areaTitles = new TextView[4];
+    private final TextView[] areaSubs = new TextView[4];
+    private final String[] areas = new String[4];
     private UserLocationManager userLocationManager;
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
     private TextView chipSemua, chipPutra, chipPutri, chipCampur;
     private View bannerKamarKosong;
     private TextView tvBannerText;
+    private View badgeNotification;
 
     private View layoutSkeleton;
     private View layoutHomeContent;
     private View layoutEmpty;
+    private ImageView ivEmptyIcon;
+    private TextView tvEmptyTitle;
+    private TextView tvEmptyDesc;
+    private TextView btnEmptyPrimary;
     private View layoutSectionTerjangkau;
     private View layoutSectionNew;
 
@@ -83,6 +85,7 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
     private List<Kost> masterKostList = new ArrayList<>();
     private String selectedCategory = "SEMUA";
+    private boolean hasLoadedOnce = false;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -116,17 +119,23 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         userLocationManager = UserLocationManager.getInstance(requireContext());
 
         swipeRefresh = view.findViewById(R.id.swipe_refresh_home);
+        swipeRefresh.setColorSchemeResources(R.color.primary);
         ivAvatar = view.findViewById(R.id.iv_home_avatar);
+        tvSalam = view.findViewById(R.id.tv_home_salam);
         tvGreeting = view.findViewById(R.id.tv_home_greeting);
-        btnNotification = view.findViewById(R.id.btn_home_notification);
-        mockSearch = view.findViewById(R.id.layout_mock_search);
-        btnFilterTrigger = view.findViewById(R.id.btn_home_filter_trigger);
         tvLocationLabel = view.findViewById(R.id.tv_home_location_label);
+        tvSearchHint = view.findViewById(R.id.tv_home_search_hint);
         tvDiscoveryAreaTitle = view.findViewById(R.id.tv_home_discovery_area_title);
+        badgeNotification = view.findViewById(R.id.badge_home_notification);
+
+        // Siluet & ornamen header mengikuti sudut melengkung background
+        View header = view.findViewById(R.id.header_home_banner);
+        if (header != null) header.setClipToOutline(true);
 
         View layoutLocationChip = view.findViewById(R.id.layout_home_location_chip);
         if (layoutLocationChip != null) {
             layoutLocationChip.setOnClickListener(v -> showLocationPicker());
+            TouchFeedbackUtil.attachPress(layoutLocationChip);
         }
 
         chipSemua = view.findViewById(R.id.chip_home_semua);
@@ -140,6 +149,10 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         layoutSkeleton = view.findViewById(R.id.skeleton_home);
         layoutHomeContent = view.findViewById(R.id.layout_home_content);
         layoutEmpty = view.findViewById(R.id.layout_home_empty);
+        ivEmptyIcon = view.findViewById(R.id.iv_home_empty_icon);
+        tvEmptyTitle = view.findViewById(R.id.tv_home_empty_title);
+        tvEmptyDesc = view.findViewById(R.id.tv_home_empty_desc);
+        btnEmptyPrimary = view.findViewById(R.id.btn_home_empty_expand);
         layoutSectionTerjangkau = view.findViewById(R.id.layout_section_terjangkau);
         layoutSectionNew = view.findViewById(R.id.layout_section_new);
         tvSectionNewTitle = view.findViewById(R.id.tv_home_section_new_title);
@@ -147,37 +160,20 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         rvCarousel = view.findViewById(R.id.rv_home_carousel);
         rvKost = view.findViewById(R.id.rv_home_kost);
 
-        View btnSeeAllTerjangkau = view.findViewById(R.id.btn_see_all_terjangkau);
-        View btnSeeAllNew = view.findViewById(R.id.btn_see_all_new);
+        int[] titleIds = {R.id.tv_area_1_title, R.id.tv_area_2_title, R.id.tv_area_3_title, R.id.tv_area_4_title};
+        int[] subIds = {R.id.tv_area_1_sub, R.id.tv_area_2_sub, R.id.tv_area_3_sub, R.id.tv_area_4_sub};
+        int[] cardIds = {R.id.card_area_bukit_raya, R.id.card_area_tangkerang, R.id.card_area_marpoyan, R.id.card_area_simpang_tiga};
+        for (int i = 0; i < 4; i++) {
+            areaTitles[i] = view.findViewById(titleIds[i]);
+            areaSubs[i] = view.findViewById(subIds[i]);
+            final int idx = i;
+            View card = view.findViewById(cardIds[i]);
+            if (card != null) card.setOnClickListener(v -> openMapWithQuery(areas[idx]));
+        }
 
-        // Discovery Area Cards Bindings
-        View cardBukitRaya = view.findViewById(R.id.card_area_bukit_raya);
-        View cardTangkerang = view.findViewById(R.id.card_area_tangkerang);
-        View cardMarpoyan = view.findViewById(R.id.card_area_marpoyan);
-        View cardSimpangTiga = view.findViewById(R.id.card_area_simpang_tiga);
-
-        tvArea1Title = view.findViewById(R.id.tv_area_1_title);
-        tvArea1Sub = view.findViewById(R.id.tv_area_1_sub);
-        tvArea2Title = view.findViewById(R.id.tv_area_2_title);
-        tvArea2Sub = view.findViewById(R.id.tv_area_2_sub);
-        tvArea3Title = view.findViewById(R.id.tv_area_3_title);
-        tvArea3Sub = view.findViewById(R.id.tv_area_3_sub);
-        tvArea4Title = view.findViewById(R.id.tv_area_4_title);
-        tvArea4Sub = view.findViewById(R.id.tv_area_4_sub);
-
-        if (cardBukitRaya != null) cardBukitRaya.setOnClickListener(v -> openMapWithQuery(area1));
-        if (cardTangkerang != null) cardTangkerang.setOnClickListener(v -> openMapWithQuery(area2));
-        if (cardMarpoyan != null) cardMarpoyan.setOnClickListener(v -> openMapWithQuery(area3));
-        if (cardSimpangTiga != null) cardSimpangTiga.setOnClickListener(v -> openMapWithQuery(area4));
-
-
-        // Empty State Action Buttons
-        View btnEmptyExpand = view.findViewById(R.id.btn_home_empty_expand);
         View btnEmptyMap = view.findViewById(R.id.btn_home_empty_map);
-        if (btnEmptyExpand != null) btnEmptyExpand.setOnClickListener(v -> openMapWithQuery(""));
         if (btnEmptyMap != null) btnEmptyMap.setOnClickListener(v -> openMapWithQuery(""));
 
-        // Header Greeting & Avatar
         refreshUserProfile();
         if (ivAvatar != null) {
             ivAvatar.setOnClickListener(v -> {
@@ -187,59 +183,59 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             });
         }
 
-        // Notification Button -> Navigate to Chat tab
+        View btnNotification = view.findViewById(R.id.btn_home_notification);
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> {
+                if (!AuthPrompt.require(requireContext(), "Masuk untuk melihat pesan dari pemilik kost.")) return;
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).navigateToChat();
                 }
             });
-            com.carikostkita.util.TouchFeedbackUtil.attachPress(btnNotification);
+            TouchFeedbackUtil.attachPress(btnNotification);
         }
 
-        // Search bar & Filter Trigger -> Navigate to Map Search
-        View.OnClickListener goToSearch = v -> {
-            startActivity(new Intent(requireContext(), com.carikostkita.ui.map.MapSearchActivity.class));
-        };
-        if (mockSearch != null) mockSearch.setOnClickListener(goToSearch);
-        if (btnFilterTrigger != null) {
-            btnFilterTrigger.setOnClickListener(goToSearch);
-            com.carikostkita.util.TouchFeedbackUtil.attachPress(btnFilterTrigger);
+        // Search bar Beranda membuka tab Cari: satu tempat pencarian untuk seluruh aplikasi
+        View mockSearch = view.findViewById(R.id.layout_mock_search);
+        if (mockSearch != null) {
+            mockSearch.setOnClickListener(v -> openSearchTab(null));
+            TouchFeedbackUtil.attachPress(mockSearch);
+        }
+        View btnMap = view.findViewById(R.id.btn_home_filter_trigger);
+        if (btnMap != null) {
+            btnMap.setOnClickListener(v -> openMapWithQuery(""));
+            TouchFeedbackUtil.attachPress(btnMap);
         }
 
-        // Carousel 220dp cards setup
+        setupTrustCards(view);
+
         carouselAdapter = new KostCarouselAdapter(this);
         rvCarousel.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         rvCarousel.setAdapter(carouselAdapter);
 
-        // Vertical List setup
         kostAdapter = new KostAdapter(this);
         rvKost.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvKost.setNestedScrollingEnabled(false);
         rvKost.setAdapter(kostAdapter);
 
-        // Category Chips Click Listeners
         chipSemua.setOnClickListener(v -> filterByCategory("SEMUA"));
         chipPutra.setOnClickListener(v -> filterByCategory("PUTRA"));
         chipPutri.setOnClickListener(v -> filterByCategory("PUTRI"));
         chipCampur.setOnClickListener(v -> filterByCategory("CAMPUR"));
 
-        // Informational Banner Click -> Filter Available Rooms
         if (bannerKamarKosong != null) {
-            bannerKamarKosong.setOnClickListener(v -> {
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToSearch();
-                }
-            });
+            bannerKamarKosong.setOnClickListener(v -> openSearchTab("AVAILABLE"));
         }
 
-        if (btnSeeAllTerjangkau != null) btnSeeAllTerjangkau.setOnClickListener(goToSearch);
-        if (btnSeeAllNew != null) btnSeeAllNew.setOnClickListener(goToSearch);
+        View btnSeeAllTerjangkau = view.findViewById(R.id.btn_see_all_terjangkau);
+        View btnSeeAllNew = view.findViewById(R.id.btn_see_all_new);
+        if (btnSeeAllTerjangkau != null) btnSeeAllTerjangkau.setOnClickListener(v -> openSearchTab("SORT_CHEAPEST"));
+        if (btnSeeAllNew != null) btnSeeAllNew.setOnClickListener(v -> openSearchTab(null));
 
-        swipeRefresh.setOnRefreshListener(this::loadData);
+        swipeRefresh.setOnRefreshListener(() -> loadData(false));
 
-        loadData();
+        loadData(true);
 
-        // Location Detection & UX Flow (No forced permission popup on Home)
+        // Lokasi tidak dipaksa: izin hanya diminta saat pengguna memilihnya
         updateLocationUI();
         if (sessionManager.hasLocationSaved()) {
             updateDiscoveryArea(sessionManager.getUserSelectedCity());
@@ -254,12 +250,41 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     public void onResume() {
         super.onResume();
         refreshUserProfile();
+        // Sinkronkan status favorit yang mungkin berubah di tab/halaman lain tanpa skeleton
+        if (hasLoadedOnce) loadData(false);
+    }
+
+    private void bindTrustCard(View card, int icon, String title, String desc, View.OnClickListener onClick) {
+        if (card == null) return;
+        ImageView iv = card.findViewById(R.id.iv_trust_icon);
+        TextView tvTitle = card.findViewById(R.id.tv_trust_title);
+        TextView tvDesc = card.findViewById(R.id.tv_trust_desc);
+        if (iv != null) iv.setImageResource(icon);
+        if (tvTitle != null) tvTitle.setText(title);
+        if (tvDesc != null) tvDesc.setText(desc);
+        card.setContentDescription(title + ". " + desc);
+        card.setOnClickListener(onClick);
+        TouchFeedbackUtil.attachPress(card);
+    }
+
+    private void setupTrustCards(View root) {
+        bindTrustCard(root.findViewById(R.id.trust_card_verified), R.drawable.ic_verified,
+                "Terverifikasi", "Dicek tim sebelum tampil",
+                v -> com.carikostkita.util.AppInfoSheets.showAbout(requireContext()));
+        bindTrustCard(root.findViewById(R.id.trust_card_chat), R.drawable.ic_nav_chat,
+                "Chat langsung", "Tanpa perantara & komisi", v -> {
+                    if (!AuthPrompt.require(requireContext(), "Masuk untuk chat langsung dengan pemilik kost.")) return;
+                    if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).navigateToChat();
+                });
+        bindTrustCard(root.findViewById(R.id.trust_card_map), R.drawable.ic_map,
+                "Lewat peta", "Lihat jarak dari lokasimu", v -> openMapWithQuery(""));
     }
 
     private void refreshUserProfile() {
         if (!isAdded()) return;
+        if (tvSalam != null) tvSalam.setText(greetingForNow());
         if (sessionManager != null && sessionManager.isLoggedIn()) {
-            if (tvGreeting != null) tvGreeting.setText(sessionManager.getUserName());
+            if (tvGreeting != null) tvGreeting.setText(firstName(sessionManager.getUserName()));
             if (ivAvatar != null) UserAvatarHelper.loadAvatar(ivAvatar, sessionManager.getUserAvatar());
         } else {
             if (tvGreeting != null) tvGreeting.setText("Pencari Kost");
@@ -267,17 +292,29 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         }
     }
 
-    private void loadData() {
+    private static String greetingForNow() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        if (hour < 11) return "Selamat pagi,";
+        if (hour < 15) return "Selamat siang,";
+        if (hour < 19) return "Selamat sore,";
+        return "Selamat malam,";
+    }
+
+    private static String firstName(String fullName) {
+        if (fullName == null || fullName.trim().isEmpty()) return "Pencari Kost";
+        String[] parts = fullName.trim().split("\\s+");
+        return parts[0];
+    }
+
+    private void loadData(boolean showSkeleton) {
         long startTime = SkeletonHelper.markStart();
 
-        if (!swipeRefresh.isRefreshing()) {
+        if (showSkeleton && !swipeRefresh.isRefreshing()) {
             if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);
             if (layoutHomeContent != null) layoutHomeContent.setVisibility(View.GONE);
         }
-        layoutEmpty.setVisibility(View.GONE);
 
-        int userId = sessionManager.getUserId();
-        kostRepository.getAllActiveKost(userId, new DataCallback<List<Kost>>() {
+        kostRepository.getAllActiveKost(sessionManager.getUserUid(), new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> allKost) {
                 SkeletonHelper.complete(startTime, () -> onDataLoaded(allKost));
@@ -290,42 +327,36 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         });
     }
 
-    private void onDataLoaded(List<Kost> allKost) {
-        if (!isAdded()) return;
-
+    private void showContent() {
         if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
         if (layoutHomeContent != null) layoutHomeContent.setVisibility(View.VISIBLE);
         swipeRefresh.setRefreshing(false);
+    }
+
+    private void onDataLoaded(List<Kost> allKost) {
+        if (!isAdded()) return;
+        hasLoadedOnce = true;
+        showContent();
 
         masterKostList = (allKost != null) ? allKost : new ArrayList<>();
 
         if (masterKostList.isEmpty()) {
-            layoutEmpty.setVisibility(View.VISIBLE);
-            if (layoutSectionTerjangkau != null) layoutSectionTerjangkau.setVisibility(View.GONE);
-            if (layoutSectionNew != null) layoutSectionNew.setVisibility(View.GONE);
-            rvKost.setVisibility(View.GONE);
-            chipSemua.setText("Semua");
-            chipPutra.setText("Putra");
-            chipPutri.setText("Putri");
-            chipCampur.setText("Campur");
+            showEmptyState(false, null);
             return;
         }
 
         layoutEmpty.setVisibility(View.GONE);
         rvKost.setVisibility(View.VISIBLE);
+        if (bannerKamarKosong != null) bannerKamarKosong.setVisibility(View.VISIBLE);
         if (layoutSectionTerjangkau != null) layoutSectionTerjangkau.setVisibility(View.VISIBLE);
         if (layoutSectionNew != null) layoutSectionNew.setVisibility(View.VISIBLE);
 
-        // 1. Calculate dynamic category counts
-        int countPutri = 0, countPutra = 0, countCampur = 0, availableRooms = 0;
+        int countPutri = 0, countPutra = 0, countCampur = 0, availableKost = 0;
         for (Kost k : masterKostList) {
             if (k.getTipeKost() == TipeKost.PUTRI) countPutri++;
             else if (k.getTipeKost() == TipeKost.PUTRA) countPutra++;
             else if (k.getTipeKost() == TipeKost.CAMPUR) countCampur++;
-
-            if (k.getStatus() == StatusKost.TERSEDIA) {
-                availableRooms += Math.max(1, k.getKamarTersedia());
-            }
+            if (k.isAvailable()) availableKost++;
         }
 
         chipSemua.setText("Semua " + masterKostList.size());
@@ -333,23 +364,52 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         chipPutri.setText("Putri " + countPutri);
         chipCampur.setText("Campur " + countCampur);
 
-        // Update Info Banner text
         if (tvBannerText != null) {
-            if (availableRooms > 0) {
-                tvBannerText.setText(availableRooms + " kamar kosong baru minggu ini");
-            } else {
-                tvBannerText.setText("Kamar kosong baru tersedia minggu ini");
-            }
+            tvBannerText.setText(availableKost > 0
+                    ? availableKost + " kost masih punya kamar kosong"
+                    : "Semua kost sedang penuh. Simpan favorit untuk memantau.");
         }
 
-        // 2. Section "Harga Terjangkau": Sorted by price ascending
         List<Kost> affordableList = new ArrayList<>(masterKostList);
         Collections.sort(affordableList, Comparator.comparingDouble(Kost::getHarga));
-        int carouselLimit = Math.min(6, affordableList.size());
-        carouselAdapter.submitList(affordableList.subList(0, carouselLimit));
+        carouselAdapter.submitList(new ArrayList<>(affordableList.subList(0, Math.min(6, affordableList.size()))));
 
-        // 3. Section "Baru Ditambahkan": Filtered by active category, newest first
         applyCategoryFilter();
+    }
+
+    /** Empty state & error state memakai kartu yang sama dengan isi yang berbeda. */
+    private void showEmptyState(boolean isError, String errorMessage) {
+        layoutEmpty.setVisibility(View.VISIBLE);
+        rvKost.setVisibility(View.GONE);
+        if (bannerKamarKosong != null) bannerKamarKosong.setVisibility(View.GONE);
+        if (layoutSectionTerjangkau != null) layoutSectionTerjangkau.setVisibility(View.GONE);
+        if (layoutSectionNew != null) layoutSectionNew.setVisibility(View.GONE);
+        chipSemua.setText("Semua");
+        chipPutra.setText("Putra");
+        chipPutri.setText("Putri");
+        chipCampur.setText("Campur");
+
+        if (isError) {
+            if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(ErrorMessages.isOffline(errorMessage) ? R.drawable.ic_error_circle : R.drawable.ic_warning);
+            if (tvEmptyTitle != null) tvEmptyTitle.setText(ErrorMessages.isOffline(errorMessage) ? "Kamu Sedang Offline" : "Gagal Memuat Kost");
+            if (tvEmptyDesc != null) tvEmptyDesc.setText(errorMessage);
+            if (btnEmptyPrimary != null) {
+                btnEmptyPrimary.setText("Coba Lagi");
+                btnEmptyPrimary.setOnClickListener(v -> loadData(true));
+            }
+        } else {
+            String city = userLocationManager.getActiveCity();
+            if (ivEmptyIcon != null) ivEmptyIcon.setImageResource(R.drawable.il_empty_kost);
+            if (tvEmptyTitle != null) tvEmptyTitle.setText("Belum Ada Kost Tersedia");
+            if (tvEmptyDesc != null) {
+                tvEmptyDesc.setText("Belum ada kost terverifikasi" + (city != null && !city.isEmpty() ? " di " + city : "")
+                        + ". Kost baru tampil di sini setelah lolos verifikasi tim CariKostKita.");
+            }
+            if (btnEmptyPrimary != null) {
+                btnEmptyPrimary.setText("Ganti Lokasi");
+                btnEmptyPrimary.setOnClickListener(v -> showLocationPicker());
+            }
+        }
     }
 
     private void filterByCategory(String category) {
@@ -376,34 +436,68 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         }
     }
 
+    /**
+     * Daftar utama: urut jarak terdekat bila lokasi pengguna diketahui,
+     * selain itu urut dari yang terbaru. Judul section mengikuti urutan sebenarnya.
+     */
     private void applyCategoryFilter() {
         List<Kost> filtered = new ArrayList<>();
         for (Kost k : masterKostList) {
-            if ("SEMUA".equals(selectedCategory)) {
-                filtered.add(k);
-            } else if ("PUTRA".equals(selectedCategory) && k.getTipeKost() == TipeKost.PUTRA) {
-                filtered.add(k);
-            } else if ("PUTRI".equals(selectedCategory) && k.getTipeKost() == TipeKost.PUTRI) {
-                filtered.add(k);
-            } else if ("CAMPUR".equals(selectedCategory) && k.getTipeKost() == TipeKost.CAMPUR) {
+            if ("SEMUA".equals(selectedCategory)
+                    || (k.getTipeKost() != null && k.getTipeKost().name().equals(selectedCategory))) {
                 filtered.add(k);
             }
         }
-        Collections.sort(filtered, (a, b) -> {
-            if (b.getCreatedAt() != null && a.getCreatedAt() != null) {
-                return b.getCreatedAt().compareTo(a.getCreatedAt());
-            }
-            return b.getId().compareTo(a.getId());
-        });
+
+        double lat = sessionManager.getUserSelectedLat();
+        double lng = sessionManager.getUserSelectedLng();
+        boolean hasLocation = lat != 0 && lng != 0;
+        if (hasLocation) {
+            Collections.sort(filtered, (a, b) -> {
+                double da = a.hasCoordinates() ? GeoUtil.distanceKm(lat, lng, a.getLatitude(), a.getLongitude()) : Double.MAX_VALUE;
+                double db = b.hasCoordinates() ? GeoUtil.distanceKm(lat, lng, b.getLatitude(), b.getLongitude()) : Double.MAX_VALUE;
+                return Double.compare(da, db);
+            });
+            kostAdapter.setDistanceOrigin(lat, lng);
+        } else {
+            Collections.sort(filtered, (a, b) -> {
+                if (b.getCreatedAt() != null && a.getCreatedAt() != null) {
+                    return b.getCreatedAt().compareTo(a.getCreatedAt());
+                }
+                return 0;
+            });
+            kostAdapter.setDistanceOrigin(0, 0);
+        }
+        carouselAdapter.notifyDataSetChanged();
         kostAdapter.submitList(filtered);
+        updateSectionTitle(hasLocation);
+    }
+
+    private void updateSectionTitle(boolean sortedByDistance) {
+        if (tvSectionNewTitle == null) return;
+        String loc = userLocationManager.getActiveLocationDisplay();
+        boolean hasLabel = loc != null && !loc.trim().isEmpty() && !loc.equalsIgnoreCase("Pilih Lokasi");
+        if (sortedByDistance) {
+            tvSectionNewTitle.setText(hasLabel ? "Terdekat dari " + shortLocation(loc) : "Terdekat dari lokasimu");
+        } else {
+            tvSectionNewTitle.setText("Baru ditambahkan");
+        }
+    }
+
+    private static String shortLocation(String display) {
+        int comma = display.indexOf(',');
+        return comma > 0 ? display.substring(0, comma).trim() : display.trim();
     }
 
     private void onErrorLoaded(String msg) {
         if (!isAdded()) return;
-        if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
-        if (layoutHomeContent != null) layoutHomeContent.setVisibility(View.VISIBLE);
-        swipeRefresh.setRefreshing(false);
-        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+        showContent();
+        if (masterKostList.isEmpty()) {
+            showEmptyState(true, msg);
+        } else {
+            // Data lama tetap tampil; cukup beri tahu bahwa pembaruan gagal
+            Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -415,14 +509,7 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
     @Override
     public void onFavoriteToggle(Kost kost, int position) {
-        handleFavoriteToggle(kost);
-    }
-
-    private void handleFavoriteToggle(Kost kost) {
-        if (!sessionManager.isLoggedIn()) {
-            Toast.makeText(requireContext(), "Silakan login terlebih dahulu untuk menyimpan favorit", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (!AuthPrompt.require(requireContext(), "Masuk untuk menyimpan kost favorit dan membukanya lagi kapan saja.")) return;
 
         kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
             @Override
@@ -441,18 +528,16 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         });
     }
 
-    private void openMapWithQuery(String query) {
-        Intent intent = new Intent(requireContext(), com.carikostkita.ui.map.MapSearchActivity.class);
-        if (query != null && !query.isEmpty()) {
-            intent.putExtra("search_query", query);
+    private void openSearchTab(String quickAction) {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).navigateToSearch(quickAction, quickAction == null);
         }
-        startActivity(intent);
     }
 
-    private void openMapWithType(String tipe) {
-        Intent intent = new Intent(requireContext(), com.carikostkita.ui.map.MapSearchActivity.class);
-        if (tipe != null && !tipe.isEmpty()) {
-            intent.putExtra("filter_tipe", tipe);
+    private void openMapWithQuery(String query) {
+        Intent intent = new Intent(requireContext(), MapSearchActivity.class);
+        if (query != null && !query.isEmpty()) {
+            intent.putExtra("search_query", query);
         }
         startActivity(intent);
     }
@@ -461,12 +546,13 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         LocationPickerBottomSheet.show(requireContext(), (city, district, display) -> {
             updateLocationUI();
             updateDiscoveryArea(city);
+            applyCategoryFilter();
         });
     }
 
     private void detectDeviceLocation() {
         if (tvLocationLabel != null) {
-            tvLocationLabel.setText("Mendeteksi...");
+            tvLocationLabel.setText("Mendeteksi lokasi…");
         }
         userLocationManager.detectCurrentLocation(new UserLocationManager.LocationCallback() {
             @Override
@@ -475,15 +561,14 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
                 requireActivity().runOnUiThread(() -> {
                     updateLocationUI();
                     updateDiscoveryArea(city);
+                    applyCategoryFilter();
                 });
             }
 
             @Override
             public void onLocationFailed(String fallbackMessage) {
                 if (!isAdded()) return;
-                requireActivity().runOnUiThread(() -> {
-                    updateLocationUI();
-                });
+                requireActivity().runOnUiThread(() -> updateLocationUI());
             }
         });
     }
@@ -491,19 +576,13 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     private void updateLocationUI() {
         if (!isAdded()) return;
         String loc = userLocationManager.getActiveLocationDisplay();
-        if (tvLocationLabel != null) {
-            if (loc != null && !loc.trim().isEmpty() && !loc.equalsIgnoreCase("Pilih Lokasi")) {
-                tvLocationLabel.setText(loc);
-            } else {
-                tvLocationLabel.setText("Pilih Lokasi");
-            }
-        }
-        if (tvSectionNewTitle != null) {
-            if (loc != null && !loc.trim().isEmpty() && !loc.equalsIgnoreCase("Pilih Lokasi")) {
-                tvSectionNewTitle.setText("Kost di sekitar " + loc);
-            } else {
-                tvSectionNewTitle.setText("Kost di sekitar Anda");
-            }
+        boolean hasLabel = loc != null && !loc.trim().isEmpty() && !loc.equalsIgnoreCase("Pilih Lokasi");
+        if (tvLocationLabel != null) tvLocationLabel.setText(hasLabel ? loc : "Pilih lokasi");
+        if (tvSearchHint != null) {
+            String city = userLocationManager.getActiveCity();
+            tvSearchHint.setText(city != null && !city.isEmpty()
+                    ? "Cari kost di " + city + "…"
+                    : "Cari nama kost, jalan, kelurahan…");
         }
     }
 
@@ -518,26 +597,21 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             tvDiscoveryAreaTitle.setText("Jelajahi Area " + activeCity);
         }
 
-        List<String> kecList = com.carikostkita.data.location.IndonesiaLocationData.getKecamatanList(activeCity);
-        if (kecList != null && !kecList.isEmpty()) {
-            if (kecList.size() > 0) area1 = kecList.get(0);
-            if (kecList.size() > 1) area2 = kecList.get(1);
-            if (kecList.size() > 2) area3 = kecList.get(2);
-            if (kecList.size() > 3) area4 = kecList.get(3);
-        } else {
-            area1 = activeCity;
-            area2 = "Pusat Kota";
-            area3 = "Area Kampus";
-            area4 = "Kecamatan Sekitar";
+        List<String> kecList = IndonesiaLocationData.getKecamatanList(activeCity);
+        for (int i = 0; i < 4; i++) {
+            if (kecList != null && kecList.size() > i) {
+                areas[i] = kecList.get(i);
+            } else {
+                areas[i] = i == 0 ? activeCity : null;
+            }
+            View card = areaTitles[i] != null ? (View) areaTitles[i].getParent().getParent().getParent() : null;
+            if (areas[i] == null) {
+                if (card != null) card.setVisibility(View.GONE);
+                continue;
+            }
+            if (card != null) card.setVisibility(View.VISIBLE);
+            if (areaTitles[i] != null) areaTitles[i].setText(areas[i]);
+            if (areaSubs[i] != null) areaSubs[i].setText(i == 0 && (kecList == null || kecList.isEmpty()) ? "Lihat di peta" : "Kecamatan • lihat peta");
         }
-
-        if (tvArea1Title != null) tvArea1Title.setText(area1);
-        if (tvArea1Sub != null) tvArea1Sub.setText("Kecamatan");
-        if (tvArea2Title != null) tvArea2Title.setText(area2);
-        if (tvArea2Sub != null) tvArea2Sub.setText("Strategis");
-        if (tvArea3Title != null) tvArea3Title.setText(area3);
-        if (tvArea3Sub != null) tvArea3Sub.setText("Area Kost");
-        if (tvArea4Title != null) tvArea4Title.setText(area4);
-        if (tvArea4Sub != null) tvArea4Sub.setText("Akses Mudah");
     }
 }

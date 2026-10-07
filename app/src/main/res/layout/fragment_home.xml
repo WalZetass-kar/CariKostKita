@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout 
+    
     android:id="@+id/swipe_refresh_home"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -18,198 +23,267 @@
             android:orientation="vertical"
             android:paddingBottom="96dp">
 
-            <!-- Warm Pastel Curved Header Banner (Peach + Soft Pink + Soft Lavender) -->
-            <LinearLayout
+            <!-- Header: gradient maroon + ornamen + siluet deretan kost (identitas CariKostKita) -->
+            <FrameLayout
                 android:id="@+id/header_home_banner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_header_curved"
-                android:orientation="vertical"
-                android:paddingHorizontal="20dp"
-                android:paddingTop="28dp"
-                android:paddingBottom="26dp">
+                android:background="@drawable/bg_header_curved">
 
-                <!-- Top Row: Avatar + Greeting + Notification Button -->
+                <ImageView
+                    android:layout_width="160dp"
+                    android:layout_height="140dp"
+                    android:layout_gravity="top|end"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/il_header_ornament" />
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="72dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginBottom="22dp"
+                    android:importantForAccessibility="no"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/il_header_skyline" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:paddingHorizontal="20dp"
+                    android:paddingTop="24dp"
+                    android:paddingBottom="90dp">
 
-                    <!-- Circular User Avatar -->
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/iv_home_avatar"
-                        android:layout_width="42dp"
-                        android:layout_height="42dp"
-                        android:background="@color/surface"
-                        android:contentDescription="Avatar Pengguna"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_avatar_male"
-                        app:shapeAppearanceOverlay="@style/CircleImageOverlay"
-                        app:strokeColor="@color/border_subtle"
-                        app:strokeWidth="1.5dp" />
-
+                    <!-- Avatar + sapaan + notifikasi -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/iv_home_avatar"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@color/surface"
+                            android:contentDescription="Buka profil"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/ic_avatar_male"
+                            app:shapeAppearanceOverlay="@style/CircleImageOverlay"
+                            app:strokeColor="@color/accent_gold"
+                            app:strokeWidth="2dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Halo,"
-                            android:textColor="#E0FFFFFF"
-                            android:textSize="12sp" />
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tv_home_salam"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Halo,"
+                                android:textColor="#E6FFFFFF"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/tv_home_greeting"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="Pencari Kost"
+                                android:textColor="@color/white"
+                                android:textSize="17sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:id="@+id/btn_home_notification"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:clickable="true"
+                            android:contentDescription="Pesan masuk"
+                            android:focusable="true">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="center"
+                                android:background="@drawable/bg_header_location_chip">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_bell"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <View
+                                android:id="@+id/badge_home_notification"
+                                android:layout_width="10dp"
+                                android:layout_height="10dp"
+                                android:layout_gravity="top|end"
+                                android:layout_marginTop="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/bg_dot_active"
+                                android:backgroundTint="@color/accent_gold"
+                                android:visibility="gone" />
+                        </FrameLayout>
+                    </LinearLayout>
+
+                    <!-- Judul + garis aksen emas -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:text="Mau ngekost di mana hari ini?"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="36dp"
+                        android:layout_height="4dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_headline_accent" />
+
+                    <!-- Lokasi aktif (bisa diketuk) -->
+                    <LinearLayout
+                        android:id="@+id/layout_home_location_chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_header_location_chip"
+                        android:clickable="true"
+                        android:contentDescription="Ganti lokasi pencarian"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="36dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="6dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_location_pin"
+                            app:tint="@color/accent_gold" />
 
                         <TextView
-                            android:id="@+id/tv_home_greeting"
+                            android:id="@+id/tv_home_location_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:ellipsize="end"
+                            android:maxWidth="240dp"
                             android:maxLines="1"
-                            android:text="Pencari Kost"
+                            android:text="Pilih lokasi"
                             android:textColor="@color/white"
-                            android:textSize="16sp"
+                            android:textSize="13sp"
                             android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <!-- Circular Notification Bell Button -->
-                    <FrameLayout
-                        android:id="@+id/btn_home_notification"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@drawable/bg_header_action_circle"
-                        android:clickable="true"
-                        android:focusable="true">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="Notifikasi"
-                            android:src="@drawable/ic_bell"
-                            app:tint="@color/primary" />
-
-                        <View
-                            android:id="@+id/badge_home_notification"
-                            android:layout_width="8dp"
-                            android:layout_height="8dp"
-                            android:layout_gravity="top|end"
-                            android:layout_marginTop="7dp"
-                            android:layout_marginEnd="7dp"
-                            android:background="@drawable/bg_dot_active"
-                            android:visibility="gone" />
-                    </FrameLayout>
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_marginStart="4dp"
+                            android:importantForAccessibility="no"
+                            android:rotation="90"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="#D0FFFFFF" />
+                    </LinearLayout>
                 </LinearLayout>
+            </FrameLayout>
 
-                <!-- Headline -->
+            <!-- Search bar melayang di atas tepi header -->
+            <LinearLayout
+                android:id="@+id/layout_mock_search"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="-27dp"
+                android:background="@drawable/bg_home_search_bar"
+                android:clickable="true"
+                android:contentDescription="Cari kost"
+                android:elevation="6dp"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="6dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_nav_search"
+                    app:tint="@color/primary" />
+
                 <TextView
-                    android:layout_width="match_parent"
+                    android:id="@+id/tv_home_search_hint"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:text="Mau ngekost di mana hari ini?"
-                    android:textColor="@color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Cari nama kost, jalan, kelurahan…"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
 
-                <!-- Location Chip Pill (Interactive & Dynamic) -->
-                <LinearLayout
-                    android:id="@+id/layout_home_location_chip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_header_location_chip"
+                <FrameLayout
+                    android:id="@+id/btn_home_filter_trigger"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="@drawable/bg_rounded_primary"
                     android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="5dp">
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:layout_marginEnd="6dp"
-                        android:src="@drawable/ic_location_pin"
-                        app:tint="@color/white" />
-
-                    <TextView
-                        android:id="@+id/tv_home_location_label"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Memuat lokasi..."
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:layout_marginStart="4dp"
-                        android:src="@drawable/ic_chevron_right"
-                        app:tint="#D0FFFFFF" />
-                </LinearLayout>
-
-                <!-- Search Bar Trigger + Filter Button -->
-                <LinearLayout
-                    android:id="@+id/layout_mock_search"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="16dp"
-                    android:background="@drawable/bg_home_search_bar"
-                    android:clickable="true"
-                    android:elevation="2dp"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="6dp">
+                    android:contentDescription="Buka peta kost"
+                    android:focusable="true">
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:contentDescription="Search Icon"
-                        android:src="@drawable/ic_nav_search"
-                        app:tint="@color/text_secondary" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:text="Cari nama kost, jalan, kelurahan…"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-
-                    <!-- Mini Filter Button in Search Bar -->
-                    <FrameLayout
-                        android:id="@+id/btn_home_filter_trigger"
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_header_action_circle"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="Filter"
-                            android:src="@drawable/ic_filter"
-                            app:tint="@color/primary" />
-                    </FrameLayout>
-                </LinearLayout>
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_map"
+                        app:tint="@color/white" />
+                </FrameLayout>
             </LinearLayout>
 
-            <!-- Skeleton Container (Minimum 200ms) -->
-            <include
-                android:id="@+id/skeleton_home"
-                layout="@layout/layout_skeleton_home"
-                android:visibility="gone" />
+            <!-- Alasan percaya: 3 kartu mini seragam; semua klaim sesuai fitur yang benar-benar ada -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <include
+                    android:id="@+id/trust_card_verified"
+                    layout="@layout/item_trust_card" />
+
+                <Space
+                    android:layout_width="8dp"
+                    android:layout_height="1dp" />
+
+                <include
+                    android:id="@+id/trust_card_chat"
+                    layout="@layout/item_trust_card" />
+
+                <Space
+                    android:layout_width="8dp"
+                    android:layout_height="1dp" />
+
+                <include
+                    android:id="@+id/trust_card_map"
+                    layout="@layout/item_trust_card" />
+            </LinearLayout>
 
             <!-- Main Content Container -->
             <LinearLayout
@@ -316,7 +390,7 @@
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:contentDescription="Sparkle"
+                        android:importantForAccessibility="no"
                         android:src="@drawable/ic_sparkle"
                         app:tint="@color/primary" />
 
@@ -326,7 +400,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:layout_weight="1"
-                        android:text="Kamar kosong baru tersedia minggu ini"
+                        android:text="Lihat kost yang masih punya kamar kosong"
                         android:textColor="@color/badge_info_text"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -349,6 +423,8 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:drawableStart="@drawable/ic_section_accent"
+                        android:drawablePadding="10dp"
                         android:id="@+id/tv_home_discovery_area_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -422,7 +498,7 @@
                                             android:layout_height="wrap_content"
                                             android:text="Kecamatan"
                                             android:textColor="@color/text_secondary"
-                                            android:textSize="10sp" />
+                                            android:textSize="11sp" />
                                     </LinearLayout>
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
@@ -477,7 +553,7 @@
                                             android:layout_height="wrap_content"
                                             android:text="Strategis"
                                             android:textColor="@color/text_secondary"
-                                            android:textSize="10sp" />
+                                            android:textSize="11sp" />
                                     </LinearLayout>
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
@@ -532,7 +608,7 @@
                                             android:layout_height="wrap_content"
                                             android:text="Area Kost"
                                             android:textColor="@color/text_secondary"
-                                            android:textSize="10sp" />
+                                            android:textSize="11sp" />
                                     </LinearLayout>
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
@@ -587,7 +663,7 @@
                                             android:layout_height="wrap_content"
                                             android:text="Akses Mudah"
                                             android:textColor="@color/text_secondary"
-                                            android:textSize="10sp" />
+                                            android:textSize="11sp" />
                                     </LinearLayout>
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
@@ -612,6 +688,12 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingHorizontal="20dp">
+
+                        <View
+                            android:layout_width="4dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/bg_headline_accent" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -656,6 +738,12 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="20dp">
+
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="18dp"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/bg_headline_accent" />
 
                     <TextView
                         android:id="@+id/tv_home_section_new_title"
@@ -704,12 +792,14 @@
                         android:paddingVertical="24dp">
 
                         <ImageView
+                            android:id="@+id/iv_home_empty_icon"
                             android:layout_width="80dp"
                             android:layout_height="80dp"
-                            android:contentDescription="Belum Ada Kost"
+                            android:importantForAccessibility="no"
                             android:src="@drawable/il_empty_kost" />
 
                         <TextView
+                            android:id="@+id/tv_home_empty_title"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="14dp"
@@ -720,6 +810,7 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tv_home_empty_desc"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
@@ -779,3 +870,12 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Skeleton satu halaman penuh (shimmer), menutupi seluruh layar saat pemuatan pertama -->
+    <include
+        android:id="@+id/skeleton_home"
+        layout="@layout/layout_skeleton_home"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+</FrameLayout>

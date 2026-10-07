@@ -12,7 +12,23 @@ public class KostFilterCriteria implements Serializable {
     private StatusKost status;
     private Integer idWilayah;
     private List<Integer> fasilitasIds;
-    private String sortBy; // "TERBARU", "TERMURAH", "TERMAHAL"
+    private String sortBy; // "TERBARU", "TERMURAH", "TERMAHAL", "TERDEKAT"
+    private String kecamatan;
+    private Double maxDistanceKm;
+    /** Titik acuan jarak selain lokasi pengguna, mis. kampus atau kantor. */
+    private Double originLat;
+    private Double originLng;
+    private String originLabel;
+
+    public Double getOriginLat() { return originLat; }
+    public Double getOriginLng() { return originLng; }
+    public String getOriginLabel() { return originLabel; }
+
+    public void setOrigin(Double lat, Double lng, String label) {
+        this.originLat = lat;
+        this.originLng = lng;
+        this.originLabel = label;
+    }
 
     public KostFilterCriteria() {
         this.fasilitasIds = new ArrayList<>();
@@ -83,7 +99,47 @@ public class KostFilterCriteria implements Serializable {
         this.sortBy = sortBy;
     }
 
+    public String getKecamatan() {
+        return kecamatan;
+    }
+
+    public void setKecamatan(String kecamatan) {
+        this.kecamatan = kecamatan;
+    }
+
+    public Double getMaxDistanceKm() {
+        return maxDistanceKm;
+    }
+
+    public void setMaxDistanceKm(Double maxDistanceKm) {
+        this.maxDistanceKm = maxDistanceKm;
+    }
+
+    /** Salinan dangkal agar sheet filter bisa diedit tanpa mengubah kriteria aktif. */
+    public KostFilterCriteria copy() {
+        KostFilterCriteria c = new KostFilterCriteria();
+        c.keyword = keyword;
+        c.maxHarga = maxHarga;
+        c.minHarga = minHarga;
+        c.tipeKost = tipeKost;
+        c.status = status;
+        c.idWilayah = idWilayah;
+        c.fasilitasIds = fasilitasIds != null ? new ArrayList<>(fasilitasIds) : new ArrayList<>();
+        c.sortBy = sortBy;
+        c.kecamatan = kecamatan;
+        c.maxDistanceKm = maxDistanceKm;
+        c.originLat = originLat;
+        c.originLng = originLng;
+        c.originLabel = originLabel;
+        return c;
+    }
+
     public void reset() {
+        this.originLat = null;
+        this.originLng = null;
+        this.originLabel = null;
+        this.kecamatan = null;
+        this.maxDistanceKm = null;
         this.keyword = null;
         this.maxHarga = null;
         this.minHarga = null;

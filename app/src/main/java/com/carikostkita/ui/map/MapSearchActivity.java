@@ -129,6 +129,7 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
 
         initViews();
         setupMap();
+        setupSearchThisArea();
         setupBottomSheet();
         setupFilters();
 
@@ -263,6 +264,44 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
                 mapController.setCenter(new GeoPoint(currentAnchorLat, currentAnchorLng));
             }
         });
+    }
+
+    private View btnSearchThisArea;
+    private boolean suppressAreaButton = true;
+
+    /** Tampilkan "Cari di area ini" setelah pengguna menggeser/zoom peta sendiri. */
+    private void setupSearchThisArea() {
+        btnSearchThisArea = findViewById(R.id.btn_map_search_this_area);
+        if (btnSearchThisArea == null) return;
+        mapView.addMapListener(new org.osmdroid.events.MapListener() {
+            @Override
+            public boolean onScroll(org.osmdroid.events.ScrollEvent event) {
+                maybeShowAreaButton();
+                return false;
+            }
+
+            @Override
+            public boolean onZoom(org.osmdroid.events.ZoomEvent event) {
+                maybeShowAreaButton();
+                return false;
+            }
+        });
+        btnSearchThisArea.setOnClickListener(v -> {
+            org.osmdroid.api.IGeoPoint center = mapView.getMapCenter();
+            currentAnchorLat = center.getLatitude();
+            currentAnchorLng = center.getLongitude();
+            btnSearchThisArea.setVisibility(View.GONE);
+            applyAllFilters();
+        });
+        // Abaikan event dari pemusatan peta otomatis saat layar pertama dibuka
+        mapView.postDelayed(() -> suppressAreaButton = false, 1500);
+    }
+
+    private void maybeShowAreaButton() {
+        if (suppressAreaButton || btnSearchThisArea == null) return;
+        org.osmdroid.api.IGeoPoint c = mapView.getMapCenter();
+        double moved = com.carikostkita.util.GeoUtil.distanceKm(currentAnchorLat, currentAnchorLng, c.getLatitude(), c.getLongitude());
+        btnSearchThisArea.setVisibility(moved > 0.5 ? View.VISIBLE : View.GONE);
     }
 
     private void setupBottomSheet() {
@@ -614,7 +653,7 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
         // Update Bottom Sheet
         sheetAdapter.submitList(displayedKostItems);
         tvSheetCountBadge.setText(displayedKostItems.size() + " Kost");
-        tvSheetSubtitle.setText("Menampilkan " + displayedKostItems.size() + " kost terdekat dari lokasi");
+        tvSheetSubtitle.setText("Diurutkan dari yang terdekat ke titik tengah area");
 
         if (displayedKostItems.isEmpty()) {
             layoutSheetEmpty.setVisibility(View.VISIBLE);

@@ -11,6 +11,28 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Muncul saat peta digeser: cari ulang berdasarkan area yang sedang dilihat -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_map_search_this_area"
+        android:layout_width="wrap_content"
+        android:layout_height="44dp"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="156dp"
+        android:backgroundTint="@color/surface"
+        android:elevation="8dp"
+        android:text="Cari di area ini"
+        android:textAllCaps="false"
+        android:textColor="@color/primary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:cornerRadius="22dp"
+        app:icon="@drawable/ic_nav_search"
+        app:iconSize="18dp"
+        app:iconTint="@color/primary"
+        app:strokeColor="@color/border_subtle"
+        app:strokeWidth="1dp" />
+
     <!-- TOP FLOATING BAR (Search & Quick Filters) -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -264,7 +286,7 @@
                             android:paddingVertical="2dp"
                             android:text="CAMPUR"
                             android:textColor="@color/badge_putra"
-                            android:textSize="9sp"
+                            android:textSize="11sp"
                             android:textStyle="bold" />
 
                         <TextView

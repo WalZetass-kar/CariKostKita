@@ -36,13 +36,15 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
+            <!-- Progress indicator: "1 dari 6" -->
             <TextView
+                android:id="@+id/tv_tips_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Panduan praktis mengoptimalkan hunian kost Anda"
+                android:text="Langkah 1 dari 6"
                 android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <ImageButton
@@ -58,324 +60,118 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:layout_marginBottom="12dp"
         android:background="@color/border" />
 
-    <!-- Scrollable 6 Tips List -->
-    <androidx.core.widget.NestedScrollView
+    <!-- Single Tip Container (shows 1 tip at a time) -->
+    <LinearLayout
+        android:id="@+id/container_tip_slide"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="420dp">
+        android:background="@drawable/bg_home_search_bar"
+        android:minHeight="120dp"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <FrameLayout
+            android:id="@+id/fl_tip_icon_bg"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_circle_icon_blue">
+
+            <ImageView
+                android:id="@+id/iv_tip_icon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_add"
+                app:tint="@color/primary" />
+        </FrameLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
-            <!-- Tip 1: Tambah Kost -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tv_tip_title"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_home_search_bar"
-                android:orientation="horizontal"
-                android:padding="14dp">
+                android:text="1. Cara Menambahkan Kost"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_icon_blue">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_add"
-                        app:tint="@color/primary" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="1. Cara Menambahkan Kost"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Buka menu 'Kost Saya', lalu tekan tombol '+ Tambah Kost'. Ikuti formulir multi-langkah mulai dari info umum, lokasi peta, hingga foto kost."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Tip 2: Ubah Data Kost -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tv_tip_desc"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_home_search_bar"
-                android:orientation="horizontal"
-                android:padding="14dp">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_icon_purple">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_edit"
-                        app:tint="#8B5CF6" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="2. Cara Mengubah Data Kost"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Pilih kost di tab 'Kost Saya' dan tekan tombol 'Edit'. Anda dapat memperbarui foto, fasilitas terbaru, atau harga sewa bulanan kapan saja."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Tip 3: Perbarui Kamar Kosong -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_home_search_bar"
-                android:orientation="horizontal"
-                android:padding="14dp">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_icon_green">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_bed"
-                        app:tint="#10B981" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="3. Cara Memperbarui Kamar Kosong"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Selalu perbarui jumlah ketersediaan kamar kosong di kartu properti Anda. Status kamar yang akurat menarik minat pencari kost lebih cepat."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Tip 4: Menangani Pesan Calon Penyewa -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_home_search_bar"
-                android:orientation="horizontal"
-                android:padding="14dp">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_icon_blue">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_nav_chat"
-                        app:tint="@color/primary" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="4. Menangani Pesan Calon Penyewa"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Cek tab 'Pesan' secara berkala. Berikan respons cepat dan sopan terhadap pertanyaan calon penyewa mengenai peraturan, fasilitas, atau jadwal survei."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Tip 5: Tingkatkan Peluang Ditemukan -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_home_search_bar"
-                android:orientation="horizontal"
-                android:padding="14dp">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_icon_amber">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_sparkle"
-                        app:tint="#F59E0B" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="5. Tingkatkan Peluang Ditemukan"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Tentukan titik peta secara presisi, gunakan foto kamar yang terang, dan tandai semua fasilitas yang Anda sediakan (WiFi, AC, Parkir, Kamar Mandi)."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Tip 6: Pastikan Informasi Akurat -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_home_search_bar"
-                android:orientation="horizontal"
-                android:padding="14dp">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_icon_peach">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:src="@drawable/ic_check"
-                        app:tint="#EF4444" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="6. Pastikan Informasi Selalu Akurat"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Hindari perbedaan harga atau fasilitas antara aplikasi dan kondisi lapangan untuk membangun reputasi kost yang terpercaya dan terverifikasi."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
+                android:layout_marginTop="5dp"
+                android:lineSpacingExtra="3dp"
+                android:text="Buka menu 'Kost Saya', lalu tekan tombol '+ Tambah Kost'."
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
 
-    <!-- Close Action Button -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_dismiss_tips"
+    <!-- Dot Indicators -->
+    <LinearLayout
+        android:id="@+id/dots_tips_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal" />
+
+    <!-- Navigation Buttons -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:text="Saya Mengerti"
-        android:textColor="@color/white"
-        android:textSize="14sp"
-        android:fontFamily="sans-serif-medium"
-        app:backgroundTint="@color/primary"
-        app:cornerRadius="14dp"
-        android:elevation="0dp" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_tips_prev"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:text="&#8592; Sebelumnya"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:cornerRadius="12dp"
+            app:strokeColor="@color/primary"
+            android:textColor="@color/primary" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_tips_next"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="Selanjutnya &#8594;"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:elevation="0dp"
+            app:backgroundTint="@color/primary"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_dismiss_tips"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:text="Selesai ✓"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:elevation="0dp"
+            android:visibility="gone"
+            app:backgroundTint="@color/primary"
+            app:cornerRadius="12dp" />
+    </LinearLayout>
 
 </LinearLayout>

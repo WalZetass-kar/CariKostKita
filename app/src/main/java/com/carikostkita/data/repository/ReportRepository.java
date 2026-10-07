@@ -1,5 +1,7 @@
 package com.carikostkita.data.repository;
 
+import com.carikostkita.util.ErrorMessages;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -63,7 +65,7 @@ public class ReportRepository {
                     mainHandler.post(() -> callback.onError("Gagal mengirim laporan ke server"));
                 }
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Kesalahan: " + e.getMessage()));
+                mainHandler.post(() -> callback.onError(ErrorMessages.fromException("Kesalahan", e)));
             }
         });
     }
@@ -94,10 +96,11 @@ public class ReportRepository {
 
                     mainHandler.post(() -> callback.onSuccess(list));
                 } else {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
+                    String msg = ErrorMessages.fromResponse("getReports", res);
+                    mainHandler.post(() -> callback.onError(msg));
                 }
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Gagal memuat laporan: " + e.getMessage()));
+                mainHandler.post(() -> callback.onError(ErrorMessages.fromException("Gagal memuat laporan", e)));
             }
         });
     }
@@ -162,7 +165,7 @@ public class ReportRepository {
                     mainHandler.post(() -> callback.onError("Gagal mengupdate laporan di server"));
                 }
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Kesalahan: " + e.getMessage()));
+                mainHandler.post(() -> callback.onError(ErrorMessages.fromException("Kesalahan", e)));
             }
         });
     }
@@ -196,7 +199,7 @@ public class ReportRepository {
                     mainHandler.post(() -> callback.onSuccess(0));
                 }
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
+                mainHandler.post(() -> callback.onError(ErrorMessages.fromException("Error", e)));
             }
         });
     }

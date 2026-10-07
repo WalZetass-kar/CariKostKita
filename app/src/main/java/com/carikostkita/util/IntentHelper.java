@@ -20,7 +20,7 @@ public class IntentHelper {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             context.startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(context, "Tidak dapat membuka WhatsApp: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "WhatsApp tidak dapat dibuka di perangkat ini", Toast.LENGTH_SHORT).show();
         }
     }
 

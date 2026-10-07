@@ -83,4 +83,22 @@ public class KostDto {
 
     @SerializedName("updated_at")
     public String updatedAt;
+
+    @SerializedName("deposit")
+    public Integer deposit;
+
+    @SerializedName("minimal_sewa_bulan")
+    public Integer minimalSewaBulan;
+
+    @SerializedName("biaya_tambahan")
+    public String biayaTambahan;
+
+    @SerializedName("aturan")
+    public List<String> aturan;
+
+    @SerializedName("rating_avg")
+    public Double ratingAvg;
+
+    @SerializedName("rating_count")
+    public Integer ratingCount;
 }

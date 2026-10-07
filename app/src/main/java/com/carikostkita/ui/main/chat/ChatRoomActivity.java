@@ -18,10 +18,12 @@ import com.carikostkita.R;
 import com.carikostkita.data.model.ChatConversation;
 import com.carikostkita.data.model.ChatMessage;
 import com.carikostkita.data.model.Kost;
+import com.carikostkita.data.model.User;
 import com.carikostkita.data.remote.SupabaseRealtimeClient;
 import com.carikostkita.data.repository.ChatRepository;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.data.repository.KostRepository;
+import com.carikostkita.data.repository.UserRepository;
 import com.carikostkita.ui.adapter.ChatBubbleAdapter;
 import com.carikostkita.util.FormatUtil;
 import com.carikostkita.util.SessionManager;
@@ -53,12 +55,14 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private ChatRepository chatRepository;
     private KostRepository kostRepository;
+    private UserRepository userRepository;
     private SessionManager sessionManager;
     private ChatBubbleAdapter bubbleAdapter;
     private SupabaseRealtimeClient realtimeClient;
 
     private String conversationId = null;
     private String idKost = null;
+    private String idPencari = null;
     private String idPemilik = null;
     private String namaKost = "";
     private String namaCounterpart = "";
@@ -77,6 +81,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         chatRepository = new ChatRepository(this);
         kostRepository = new KostRepository(this);
+        userRepository = new UserRepository(this);
         currentUserId = sessionManager.getUserUid();
 
         if (currentUserId == null || currentUserId.isEmpty()) {
@@ -92,6 +97,9 @@ public class ChatRoomActivity extends AppCompatActivity {
         setupRealtime();
         loadOrInitializeChat();
         fetchKostContextDetails();
+        refreshBlockedState();
+        new com.carikostkita.data.repository.AnalyticsRepository(this).log(
+                com.carikostkita.data.repository.AnalyticsRepository.CHAT_START, idKost);
     }
 
     private void readIntentData() {
@@ -117,6 +125,14 @@ public class ChatRoomActivity extends AppCompatActivity {
         } else {
             int legacyPemilik = getIntent().getIntExtra("id_pemilik", -1);
             if (legacyPemilik != -1) idPemilik = String.valueOf(legacyPemilik);
+        }
+
+        String pencariExtra = getIntent().getStringExtra("id_pencari");
+        if (pencariExtra != null && !pencariExtra.isEmpty()) {
+            idPencari = pencariExtra;
+        } else {
+            int legacyPencari = getIntent().getIntExtra("id_pencari", -1);
+            if (legacyPencari != -1) idPencari = String.valueOf(legacyPencari);
         }
 
         namaKost = getIntent().getStringExtra("nama_kost");
@@ -163,9 +179,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         tvKostSubtitle.setText(namaKost);
         tvContextKostName.setText(namaKost);
 
-        if (!avatarCounterpart.isEmpty()) {
-            com.carikostkita.util.UserAvatarHelper.loadAvatar(ivAvatar, avatarCounterpart);
-        }
+        com.carikostkita.util.UserAvatarHelper.loadAvatar(ivAvatar, avatarCounterpart);
+        fetchCounterpartProfileIfNeeded();
 
         if (lokasiKost != null && !lokasiKost.trim().isEmpty()) {
             tvContextKostLocation.setText(lokasiKost.trim());
@@ -209,6 +224,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
         com.carikostkita.util.TouchFeedbackUtil.attachPress(btnBack);
         btnSend.setOnClickListener(v -> handleSendMessage());
+        View btnMore = findViewById(R.id.btn_chat_more);
+        if (btnMore != null) btnMore.setOnClickListener(v -> showSafetyMenu());
     }
 
     private void fetchKostContextDetails() {
@@ -274,7 +291,128 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
     }
 
+    private String counterpartId() {
+        return (currentUserId != null && currentUserId.equals(idPemilik)) ? idPencari : idPemilik;
+    }
+
+    private boolean blockedByMe = false;
+
+    /** Laporkan atau blokir lawan bicara (keamanan & syarat Google Play untuk konten pengguna). */
+    private void showSafetyMenu() {
+        String other = counterpartId();
+        if (other == null || other.isEmpty()) return;
+        String[] items = {"Laporkan pengguna", blockedByMe ? "Buka blokir" : "Blokir pengguna"};
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(namaCounterpart != null && !namaCounterpart.isEmpty() ? namaCounterpart : "Opsi percakapan")
+                .setItems(items, (d, which) -> {
+                    if (which == 0) showReportUserDialog(other);
+                    else if (blockedByMe) unblock(other);
+                    else confirmBlock(other);
+                })
+                .show();
+    }
+
+    private void showReportUserDialog(String other) {
+        String[] reasons = com.carikostkita.data.repository.SafetyRepository.USER_REPORT_REASONS;
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Kenapa kamu melaporkan pengguna ini?")
+                .setItems(reasons, (d, which) -> com.carikostkita.util.AppDialogHelper.showInput(this,
+                        "Detail laporan", "Opsional: ceritakan singkat apa yang terjadi. Tim akan meninjau percakapan ini.",
+                        "Contoh: minta transfer DP sebelum survei", "", "Kirim Laporan",
+                        detail -> new com.carikostkita.data.repository.SafetyRepository(this).reportUser(other, conversationId,
+                                reasons[which], detail, new DataCallback<Boolean>() {
+                                    @Override
+                                    public void onSuccess(Boolean ok) {
+                                        com.carikostkita.util.AppDialogHelper.showSuccessDialog(ChatRoomActivity.this, "Laporan Terkirim",
+                                                "Terima kasih. Kamu juga bisa memblokir pengguna ini agar tidak bisa mengirim pesan lagi.");
+                                    }
+
+                                    @Override
+                                    public void onError(String message) {
+                                        Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
+                                    }
+                                })))
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void confirmBlock(String other) {
+        com.carikostkita.util.AppDialogHelper.showDanger(this, "Blokir pengguna?",
+                "Kalian tidak akan bisa saling mengirim pesan atau jadwal survei. Kamu bisa membuka blokir kapan saja.",
+                "Blokir", () -> new com.carikostkita.data.repository.SafetyRepository(this).block(other, new DataCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean ok) {
+                        blockedByMe = true;
+                        applyBlockedState(true, true);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
+                    }
+                }));
+    }
+
+    private void unblock(String other) {
+        new com.carikostkita.data.repository.SafetyRepository(this).unblock(other, new DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean ok) {
+                blockedByMe = false;
+                refreshBlockedState();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void refreshBlockedState() {
+        String other = counterpartId();
+        if (other == null || other.isEmpty()) return;
+        com.carikostkita.data.repository.SafetyRepository repo = new com.carikostkita.data.repository.SafetyRepository(this);
+        repo.isBlockedByMe(other, new DataCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean mine) {
+                blockedByMe = mine;
+                repo.isBlockedWith(other, new DataCallback<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean any) {
+                        if (!isFinishing()) applyBlockedState(any, mine);
+                    }
+
+                    @Override
+                    public void onError(String message) {}
+                });
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+    }
+
+    private void applyBlockedState(boolean blocked, boolean byMe) {
+        TextView banner = findViewById(R.id.tv_chat_blocked);
+        View quick = findViewById(R.id.layout_chat_quick_replies);
+        etInput.setVisibility(blocked ? View.GONE : View.VISIBLE);
+        btnSend.setVisibility(blocked ? View.GONE : View.VISIBLE);
+        if (quick != null && blocked) quick.setVisibility(View.GONE);
+        if (banner != null) {
+            banner.setVisibility(blocked ? View.VISIBLE : View.GONE);
+            banner.setText(byMe ? "Kamu memblokir pengguna ini. Buka blokir lewat menu di kanan atas."
+                    : "Percakapan ini tidak bisa dilanjutkan.");
+        }
+    }
+
     private void setupQuickReplies() {
+        // Pemilik mendapat templat balasan cepat; pencari mendapat pertanyaan umum
+        if (sessionManager.isPemilikKost()) {
+            chipQuick1.setText("Kamar masih tersedia, silakan survei dulu");
+            chipQuick2.setText("Harga sudah termasuk listrik dan air");
+            chipQuick3.setText("Jam malam pukul 22.00");
+            chipQuick4.setText("Silakan ajukan jadwal survei di aplikasi");
+        }
         View.OnClickListener listener = v -> {
             TextView tv = (TextView) v;
             etInput.setText(tv.getText().toString());
@@ -317,23 +455,86 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchCounterpartProfileIfNeeded() {
+        String counterpartId = (currentUserId != null && currentUserId.equals(idPemilik)) ? idPencari : idPemilik;
+        if (counterpartId == null || counterpartId.trim().isEmpty()) return;
+
+        if (avatarCounterpart == null || avatarCounterpart.trim().isEmpty() ||
+                "Pencari Kost".equalsIgnoreCase(namaCounterpart) || "Pemilik Kost".equalsIgnoreCase(namaCounterpart)) {
+            userRepository.getUserById(counterpartId, new DataCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    if (user == null || isFinishing() || isDestroyed()) return;
+                    if (user.getNama() != null && !user.getNama().trim().isEmpty()) {
+                        namaCounterpart = user.getNama().trim();
+                        tvCounterpartName.setText(namaCounterpart);
+                    }
+                    if (user.getAvatarUrl() != null && !user.getAvatarUrl().trim().isEmpty()) {
+                        avatarCounterpart = user.getAvatarUrl().trim();
+                        com.carikostkita.util.UserAvatarHelper.loadAvatar(ivAvatar, avatarCounterpart);
+                    }
+                }
+
+                @Override
+                public void onError(String message) {}
+            });
+        }
+    }
+
     private void loadOrInitializeChat() {
         pbLoading.setVisibility(View.VISIBLE);
         if (conversationId != null && !conversationId.isEmpty()) {
             realtimeClient.connect(conversationId);
             loadMessages();
+            if (idPemilik == null || idPemilik.isEmpty() || idPencari == null || idPencari.isEmpty() ||
+                    avatarCounterpart == null || avatarCounterpart.isEmpty() || idKost == null || idKost.isEmpty()) {
+                chatRepository.getConversationById(conversationId, new DataCallback<ChatConversation>() {
+                    @Override
+                    public void onSuccess(ChatConversation data) {
+                        if (data == null || isFinishing() || isDestroyed()) return;
+                        if (idKost == null || idKost.isEmpty()) {
+                            idKost = data.getIdKost();
+                            fetchKostContextDetails();
+                        }
+                        if (idPencari == null || idPencari.isEmpty()) {
+                            idPencari = data.getIdPencari();
+                        }
+                        if (idPemilik == null || idPemilik.isEmpty()) {
+                            idPemilik = data.getIdPemilik();
+                        }
+                        if (avatarCounterpart == null || avatarCounterpart.isEmpty()) {
+                            if (data.getAvatarLawan() != null && !data.getAvatarLawan().isEmpty()) {
+                                avatarCounterpart = data.getAvatarLawan();
+                                com.carikostkita.util.UserAvatarHelper.loadAvatar(ivAvatar, avatarCounterpart);
+                            }
+                        }
+                        fetchCounterpartProfileIfNeeded();
+                    }
+
+                    @Override
+                    public void onError(String message) {}
+                });
+            }
         } else if (idKost != null && !idKost.isEmpty()) {
-            chatRepository.getOrCreateConversation(idKost, currentUserId, idPemilik, new DataCallback<ChatConversation>() {
+            // Hanya cari percakapan yang sudah ada; yang baru dibuat saat pesan pertama dikirim
+            chatRepository.getOrCreateConversation(idKost, currentUserId, idPemilik, false, new DataCallback<ChatConversation>() {
                 @Override
                 public void onSuccess(ChatConversation data) {
-                    conversationId = data.getId();
-                    realtimeClient.connect(conversationId);
+                    if (isFinishing() || isDestroyed()) return;
+                    if (data == null) {
+                        pbLoading.setVisibility(View.GONE);
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        fetchCounterpartProfileIfNeeded();
+                        return;
+                    }
+                    onConversationReady(data);
                     loadMessages();
                 }
 
                 @Override
                 public void onError(String message) {
                     pbLoading.setVisibility(View.GONE);
+                    layoutEmpty.setVisibility(View.VISIBLE);
                     Toast.makeText(ChatRoomActivity.this, message, Toast.LENGTH_SHORT).show();
                 }
             });
@@ -341,6 +542,25 @@ public class ChatRoomActivity extends AppCompatActivity {
             pbLoading.setVisibility(View.GONE);
             layoutEmpty.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void onConversationReady(ChatConversation data) {
+        conversationId = data.getId();
+        if (idPencari == null || idPencari.isEmpty()) {
+            idPencari = data.getIdPencari();
+        }
+        if (idPemilik == null || idPemilik.isEmpty()) {
+            idPemilik = data.getIdPemilik();
+        }
+        if (avatarCounterpart == null || avatarCounterpart.isEmpty()) {
+            if (data.getAvatarLawan() != null && !data.getAvatarLawan().isEmpty()) {
+                avatarCounterpart = data.getAvatarLawan();
+                com.carikostkita.util.UserAvatarHelper.loadAvatar(ivAvatar, avatarCounterpart);
+            }
+        }
+        fetchCounterpartProfileIfNeeded();
+        refreshBlockedState();
+        realtimeClient.connect(conversationId);
     }
 
     private void loadMessages() {
@@ -371,11 +591,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         String text = etInput.getText().toString().trim();
         if (TextUtils.isEmpty(text)) return;
 
-        if (conversationId == null || conversationId.isEmpty()) {
-            Toast.makeText(this, "Menghubungkan percakapan...", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         // Optimistic UI update: tampilkan pesan seketika dengan status SENDING
         String tempId = "temp_" + System.currentTimeMillis();
         String nowIso = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(new java.util.Date());
@@ -387,7 +602,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         bubbleAdapter.addMessage(pendingMsg);
         rvMessages.scrollToPosition(bubbleAdapter.getItemCount() - 1);
 
-        chatRepository.sendMessage(conversationId, currentUserId, text, new DataCallback<ChatMessage>() {
+        DataCallback<ChatMessage> sendCallback = new DataCallback<ChatMessage>() {
             @Override
             public void onSuccess(ChatMessage msg) {
                 msg.setStatus(ChatMessage.STATUS_SENT);
@@ -398,13 +613,44 @@ public class ChatRoomActivity extends AppCompatActivity {
             public void onError(String message) {
                 pendingMsg.setStatus(ChatMessage.STATUS_FAILED);
                 bubbleAdapter.updateMessage(pendingMsg);
-                Toast.makeText(ChatRoomActivity.this, "Gagal mengirim: " + message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(ChatRoomActivity.this, "Pesan belum terkirim. Ketuk pesan untuk mengirim ulang.", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        if (conversationId != null && !conversationId.isEmpty()) {
+            chatRepository.sendMessage(conversationId, currentUserId, text, sendCallback);
+            return;
+        }
+        if (idKost == null || idKost.isEmpty()) {
+            sendCallback.onError("Data kost tidak ditemukan");
+            return;
+        }
+        // Pesan pertama: buat percakapan lalu kirim
+        chatRepository.getOrCreateConversation(idKost, currentUserId, idPemilik, true, new DataCallback<ChatConversation>() {
+            @Override
+            public void onSuccess(ChatConversation data) {
+                if (isFinishing() || isDestroyed()) return;
+                onConversationReady(data);
+                chatRepository.sendMessage(conversationId, currentUserId, text, sendCallback);
+            }
+
+            @Override
+            public void onError(String message) {
+                pendingMsg.setStatus(ChatMessage.STATUS_FAILED);
+                bubbleAdapter.updateMessage(pendingMsg);
+                com.carikostkita.util.AppDialogHelper.showError(ChatRoomActivity.this, "Pesan Belum Terkirim", message);
             }
         });
     }
 
     private void retrySendMessage(ChatMessage msg) {
         if (msg == null) return;
+        if (conversationId == null || conversationId.isEmpty()) {
+            bubbleAdapter.removeMessage(msg);
+            etInput.setText(msg.getMessageText());
+            handleSendMessage();
+            return;
+        }
         msg.setStatus(ChatMessage.STATUS_SENDING);
         bubbleAdapter.updateMessage(msg);
 

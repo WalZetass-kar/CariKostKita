@@ -62,6 +62,55 @@ public class ProfileFragment extends Fragment {
     private View layoutSkeleton;
     private View layoutContent;
 
+    private androidx.activity.result.ActivityResultLauncher<String> docPicker;
+    private String pendingDocType;
+    private View pendingDocRow;
+    private final java.util.Set<String> uploadedDocs = new java.util.HashSet<>();
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        docPicker = registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.GetContent(), uri -> {
+            if (uri == null || pendingDocType == null || pendingDocRow == null) return;
+            String type = pendingDocType;
+            View row = pendingDocRow;
+            android.widget.TextView status = row.findViewWithTag("status");
+            if (status != null) status.setText("Mengunggah…");
+            new com.carikostkita.data.repository.VerificationRepository(requireContext()).upload(uri, type, new DataCallback<String>() {
+                @Override
+                public void onSuccess(String path) {
+                    if (!isAdded()) return;
+                    uploadedDocs.add(type);
+                    if (status != null) {
+                        status.setText("Terunggah ✓");
+                        status.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_tersedia));
+                    }
+                }
+
+                @Override
+                public void onError(String message) {
+                    if (!isAdded()) return;
+                    if (status != null) {
+                        status.setText("Gagal: " + message);
+                        status.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_penuh));
+                    }
+                }
+            });
+        });
+    }
+
+    private void bindDocRow(View dialogView, int rowId, int statusId, String docType) {
+        View row = dialogView.findViewById(rowId);
+        View status = dialogView.findViewById(statusId);
+        if (row == null) return;
+        if (status != null) status.setTag("status");
+        row.setOnClickListener(v -> {
+            pendingDocType = docType;
+            pendingDocRow = row;
+            docPicker.launch("image/*");
+        });
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -75,7 +124,9 @@ public class ProfileFragment extends Fragment {
         sessionManager = new SessionManager(requireContext());
         userRepository = new UserRepository(requireContext());
 
+        com.carikostkita.util.PageHeader.bind(view, "Profil Saya", "Akun, status peran, dan preferensi");
         initViews(view);
+        notificationsEnabled = sessionManager.isChatNotificationEnabled();
         populateUserData();
         setupListeners();
     }
@@ -86,7 +137,7 @@ public class ProfileFragment extends Fragment {
         if (sessionManager != null && sessionManager.isLoggedIn()) {
             populateUserData(); // Tampilkan langsung data lokal dari sessionManager tanpa delay
             long startTime = com.carikostkita.util.SkeletonHelper.markStart();
-            userRepository.getUserById(sessionManager.getUserId(), new DataCallback<User>() {
+            userRepository.getUserById(sessionManager.getUserUid(), new DataCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
                     com.carikostkita.util.SkeletonHelper.complete(startTime, () -> {
@@ -138,7 +189,6 @@ public class ProfileFragment extends Fragment {
         itemMyFavorites = view.findViewById(R.id.item_my_favorites);
         itemChangePassword = view.findViewById(R.id.item_change_password);
         itemNotificationSettings = view.findViewById(R.id.item_notification_settings);
-        tvNotificationStatus = view.findViewById(R.id.tv_notification_status);
         btnLogout = view.findViewById(R.id.btn_logout);
     }
 
@@ -166,17 +216,33 @@ public class ProfileFragment extends Fragment {
             requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
         });
 
-        itemNotificationSettings.setOnClickListener(v -> {
-            notificationsEnabled = !notificationsEnabled;
-            tvNotificationStatus.setText(notificationsEnabled ? "Aktif" : "Senyap");
-            tvNotificationStatus.setTextColor(ContextCompat.getColor(requireContext(),
-                    notificationsEnabled ? R.color.status_tersedia : R.color.text_muted));
-            Toast.makeText(requireContext(),
-                    notificationsEnabled ? "Notifikasi aplikasi diaktifkan" : "Notifikasi disenyapkan",
-                    Toast.LENGTH_SHORT).show();
-        });
+        // Baris menu seragam; notifikasi memakai toggle sungguhan yang tersimpan
+        com.carikostkita.util.SettingRowBinder.bind(itemMyFavorites, R.drawable.ic_nav_favorite,
+                "Kost Favorit", "Lihat kost yang kamu simpan", null);
+        com.carikostkita.util.SettingRowBinder.bind(requireView().findViewById(R.id.item_my_surveys), R.drawable.ic_clock,
+                "Jadwal Survei", "Kunjungan kost yang kamu ajukan",
+                v -> startActivity(new Intent(requireContext(), com.carikostkita.ui.survey.SurveyListActivity.class)));
+        com.carikostkita.util.SettingRowBinder.bind(itemChangePassword, R.drawable.ic_lock,
+                "Ganti Kata Sandi", "Jaga akunmu tetap aman", null);
+        com.carikostkita.util.SettingRowBinder.bindToggle(itemNotificationSettings, R.drawable.ic_bell,
+                "Notifikasi Pesan", "Kabari saya saat pemilik membalas chat",
+                sessionManager.isChatNotificationEnabled(), (button, checked) -> {
+                    notificationsEnabled = checked;
+                    sessionManager.setChatNotificationEnabled(checked);
+                });
+        com.carikostkita.util.SettingRowBinder.bind(requireView().findViewById(R.id.item_delete_account), R.drawable.ic_delete,
+                "Hapus Akun", "Hapus akun dan semua datamu secara permanen",
+                v -> com.carikostkita.util.AccountDeletion.confirm(requireActivity()));
+        View itemAbout = requireView().findViewById(R.id.item_about_app);
+        com.carikostkita.util.SettingRowBinder.bind(itemAbout, R.drawable.ic_info,
+                "Tentang CariKostKita", "Versi " + com.carikostkita.BuildConfig.VERSION_NAME + ", syarat & privasi",
+                v -> com.carikostkita.util.AppInfoSheets.showAbout(requireContext()));
 
         btnLogout.setOnClickListener(v -> {
+            if (!sessionManager.isLoggedIn()) {
+                com.carikostkita.util.AuthPrompt.openLogin(requireContext());
+                return;
+            }
             AppDialogHelper.showLogoutDialog(requireContext(), () -> {
                 sessionManager.logout();
                 Toast.makeText(requireContext(), "Anda telah keluar dari akun", Toast.LENGTH_SHORT).show();
@@ -188,17 +254,67 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    private void renderNotificationStatus() {
+        if (tvNotificationStatus == null) return;
+        tvNotificationStatus.setText(notificationsEnabled ? "Aktif" : "Senyap");
+        tvNotificationStatus.setTextColor(ContextCompat.getColor(requireContext(),
+                notificationsEnabled ? R.color.status_tersedia : R.color.text_muted));
+    }
+
+    private void setGroupVisibility(View row, int visibility) {
+        if (row == null || !(row.getParent() instanceof View)) return;
+        View card = (View) row.getParent().getParent();
+        if (card == null || !(card.getParent() instanceof ViewGroup)) return;
+        ViewGroup container = (ViewGroup) card.getParent();
+        card.setVisibility(visibility);
+        int index = container.indexOfChild(card);
+        if (index > 0) container.getChildAt(index - 1).setVisibility(visibility);
+    }
+
+    /** Tamu melihat ajakan masuk, bukan menu akun yang tidak bisa dipakai. */
+    private void applyGuestMode(boolean isGuest) {
+        int accountOnly = isGuest ? View.GONE : View.VISIBLE;
+        btnEditProfile.setVisibility(accountOnly);
+        btnEditAvatar.setVisibility(accountOnly);
+        // Sembunyikan seluruh grup (judul + kartu) yang hanya berguna untuk akun
+        setGroupVisibility(itemChangePassword, accountOnly);
+        setGroupVisibility(itemNotificationSettings, accountOnly);
+        ivAvatar.setClickable(!isGuest);
+
+        if (isGuest) {
+            btnLogout.setText("Masuk / Daftar");
+            btnLogout.setIconResource(R.drawable.ic_key);
+            btnLogout.setTextColor(ContextCompat.getColor(requireContext(), R.color.on_primary));
+            btnLogout.setIconTint(android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.on_primary)));
+            btnLogout.setBackgroundTintList(android.content.res.ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.primary)));
+            btnLogout.setStrokeWidth(0);
+        } else {
+            btnLogout.setText("Keluar dari Akun");
+            btnLogout.setIconResource(R.drawable.ic_logout);
+            int danger = ContextCompat.getColor(requireContext(), R.color.status_penuh);
+            btnLogout.setTextColor(danger);
+            btnLogout.setIconTint(android.content.res.ColorStateList.valueOf(danger));
+            btnLogout.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
+            btnLogout.setStrokeColor(android.content.res.ColorStateList.valueOf(danger));
+            btnLogout.setStrokeWidth((int) (1.2f * getResources().getDisplayMetrics().density));
+        }
+    }
+
     private void populateUserData() {
+        renderNotificationStatus();
         if (!sessionManager.isLoggedIn()) {
-            tvName.setText("Tamu");
-            tvEmail.setText("Belum masuk akun");
-            tvPhone.setText("No. WhatsApp: -");
-            tvRole.setText("GUEST");
+            applyGuestMode(true);
+            tvName.setText("Halo, Tamu");
+            tvEmail.setText("Masuk untuk menyimpan favorit dan chat dengan pemilik kost");
+            tvPhone.setVisibility(View.GONE);
+            tvRole.setText("Belum masuk");
             tvBio.setVisibility(View.GONE);
             cardOwnerVerification.setVisibility(View.GONE);
-            btnEditProfile.setVisibility(View.GONE);
+            applyAvatar(null);
             return;
         }
+        applyGuestMode(false);
+        tvPhone.setVisibility(View.VISIBLE);
 
         tvName.setText(sessionManager.getUserName());
         tvEmail.setText(sessionManager.getUserEmail());
@@ -293,14 +409,34 @@ public class ProfileFragment extends Fragment {
             }
         }
 
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setView(dialogView)
-                .setCancelable(true)
-                .create();
-
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+        dialog.setContentView(dialogView);
         if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
+        dialog.setOnShowListener(d -> {
+            View sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (sheet == null) return;
+            sheet.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+            sheet.getLayoutParams().height = (int) (getResources().getDisplayMetrics().heightPixels * 0.92f);
+            com.google.android.material.bottomsheet.BottomSheetBehavior<View> behavior =
+                    com.google.android.material.bottomsheet.BottomSheetBehavior.from(sheet);
+            behavior.setSkipCollapsed(true);
+            behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+        });
+        uploadedDocs.clear();
+        bindDocRow(dialogView, R.id.doc_ktp, R.id.doc_ktp_status, com.carikostkita.data.repository.VerificationRepository.DOC_KTP);
+        bindDocRow(dialogView, R.id.doc_selfie, R.id.doc_selfie_status, com.carikostkita.data.repository.VerificationRepository.DOC_SELFIE);
+        bindDocRow(dialogView, R.id.doc_kepemilikan, R.id.doc_kepemilikan_status, com.carikostkita.data.repository.VerificationRepository.DOC_KEPEMILIKAN);
+        View band = dialogView.findViewById(R.id.pengajuan_band);
+        if (band != null) band.setClipToOutline(true);
+        com.carikostkita.util.SettingRowBinder.bindValue(dialogView.findViewById(R.id.pengajuan_benefit_1),
+                R.drawable.ic_sparkle, "Pasang kost gratis", "Tanpa biaya iklan dan tanpa komisi.");
+        com.carikostkita.util.SettingRowBinder.bindValue(dialogView.findViewById(R.id.pengajuan_benefit_2),
+                R.drawable.ic_nav_chat, "Chat langsung dengan calon penyewa", "Pertanyaan masuk ke tab Pesan kamu.");
+        com.carikostkita.util.SettingRowBinder.bindValue(dialogView.findViewById(R.id.pengajuan_benefit_3),
+                R.drawable.ic_verified, "Badge pemilik terverifikasi", "Tampil di halaman kost, menambah kepercayaan.");
 
         btnBatal.setOnClickListener(v -> dialog.dismiss());
 
@@ -310,6 +446,9 @@ public class ProfileFragment extends Fragment {
             String wa = etWa.getText() != null ? etWa.getText().toString().trim() : "";
             String catatan = etCatatan.getText() != null ? etCatatan.getText().toString().trim() : "";
 
+            String waDigits = wa.replaceAll("[^0-9]", "");
+            if (waDigits.startsWith("62")) waDigits = waDigits.substring(2);
+            if (waDigits.startsWith("0")) waDigits = waDigits.substring(1);
             if (namaKost.isEmpty()) {
                 etNama.setError("Nama properti kost wajib diisi");
                 etNama.requestFocus();
@@ -320,14 +459,20 @@ public class ProfileFragment extends Fragment {
                 etAlamat.requestFocus();
                 return;
             }
-            if (wa.isEmpty()) {
-                etWa.setError("Nomor WhatsApp wajib diisi");
+            if (!waDigits.startsWith("8") || waDigits.length() < 8 || waDigits.length() > 12) {
+                etWa.setError("Masukkan nomor aktif tanpa 0 di depan, contoh 81234567890");
                 etWa.requestFocus();
                 return;
             }
 
             // Normalisasi nomor whatsapp
-            String fullWa = wa.startsWith("0") ? "+62" + wa.substring(1) : (wa.startsWith("+62") ? wa : "+62" + wa);
+            if (!uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_KTP)
+                    || !uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_SELFIE)) {
+                AppDialogHelper.showInfo(requireContext(), "Lengkapi Dokumen",
+                        "Unggah foto KTP dan selfie sambil memegang KTP. Ini mencegah listing palsu dan melindungi pencari kost.");
+                return;
+            }
+            String fullWa = "+62" + waDigits;
 
             StringBuilder noteBuilder = new StringBuilder();
             noteBuilder.append("Nama Kost: ").append(namaKost)
@@ -338,10 +483,11 @@ public class ProfileFragment extends Fragment {
             }
 
             pbLoading.setVisibility(View.VISIBLE);
+            btnKirim.setText("");
             btnKirim.setEnabled(false);
             btnBatal.setEnabled(false);
 
-            int userId = sessionManager.getUserId();
+            String userId = sessionManager.getUserUid();
             userRepository.submitOwnerVerification(userId, noteBuilder.toString(), new DataCallback<Boolean>() {
                 @Override
                 public void onSuccess(Boolean ok) {
@@ -361,7 +507,7 @@ public class ProfileFragment extends Fragment {
                     populateUserData();
                     AppDialogHelper.showSuccessDialog(requireContext(),
                             "Pengajuan Terkirim!",
-                            "Pengajuan verifikasi pemilik untuk \"" + namaKost + "\" telah dikirimkan ke Developer/Admin. Kami akan segera memproses akun Anda.",
+                            "Pengajuan untuk \"" + namaKost + "\" sudah kami terima. Status pengajuan bisa kamu pantau di halaman ini.",
                             null);
                 }
 
@@ -369,6 +515,7 @@ public class ProfileFragment extends Fragment {
                 public void onError(String message) {
                     if (!isAdded()) return;
                     pbLoading.setVisibility(View.GONE);
+                    btnKirim.setText("Kirim Pengajuan");
                     btnKirim.setEnabled(true);
                     btnBatal.setEnabled(true);
                     AppDialogHelper.showErrorDialog(requireContext(), "Gagal Mengajukan", message);

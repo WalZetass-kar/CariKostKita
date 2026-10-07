@@ -71,4 +71,16 @@ public class KostUpdateDto {
 
     @SerializedName("fasilitas")
     public List<String> fasilitas;
+
+    @SerializedName("deposit")
+    public Integer deposit;
+
+    @SerializedName("minimal_sewa_bulan")
+    public Integer minimalSewaBulan;
+
+    @SerializedName("biaya_tambahan")
+    public String biayaTambahan;
+
+    @SerializedName("aturan")
+    public List<String> aturan;
 }

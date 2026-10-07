@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  android:
+    name: Build & unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Konfigurasi Supabase dummy untuk build
+        run: |
+          echo "SUPABASE_URL=https://example.supabase.co" >> local.properties
+          echo "SUPABASE_ANON_KEY=ci-placeholder" >> local.properties
+      - name: Unit test
+        run: ./gradlew testDebugUnitTest --stacktrace
+      - name: Build debug & release (R8)
+        run: ./gradlew assembleDebug assembleRelease --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: app/build/test-results/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: app/build/outputs/apk/
+
+  database-security:
+    name: RLS & trigger tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Jalankan migrasi + skenario serangan
+        run: ./supabase/tests/run.sh

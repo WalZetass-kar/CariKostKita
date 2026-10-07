@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hero halaman Masuk/Daftar: gradient maroon + ornamen + siluet kost + logo -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/auth_hero_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_header_curved">
+
+    <ImageView
+        android:layout_width="170dp"
+        android:layout_height="150dp"
+        android:layout_gravity="top|end"
+        android:importantForAccessibility="no"
+        android:src="@drawable/il_header_ornament" />
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="76dp"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="94dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/il_header_skyline" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="176dp">
+
+        <FrameLayout
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/bg_logo_ring">
+
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="center"
+                android:contentDescription="Logo CariKostKita"
+                android:src="@mipmap/ic_launcher" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tv_auth_hero_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:accessibilityHeading="true"
+            android:textColor="@color/white"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_headline_accent" />
+
+        <TextView
+            android:id="@+id/tv_auth_hero_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingExtra="2dp"
+            android:textColor="#E6FFFFFF"
+            android:textSize="14sp" />
+    </LinearLayout>
+</FrameLayout>

@@ -69,7 +69,7 @@
                     android:layout_height="wrap_content"
                     android:text="Baru saja"
                     android:textColor="@color/text_muted"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <TextView

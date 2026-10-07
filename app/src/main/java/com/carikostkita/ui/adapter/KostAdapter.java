@@ -24,7 +24,6 @@ import com.carikostkita.R;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
-import com.google.android.material.snackbar.Snackbar;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +37,18 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
 
     private final List<Kost> kostList;
     private final OnKostClickListener listener;
+    private double originLat = 0;
+    private double originLng = 0;
 
     public KostAdapter(OnKostClickListener listener) {
         this.kostList = new ArrayList<>();
         this.listener = listener;
+    }
+
+    /** Titik acuan untuk menampilkan jarak di kartu; (0,0) menyembunyikan jarak. */
+    public void setDistanceOrigin(double lat, double lng) {
+        this.originLat = lat;
+        this.originLng = lng;
     }
 
     public void submitList(List<Kost> newList) {
@@ -62,7 +69,7 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
     @Override
     public void onBindViewHolder(@NonNull KostViewHolder holder, int position) {
         Kost kost = kostList.get(position);
-        holder.bind(kost, listener, position);
+        holder.bind(kost, listener, position, originLat, originLng);
     }
 
     @Override
@@ -98,16 +105,23 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             tvStatus = itemView.findViewById(R.id.tv_kost_status);
         }
 
-        public void bind(Kost kost, OnKostClickListener listener, int position) {
+        public void bind(Kost kost, OnKostClickListener listener, int position, double originLat, double originLng) {
             Context context = itemView.getContext();
             tvName.setText(kost.getNamaKost());
-            tvLocation.setText(kost.getFullLocation());
-            tvPrice.setText(kost.getFormattedHarga());
+            String location = kost.getFullLocation();
+            if (originLat != 0 && originLng != 0 && kost.hasCoordinates()) {
+                location = com.carikostkita.util.GeoUtil.formatDistance(com.carikostkita.util.GeoUtil.distanceKm(
+                        originLat, originLng, kost.getLatitude(), kost.getLongitude())) + " • " + location;
+            }
+            tvLocation.setText(location);
+            String rating = kost.getRatingLabel();
+            tvPrice.setText(rating != null ? kost.getFormattedHarga() + "   " + rating : kost.getFormattedHarga());
 
-            // Specs
-            String ukuran = (kost.getUkuranKamar() != null && !kost.getUkuranKamar().isEmpty()) ? kost.getUkuranKamar() : "3x4 m";
+            // Ukuran kamar hanya tampil bila pemilik mengisinya
             if (tvRoomSpecs != null) {
-                tvRoomSpecs.setText(ukuran);
+                String ukuran = kost.getUkuranKamar();
+                tvRoomSpecs.setText(ukuran != null ? ukuran : "");
+                tvRoomSpecs.setVisibility(ukuran != null ? View.VISIBLE : View.GONE);
             }
 
             // Facilities
@@ -142,19 +156,19 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             }
 
             // Ketersediaan & Efek Penuh (Opacity 0.6 + Grayscale)
-            boolean isPenuh = (kost.getStatus() == StatusKost.PENUH || kost.getKamarTersedia() <= 0);
+            boolean isPenuh = !kost.isAvailable();
             if (isPenuh) {
                 if (cardRoot != null) cardRoot.setAlpha(0.6f);
                 ColorMatrix cm = new ColorMatrix();
                 cm.setSaturation(0);
                 ivThumbnail.setColorFilter(new ColorMatrixColorFilter(cm));
-                tvStatus.setText("Penuh");
+                tvStatus.setText(kost.getAvailabilityLabel());
                 tvStatus.setBackgroundResource(R.drawable.bg_pill_penuh);
                 tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_penuh));
             } else {
                 if (cardRoot != null) cardRoot.setAlpha(1.0f);
                 ivThumbnail.clearColorFilter();
-                tvStatus.setText(kost.getKamarTersedia() + " kamar");
+                tvStatus.setText(kost.hasRoomInfo() ? kost.getKamarTersedia() + " kamar" : "Tersedia");
                 tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
                 tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
             }
@@ -200,8 +214,10 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             // Favorite Icon & Pop Animation + Feedback Snackbar
             if (kost.isFavorite()) {
                 btnFavorite.setImageResource(R.drawable.ic_heart_filled);
+                btnFavorite.setContentDescription("Hapus " + kost.getNamaKost() + " dari favorit");
             } else {
                 btnFavorite.setImageResource(R.drawable.ic_heart_outline);
+                btnFavorite.setContentDescription("Simpan " + kost.getNamaKost() + " ke favorit");
             }
 
             btnFavorite.setOnClickListener(v -> {
@@ -217,12 +233,6 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
                                 .setDuration(120)
                                 .start())
                         .start();
-
-                boolean willBeFav = !kost.isFavorite();
-                String msg = willBeFav ? "Disimpan ke favorit" : "Dihapus dari favorit";
-                Snackbar.make(itemView, msg, Snackbar.LENGTH_SHORT)
-                        .setDuration(1500)
-                        .show();
 
                 if (listener != null) {
                     listener.onFavoriteToggle(kost, position);
