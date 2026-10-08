@@ -1,6 +1,8 @@
 package com.carikostkita.ui.main.chat;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
@@ -670,23 +672,60 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
     }
 
+    private final Handler pollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (conversationId != null && !conversationId.isEmpty() && !isFinishing() && !isDestroyed()) {
+                refreshMessagesSilently();
+                pollHandler.postDelayed(this, 3500);
+            }
+        }
+    };
+
+    private void refreshMessagesSilently() {
+        if (conversationId == null || conversationId.isEmpty()) return;
+        chatRepository.getMessages(conversationId, currentUserId, new DataCallback<List<ChatMessage>>() {
+            @Override
+            public void onSuccess(List<ChatMessage> data) {
+                if (data == null || isFinishing() || isDestroyed()) return;
+                int currentCount = bubbleAdapter.getItemCount();
+                if (data.size() != currentCount) {
+                    bubbleAdapter.setMessages(data);
+                    if (!data.isEmpty()) {
+                        layoutEmpty.setVisibility(View.GONE);
+                        rvMessages.scrollToPosition(data.size() - 1);
+                        chatRepository.markConversationRead(conversationId, currentUserId);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         if (conversationId != null && !conversationId.isEmpty()) {
             realtimeClient.connect(conversationId);
+            pollHandler.removeCallbacks(pollRunnable);
+            pollHandler.postDelayed(pollRunnable, 3500);
         }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        pollHandler.removeCallbacks(pollRunnable);
         realtimeClient.disconnect();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        pollHandler.removeCallbacks(pollRunnable);
         realtimeClient.disconnect();
     }
 }

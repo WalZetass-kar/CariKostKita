@@ -2,6 +2,8 @@ package com.carikostkita.ui.main.chat;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -110,6 +112,17 @@ public class ChatListFragment extends Fragment {
         });
     }
 
+    private final Handler pollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable pollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isAdded() && sessionManager != null && sessionManager.isLoggedIn()) {
+                loadConversations(false);
+                pollHandler.postDelayed(this, 7000);
+            }
+        }
+    };
+
     @Override
     public void onResume() {
         super.onResume();
@@ -117,11 +130,14 @@ public class ChatListFragment extends Fragment {
             realtimeClient.connect(null);
         }
         loadConversations(!hasLoadedOnce);
+        pollHandler.removeCallbacks(pollRunnable);
+        pollHandler.postDelayed(pollRunnable, 7000);
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        pollHandler.removeCallbacks(pollRunnable);
         if (realtimeClient != null) {
             realtimeClient.disconnect();
         }
@@ -130,6 +146,7 @@ public class ChatListFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        pollHandler.removeCallbacks(pollRunnable);
         if (realtimeClient != null) {
             realtimeClient.disconnect();
         }
