@@ -9,6 +9,7 @@ if (localPropertiesFile.exists()) {
 }
 
 String supabaseUrl = localProperties.getProperty('SUPABASE_URL') ?: (project.findProperty('SUPABASE_URL') ?: 'https://placeholder.supabase.co')
+String apiBaseUrl = localProperties.getProperty('API_BASE_URL') ?: (project.findProperty('API_BASE_URL') ?: 'https://carikostkitafastapi.vercel.app')
 // Kunci rilis dibaca dari keystore.properties (tidak di-commit). Contoh isi:
 //   storeFile=/path/ke/carikostkita-release.jks
 //   storePassword=...
@@ -39,6 +40,7 @@ android {
         // Supabase configuration
         buildConfigField "String", "SUPABASE_URL", "\"${supabaseUrl}\""
         buildConfigField "String", "SUPABASE_ANON_KEY", "\"${supabaseAnonKey}\""
+        buildConfigField "String", "API_BASE_URL", "\"${apiBaseUrl}\""
     }
 
     signingConfigs {

@@ -2,104 +2,106 @@ package com.carikostkita.data.repository;
 
 import android.content.Context;
 import com.carikostkita.data.model.SurveyRequest;
-import com.google.gson.JsonObject;
+import com.carikostkita.data.remote.FastApiSurveyService;
+import com.carikostkita.data.remote.SupabaseClient;
+import com.carikostkita.data.remote.dto.SurveyCreateRequest;
+import com.carikostkita.data.remote.dto.SurveyDto;
+import com.carikostkita.data.remote.dto.SurveyListResponse;
+import com.carikostkita.data.remote.dto.SurveyResponse;
+import com.carikostkita.data.remote.dto.SurveyStatusUpdateRequest;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import retrofit2.Response;
 
-/** Jadwal survei: pencari mengajukan, pemilik mengonfirmasi/menolak/menandai selesai. */
+/** Survey operations use FastAPI; identities and allowed transitions are server-derived. */
 public class SurveyRepository extends BaseRepository {
 
-    private static final String SELECT_SIMPLE = "*";
+    private final FastApiSurveyService service;
 
     public SurveyRepository(Context context) {
         super(context);
+        service = SupabaseClient.getInstance().createSurveyService();
     }
 
-    public void request(String kostId, String ownerId, String jadwalIso, String catatan, DataCallback<SurveyRequest> callback) {
+    private String bearer() throws IOException {
+        String token = session.getAccessToken();
+        if (token == null || token.isEmpty()) throw new IOException("Sesi kamu sudah berakhir. Silakan masuk lagi.");
+        if (session.isTokenExpired()) token = SupabaseClient.getInstance().refreshTokenBlocking(token);
+        if (token == null || token.isEmpty()) throw new IOException("Sesi kamu sudah berakhir. Silakan masuk lagi.");
+        return "Bearer " + token;
+    }
+
+    private static long numericId(String value, String label) throws IOException {
+        try {
+            long id = Long.parseLong(value);
+            if (id <= 0) throw new NumberFormatException("non-positive ID");
+            return id;
+        } catch (Exception e) {
+            throw new IOException(label + " tidak valid.", e);
+        }
+    }
+
+    public void request(String kostId, String jadwalIso, String catatan, DataCallback<SurveyRequest> callback) {
         async("requestSurvey", callback, () -> {
-            JsonObject body = new JsonObject();
-            body.addProperty("kost_id", kostId);
-            body.addProperty("owner_id", ownerId);
-            body.addProperty("pencari_id", session.getUserUid());
-            body.addProperty("jadwal", jadwalIso);
-            if (catatan != null && !catatan.isEmpty()) body.addProperty("catatan", catatan);
-            List<JsonObject> rows = check("requestSurvey", db.insert("survey_requests", body).execute());
+            Response<SurveyResponse> response = service.create(
+                    bearer(), new SurveyCreateRequest(numericId(kostId, "ID kost"), jadwalIso, catatan)
+            ).execute();
+            SurveyResponse body = check("requestSurvey", response);
+            if (body == null || body.data == null) return null;
             new AnalyticsRepository(context).log(AnalyticsRepository.SURVEY_REQUEST, kostId);
-            return rows != null && !rows.isEmpty() ? map(rows.get(0)) : null;
+            return map(body.data);
         });
     }
 
-    /** Survei milik pencari yang login (asSeeker) atau masuk ke pemilik (!asSeeker). */
+    /** Scope is a view filter; the server always applies verified participant ID and database RLS. */
     public void list(boolean asSeeker, DataCallback<List<SurveyRequest>> callback) {
         async("listSurveys", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put(asSeeker ? "pencari_id" : "owner_id", "eq." + session.getUserUid());
-            List<JsonObject> rows = check("listSurveys", db.select("survey_requests", f, SELECT_SIMPLE, "jadwal.desc").execute());
-            List<SurveyRequest> list = new ArrayList<>();
-            if (rows != null) for (JsonObject o : rows) list.add(map(o));
-            fillNames(list);
-            return list;
+            Response<SurveyListResponse> response = service.list(
+                    bearer(), asSeeker ? "seeker" : "owner", null, 1, 100
+            ).execute();
+            SurveyListResponse body = check("listSurveys", response);
+            List<SurveyRequest> result = new ArrayList<>();
+            if (body != null && body.data != null) {
+                for (SurveyDto survey : body.data) result.add(map(survey));
+            }
+            return result;
         });
     }
 
-    /** Survei aktif pencari untuk satu kost (untuk tombol di halaman detail). */
+    /** Latest survey by the authenticated seeker for a kost. */
     public void findMineForKost(String kostId, DataCallback<SurveyRequest> callback) {
         async("findSurvey", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put("pencari_id", "eq." + session.getUserUid());
-            f.put("kost_id", "eq." + kostId);
-            List<JsonObject> rows = check("findSurvey", db.select("survey_requests", f, SELECT_SIMPLE, "created_at.desc").execute());
-            return rows != null && !rows.isEmpty() ? map(rows.get(0)) : null;
+            Response<SurveyListResponse> response = service.list(
+                    bearer(), "seeker", numericId(kostId, "ID kost"), 1, 20
+            ).execute();
+            SurveyListResponse body = check("findSurvey", response);
+            return body == null || body.data == null || body.data.isEmpty() ? null : map(body.data.get(0));
         });
     }
 
     public void updateStatus(String id, String status, String alasan, DataCallback<Boolean> callback) {
         async("updateSurvey", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put("id", "eq." + id);
-            JsonObject body = new JsonObject();
-            body.addProperty("status", status);
-            if (alasan != null) body.addProperty("alasan", alasan);
-            check("updateSurvey", db.patch("survey_requests", f, body).execute());
-            return true;
+            Response<SurveyResponse> response = service.updateStatus(
+                    bearer(), numericId(id, "ID survei"), new SurveyStatusUpdateRequest(status, alasan)
+            ).execute();
+            SurveyResponse body = check("updateSurvey", response);
+            return body != null && body.data != null;
         });
     }
 
-    /** Nama kost & nama pencari diambil terpisah agar tidak bergantung pada nama foreign key. */
-    private void fillNames(List<SurveyRequest> list) {
-        if (list.isEmpty()) return;
-        try {
-            List<String> kostIds = new ArrayList<>(), userIds = new ArrayList<>();
-            for (SurveyRequest s : list) {
-                if (!kostIds.contains(s.kostId)) kostIds.add(s.kostId);
-                if (!userIds.contains(s.pencariId)) userIds.add(s.pencariId);
-            }
-            Map<String, String> fk = new HashMap<>();
-            fk.put("id", "in.(" + android.text.TextUtils.join(",", kostIds) + ")");
-            List<JsonObject> kosts = db.select("kosts", fk, "id,nama_kost", null).execute().body();
-            Map<String, String> fu = new HashMap<>();
-            fu.put("id", "in.(" + android.text.TextUtils.join(",", userIds) + ")");
-            List<JsonObject> users = db.select("users", fu, "id,nama", null).execute().body();
-            for (SurveyRequest s : list) {
-                if (kosts != null) for (JsonObject k : kosts) if (s.kostId.equals(str(k, "id"))) s.namaKost = str(k, "nama_kost");
-                if (users != null) for (JsonObject u : users) if (s.pencariId.equals(str(u, "id"))) s.namaPencari = str(u, "nama");
-            }
-        } catch (Exception ignored) {}
-    }
-
-    private static SurveyRequest map(JsonObject o) {
-        SurveyRequest s = new SurveyRequest();
-        s.id = str(o, "id");
-        s.kostId = str(o, "kost_id");
-        s.pencariId = str(o, "pencari_id");
-        s.ownerId = str(o, "owner_id");
-        s.jadwal = str(o, "jadwal");
-        s.catatan = str(o, "catatan");
-        s.status = str(o, "status");
-        s.alasan = str(o, "alasan");
-        s.createdAt = str(o, "created_at");
-        return s;
+    private static SurveyRequest map(SurveyDto dto) {
+        SurveyRequest survey = new SurveyRequest();
+        survey.id = dto.id;
+        survey.kostId = dto.kostId;
+        survey.namaKost = dto.namaKost;
+        survey.pencariId = dto.pencariId;
+        survey.ownerId = dto.ownerId;
+        survey.jadwal = dto.jadwal;
+        survey.catatan = dto.catatan;
+        survey.status = dto.status;
+        survey.alasan = dto.alasan;
+        survey.createdAt = dto.createdAt;
+        return survey;
     }
 }

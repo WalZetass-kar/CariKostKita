@@ -2,17 +2,15 @@ package com.carikostkita.data.remote;
 
 import android.content.Context;
 import com.carikostkita.BuildConfig;
+import com.carikostkita.data.remote.dto.AuthResponse;
+import com.carikostkita.data.remote.dto.RefreshRequest;
 import com.carikostkita.util.SessionManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Authenticator;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -30,8 +28,8 @@ public class SupabaseClient {
     private static Context appContext;
 
     private final Retrofit retrofit;
+    private final Retrofit apiRetrofit;
     private final OkHttpClient okHttpClient;
-    private final OkHttpClient refreshClient;
     private volatile String accessToken = null;
     private final Object refreshLock = new Object();
 
@@ -41,20 +39,13 @@ public class SupabaseClient {
                 ? HttpLoggingInterceptor.Level.BODY
                 : HttpLoggingInterceptor.Level.NONE);
 
-        refreshClient = new OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .build();
-
         okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(20, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .addInterceptor(chain -> {
                     Request origRequest = chain.request();
-                    if (!isAuthEndpoint(origRequest)) {
-                        refreshIfExpired();
-                    }
+                    refreshIfExpired();
                     String token = accessToken != null ? accessToken : BuildConfig.SUPABASE_ANON_KEY;
                     Request.Builder builder = origRequest.newBuilder()
                             .header("apikey", BuildConfig.SUPABASE_ANON_KEY)
@@ -79,6 +70,20 @@ public class SupabaseClient {
         retrofit = new Retrofit.Builder()
                 .baseUrl(BuildConfig.SUPABASE_URL + "/")
                 .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build();
+
+        OkHttpClient apiHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(25, TimeUnit.SECONDS)
+                .writeTimeout(25, TimeUnit.SECONDS)
+                .build();
+        String apiBaseUrl = BuildConfig.API_BASE_URL.endsWith("/")
+                ? BuildConfig.API_BASE_URL
+                : BuildConfig.API_BASE_URL + "/";
+        apiRetrofit = new Retrofit.Builder()
+                .baseUrl(apiBaseUrl)
+                .client(apiHttpClient)
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
     }
@@ -120,13 +125,97 @@ public class SupabaseClient {
         return retrofit.create(serviceClass);
     }
 
+    public FastApiAuthService createAuthService() {
+        return apiRetrofit.create(FastApiAuthService.class);
+    }
+
+    public FastApiAnalyticsService createAnalyticsService() {
+        return apiRetrofit.create(FastApiAnalyticsService.class);
+    }
+
+    public FastApiCrashReportService createCrashReportService() {
+        return apiRetrofit.create(FastApiCrashReportService.class);
+    }
+
+    public FastApiProfileService createProfileService() {
+        return apiRetrofit.create(FastApiProfileService.class);
+    }
+
+    public FastApiOwnerKostService createOwnerKostService() {
+        return apiRetrofit.create(FastApiOwnerKostService.class);
+    }
+
+    public FastApiOwnerStatsService createOwnerStatsService() {
+        return apiRetrofit.create(FastApiOwnerStatsService.class);
+    }
+
+    public FastApiUnreadMessagesService createUnreadMessagesService() {
+        return apiRetrofit.create(FastApiUnreadMessagesService.class);
+    }
+
+    public FastApiFavoriteService createFavoriteService() {
+        return apiRetrofit.create(FastApiFavoriteService.class);
+    }
+
+    public FastApiChatService createChatService() {
+        return apiRetrofit.create(FastApiChatService.class);
+    }
+
+    public FastApiReportService createReportService() {
+        return apiRetrofit.create(FastApiReportService.class);
+    }
+
+    public FastApiAdminReportService createAdminReportService() {
+        return apiRetrofit.create(FastApiAdminReportService.class);
+    }
+
+    public FastApiAdminKostService createAdminKostService() {
+        return apiRetrofit.create(FastApiAdminKostService.class);
+    }
+
+    public FastApiActivityLogService createActivityLogService() {
+        return apiRetrofit.create(FastApiActivityLogService.class);
+    }
+
+    public FastApiAvatarService createAvatarService() {
+        return apiRetrofit.create(FastApiAvatarService.class);
+    }
+
+    public FastApiBlockService createBlockService() {
+        return apiRetrofit.create(FastApiBlockService.class);
+    }
+
+    public FastApiSafetyService createSafetyService() {
+        return apiRetrofit.create(FastApiSafetyService.class);
+    }
+
+    public FastApiSurveyService createSurveyService() {
+        return apiRetrofit.create(FastApiSurveyService.class);
+    }
+
+    public FastApiReviewService createReviewService() {
+        return apiRetrofit.create(FastApiReviewService.class);
+    }
+
+    public FastApiOwnerVerificationService createOwnerVerificationService() {
+        return apiRetrofit.create(FastApiOwnerVerificationService.class);
+    }
+
+    public FastApiUserLookupService createUserLookupService() {
+        return apiRetrofit.create(FastApiUserLookupService.class);
+    }
+
+    public FastApiAdminUserService createAdminUserService() {
+        return apiRetrofit.create(FastApiAdminUserService.class);
+    }
+
+    public FastApiKostService createKostService() {
+        return apiRetrofit.create(FastApiKostService.class);
+    }
+
     /** Helper: bangun URL publik file di Supabase Storage */
     public static String getStoragePublicUrl(String bucket, String path) {
         return BuildConfig.SUPABASE_URL + "/storage/v1/object/public/" + bucket + "/" + path;
-    }
-
-    private static boolean isAuthEndpoint(Request request) {
-        return request.url().encodedPath().contains("/auth/v1/token");
     }
 
     /** Refresh proaktif sebelum request jika token tersimpan sudah kedaluwarsa. */
@@ -154,23 +243,17 @@ public class SupabaseClient {
             String refreshToken = session.getRefreshToken();
             if (refreshToken == null || refreshToken.isEmpty()) return null;
 
-            JsonObject body = new JsonObject();
-            body.addProperty("refresh_token", refreshToken);
-            Request request = new Request.Builder()
-                    .url(BuildConfig.SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token")
-                    .header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                    .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
-                    .build();
-            try (Response response = refreshClient.newCall(request).execute()) {
+            try {
+                retrofit2.Response<AuthResponse> response = apiRetrofit
+                        .create(FastApiAuthService.class)
+                        .refreshToken(new RefreshRequest(refreshToken))
+                        .execute();
                 if (!response.isSuccessful() || response.body() == null) return null;
-                JsonObject json = JsonParser.parseString(response.body().string()).getAsJsonObject();
-                String newAccess = json.has("access_token") ? json.get("access_token").getAsString() : null;
-                String newRefresh = json.has("refresh_token") ? json.get("refresh_token").getAsString() : null;
-                long expiresIn = json.has("expires_in") ? json.get("expires_in").getAsLong() : 3600;
-                if (newAccess == null) return null;
-                session.saveTokens(newAccess, newRefresh, expiresIn);
-                accessToken = newAccess;
-                return newAccess;
+                AuthResponse refreshed = response.body();
+                if (refreshed.accessToken == null || refreshed.accessToken.isEmpty()) return null;
+                session.saveTokens(refreshed.accessToken, refreshed.refreshToken, refreshed.expiresIn);
+                accessToken = refreshed.accessToken;
+                return refreshed.accessToken;
             } catch (Exception e) {
                 return null;
             }
@@ -181,7 +264,6 @@ public class SupabaseClient {
     private class TokenAuthenticator implements Authenticator {
         @Override
         public Request authenticate(okhttp3.Route route, Response response) {
-            if (isAuthEndpoint(response.request())) return null;
             if (response.priorResponse() != null) return null;
 
             String header = response.request().header("Authorization");

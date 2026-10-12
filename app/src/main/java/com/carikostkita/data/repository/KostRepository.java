@@ -20,13 +20,19 @@ import com.carikostkita.data.model.Wilayah;
 import com.carikostkita.data.remote.SupabaseClient;
 import com.carikostkita.data.remote.SupabaseDbService;
 import com.carikostkita.data.remote.SupabaseStorageService;
-import com.carikostkita.data.remote.dto.ActivityLogDto;
+import com.carikostkita.data.remote.FastApiKostService;
+import com.carikostkita.data.remote.FastApiFavoriteService;
+import com.carikostkita.data.remote.FastApiAdminKostService;
+import com.carikostkita.data.remote.FastApiOwnerKostService;
+import com.carikostkita.data.remote.FastApiOwnerStatsService;
 import com.carikostkita.data.remote.dto.FavoriteDto;
+import com.carikostkita.data.remote.dto.FavoriteListResponse;
 import com.carikostkita.data.remote.dto.KostDto;
 import com.carikostkita.data.remote.dto.KostUpdateDto;
 import com.carikostkita.data.remote.dto.StorageUploadResponse;
 import com.carikostkita.util.ErrorMessages;
 import com.carikostkita.util.SessionManager;
+import com.google.gson.JsonObject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -53,6 +59,12 @@ public class KostRepository {
 
     private final Context appContext;
     private final SupabaseDbService dbService;
+    private final FastApiKostService kostService;
+    private final FastApiFavoriteService favoriteService;
+    private final FastApiOwnerStatsService ownerStatsService;
+    private final FastApiOwnerKostService ownerKostService;
+    private final FastApiAdminKostService adminKostService;
+    private final ActivityLogRepository activityLogRepository;
     private final SupabaseStorageService storageService;
     private final SessionManager sessionManager;
     private final ExecutorService executor;
@@ -117,6 +129,12 @@ public class KostRepository {
     public KostRepository(Context context) {
         this.appContext = context != null ? context.getApplicationContext() : null;
         this.dbService = SupabaseClient.getInstance().createService(SupabaseDbService.class);
+        this.kostService = SupabaseClient.getInstance().createKostService();
+        this.favoriteService = SupabaseClient.getInstance().createFavoriteService();
+        this.ownerStatsService = SupabaseClient.getInstance().createOwnerStatsService();
+        this.ownerKostService = SupabaseClient.getInstance().createOwnerKostService();
+        this.adminKostService = SupabaseClient.getInstance().createAdminKostService();
+        this.activityLogRepository = new ActivityLogRepository(context);
         this.storageService = SupabaseClient.getInstance().createService(SupabaseStorageService.class);
         this.sessionManager = new SessionManager(context);
         this.executor = Executors.newSingleThreadExecutor();
@@ -143,6 +161,19 @@ public class KostRepository {
     public void getAllActiveKost(String currentUserId, DataCallback<List<Kost>> callback) {
         executor.execute(() -> {
             try {
+                try {
+                    Response<com.carikostkita.data.remote.dto.KostListResponse> apiRes =
+                            kostService.listPublicKosts(null, null, null, null, null, 1, 50).execute();
+                    if (apiRes.isSuccessful() && apiRes.body() != null && apiRes.body().data != null) {
+                        List<Kost> list = mapDtoListToKost(apiRes.body().data);
+                        populateFavorites(list, currentUserId);
+                        mainHandler.post(() -> callback.onSuccess(list));
+                        return;
+                    }
+                } catch (Exception apiEx) {
+                    Log.w(TAG, "FastAPI listPublicKosts fallback to PostgREST: " + apiEx.getMessage());
+                }
+
                 Response<List<KostDto>> res = dbService.getKosts(publicCatalogFilters(), "*", "created_at.desc").execute();
                 if (res.isSuccessful() && res.body() != null) {
                     List<Kost> list = mapDtoListToKost(res.body());
@@ -284,17 +315,40 @@ public class KostRepository {
     public void getKostDetail(String idKost, String currentUserId, DataCallback<Kost> callback) {
         executor.execute(() -> {
             try {
+                try {
+                    Response<com.carikostkita.data.remote.dto.KostDetailResponse> apiRes =
+                            kostService.readPublicKost(idKost).execute();
+                    if (apiRes.isSuccessful() && apiRes.body() != null && apiRes.body().data != null) {
+                        Kost kost = mapDtoToKost(apiRes.body().data);
+                        if (currentUserId != null && currentUserId.equals(sessionManager.getUserUid())) {
+                            try {
+                                String token = activeAccessToken();
+                                if (token != null) {
+                                    Response<com.carikostkita.data.remote.dto.FavoriteResponse> favRes =
+                                            favoriteService.readFavorite("Bearer " + token, idKost).execute();
+                                    kost.setFavorite(favRes.isSuccessful() && favRes.body() != null
+                                            && favRes.body().data != null);
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                        mainHandler.post(() -> callback.onSuccess(kost));
+                        return;
+                    }
+                } catch (Exception apiEx) {
+                    Log.w(TAG, "FastAPI readPublicKost fallback to PostgREST: " + apiEx.getMessage());
+                }
+
                 Response<List<KostDto>> res = dbService.getKostById("eq." + idKost, "*").execute();
                 if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
                     Kost kost = mapDtoToKost(res.body().get(0));
-                    if (currentUserId != null && !currentUserId.isEmpty()) {
+                    if (currentUserId != null && currentUserId.equals(sessionManager.getUserUid())) {
                         try {
-                            Map<String, String> favFilter = new HashMap<>();
-                            favFilter.put("user_id", "eq." + currentUserId);
-                            favFilter.put("kost_id", "eq." + idKost);
-                            Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "id").execute();
-                            if (favRes.isSuccessful() && favRes.body() != null && !favRes.body().isEmpty()) {
-                                kost.setFavorite(true);
+                            String token = activeAccessToken();
+                            if (token != null) {
+                                Response<com.carikostkita.data.remote.dto.FavoriteResponse> favRes =
+                                        favoriteService.readFavorite("Bearer " + token, idKost).execute();
+                                kost.setFavorite(favRes.isSuccessful() && favRes.body() != null
+                                        && favRes.body().data != null);
                             }
                         } catch (Exception ignored) {}
                     }
@@ -325,26 +379,35 @@ public class KostRepository {
                     postError(callback, "Masuk terlebih dahulu untuk menyimpan favorit.");
                     return;
                 }
-
-                Map<String, String> favFilter = new HashMap<>();
-                favFilter.put("user_id", "eq." + userId);
-                favFilter.put("kost_id", "eq." + idKost);
-
-                Response<List<FavoriteDto>> checkRes = dbService.getFavorites(favFilter, "id").execute();
-                if (!checkRes.isSuccessful()) {
+                if (!userId.equals(sessionManager.getUserUid())) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
+                    return;
+                }
+                String token = activeAccessToken();
+                if (token == null) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                String bearer = "Bearer " + token;
+                Response<com.carikostkita.data.remote.dto.FavoriteResponse> checkRes =
+                        favoriteService.readFavorite(bearer, idKost).execute();
+                if (!checkRes.isSuccessful() && checkRes.code() != 404) {
                     postError(callback, ErrorMessages.fromResponse("checkFavorite", checkRes));
                     return;
                 }
-                if (checkRes.body() != null && !checkRes.body().isEmpty()) {
-                    Response<ResponseBody> delRes = dbService.removeFavorite("eq." + userId, "eq." + idKost).execute();
+                boolean exists = checkRes.isSuccessful() && checkRes.body() != null
+                        && checkRes.body().data != null;
+                if (exists) {
+                    Response<ResponseBody> delRes = favoriteService.removeFavorite(bearer, idKost).execute();
                     if (delRes.isSuccessful()) {
                         mainHandler.post(() -> callback.onSuccess(false));
                     } else {
                         postError(callback, ErrorMessages.fromResponse("removeFavorite", delRes));
                     }
                 } else {
-                    Response<List<FavoriteDto>> addRes = dbService.addFavorite(new FavoriteDto(userId, idKost)).execute();
-                    if (addRes.isSuccessful()) {
+                    Response<com.carikostkita.data.remote.dto.FavoriteResponse> addRes =
+                            favoriteService.addFavorite(bearer, idKost).execute();
+                    if (addRes.isSuccessful() && addRes.body() != null && addRes.body().data != null) {
                         mainHandler.post(() -> callback.onSuccess(true));
                     } else {
                         postError(callback, ErrorMessages.fromResponse("addFavorite", addRes));
@@ -371,21 +434,28 @@ public class KostRepository {
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
                     return;
                 }
-
-                Map<String, String> favFilter = new HashMap<>();
-                favFilter.put("user_id", "eq." + userId);
-                Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "*").execute();
+                if (!userId.equals(sessionManager.getUserUid())) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
+                    return;
+                }
+                String token = activeAccessToken();
+                if (token == null) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                Response<FavoriteListResponse> favRes = favoriteService
+                        .listFavorites("Bearer " + token).execute();
                 if (!favRes.isSuccessful()) {
                     postError(callback, ErrorMessages.fromResponse("getFavorites", favRes));
                     return;
                 }
-                if (favRes.body() == null || favRes.body().isEmpty()) {
+                if (favRes.body() == null || favRes.body().data == null || favRes.body().data.isEmpty()) {
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
                     return;
                 }
 
                 List<String> ids = new ArrayList<>();
-                for (FavoriteDto f : favRes.body()) {
+                for (FavoriteDto f : favRes.body().data) {
                     if (f.kostId != null) ids.add(f.kostId);
                 }
                 Map<String, String> kostFilter = new HashMap<>();
@@ -415,21 +485,31 @@ public class KostRepository {
     }
 
     private void populateFavorites(List<Kost> list, String currentUserId) {
-        if (currentUserId == null || currentUserId.isEmpty() || list.isEmpty()) return;
+        if (currentUserId == null || !currentUserId.equals(sessionManager.getUserUid()) || list.isEmpty()) return;
         try {
-            Map<String, String> favFilter = new HashMap<>();
-            favFilter.put("user_id", "eq." + currentUserId);
-            Response<List<FavoriteDto>> favRes = dbService.getFavorites(favFilter, "kost_id").execute();
-            if (favRes.isSuccessful() && favRes.body() != null) {
+            String token = activeAccessToken();
+            if (token == null) return;
+            Response<FavoriteListResponse> favRes = favoriteService
+                    .listFavorites("Bearer " + token).execute();
+            if (favRes.isSuccessful() && favRes.body() != null && favRes.body().data != null) {
                 Set<String> favSet = new HashSet<>();
-                for (FavoriteDto f : favRes.body()) {
-                    favSet.add(f.kostId);
+                for (FavoriteDto f : favRes.body().data) {
+                    if (f.kostId != null) favSet.add(f.kostId);
                 }
                 for (Kost k : list) {
                     k.setFavorite(favSet.contains(k.getId()));
                 }
             }
         } catch (Exception ignored) {}
+    }
+
+    private String activeAccessToken() {
+        String token = sessionManager.getAccessToken();
+        if (token == null || token.isEmpty()) return null;
+        if (sessionManager.isTokenExpired()) {
+            return SupabaseClient.getInstance().refreshTokenBlocking(token);
+        }
+        return token;
     }
 
     // =========================================================================
@@ -696,6 +776,88 @@ public class KostRepository {
         });
     }
 
+    /** Update only this owner's listing availability; other roles keep their separate admin path. */
+    public void updateOwnerStatus(String idKost, StatusKost status, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                if (status != StatusKost.TERSEDIA && status != StatusKost.PENUH) {
+                    postError(callback, "Status ketersediaan tidak valid.");
+                    return;
+                }
+                String token = sessionManager.getAccessToken();
+                if (token == null || token.isEmpty()) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                JsonObject body = new JsonObject();
+                body.addProperty("status", status.name());
+                Response<JsonObject> api = ownerKostService
+                        .updateMyKostStatus("Bearer " + token, idKost, body).execute();
+                if (api.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                    return;
+                }
+                if (api.code() != 404) {
+                    postError(callback, ErrorMessages.fromResponse("updateOwnerStatus", api));
+                    return;
+                }
+
+                // Compatibility only for an older FastAPI deployment without the owner route.
+                KostUpdateDto dto = new KostUpdateDto();
+                dto.status = status.name();
+                Response<List<KostDto>> legacy = dbService.updateKost("eq." + idKost, dto).execute();
+                if (legacy.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("updateOwnerStatus", legacy));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("updateOwnerStatus", e));
+            }
+        });
+    }
+
+    /** Update a listing's availability for the authenticated admin/developer only. */
+    public void updateAdminStatus(String idKost, StatusKost status, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                if (status != StatusKost.TERSEDIA && status != StatusKost.PENUH) {
+                    postError(callback, "Status ketersediaan tidak valid.");
+                    return;
+                }
+                String token = sessionManager.getAccessToken();
+                if (token == null || token.isEmpty()) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                JsonObject body = new JsonObject();
+                body.addProperty("status", status.name());
+                Response<JsonObject> api = adminKostService
+                        .updateKostStatus("Bearer " + token, idKost, body).execute();
+                if (api.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                    return;
+                }
+                if (api.code() != 404) {
+                    postError(callback, ErrorMessages.fromResponse("updateAdminStatus", api));
+                    return;
+                }
+
+                // Compatibility for an API deployment that predates this route.
+                KostUpdateDto dto = new KostUpdateDto();
+                dto.status = status.name();
+                Response<List<KostDto>> legacy = dbService.updateKost("eq." + idKost, dto).execute();
+                if (legacy.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("updateAdminStatus", legacy));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("updateAdminStatus", e));
+            }
+        });
+    }
+
     /**
      * Ubah jumlah kamar kosong (dan status Tersedia/Penuh) tanpa memicu review ulang:
      * trigger server hanya me-review ulang perubahan isi listing.
@@ -718,10 +880,28 @@ public class KostRepository {
         });
     }
 
-    /** Ajukan ulang kost REJECTED/REVISION_REQUIRED ke antrean (fungsi SQL resubmit_kost). */
+    /** Ajukan ulang kost REJECTED/REVISION_REQUIRED melalui API pemilik. */
     public void resubmit(String idKost, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
+                String token = sessionManager.getAccessToken();
+                if (token == null || token.isEmpty()) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+
+                Response<JsonObject> api = ownerKostService
+                        .resubmitMyKost("Bearer " + token, idKost).execute();
+                if (api.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                    return;
+                }
+                if (api.code() != 404) {
+                    postError(callback, ErrorMessages.fromResponse("resubmit", api));
+                    return;
+                }
+
+                // Compatibility for API deployments that predate this route.
                 Map<String, Object> p = new HashMap<>();
                 p.put("target_id", idKost);
                 Response<ResponseBody> res = dbService.rpc("resubmit_kost", p).execute();
@@ -769,18 +949,12 @@ public class KostRepository {
 
                 Response<List<KostDto>> res = dbService.updateKost("eq." + idKost, dto).execute();
                 if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    ActivityLogDto log = new ActivityLogDto(
-                            adminId,
-                            adminName != null ? adminName : "Developer",
+                    activityLogRepository.logActivity(
+                            sessionManager.getUserUid(), adminName != null ? adminName : "Developer",
                             "VERIFIKASI_KOST",
                             "Kost \"" + res.body().get(0).namaKost + "\" diubah menjadi " + status.getDisplayName()
                                     + (catatanRevisi != null && !catatanRevisi.isEmpty() ? " (" + catatanRevisi + ")" : ""),
-                            "KOST",
-                            idKost
-                    );
-                    try {
-                        dbService.insertLog(log).execute();
-                    } catch (Exception ignored) {}
+                            "KOST", idKost);
 
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else if (res.isSuccessful()) {
@@ -883,9 +1057,24 @@ public class KostRepository {
      */
     private int fetchOwnerFavoriteCount() {
         try {
-            Response<ResponseBody> res = dbService.rpc("owner_favorite_count", new HashMap<>()).execute();
-            if (res.isSuccessful() && res.body() != null) {
-                String raw = res.body().string().trim();
+            String token = sessionManager.getAccessToken();
+            if (token == null || token.isEmpty()) return 0;
+
+            Response<JsonObject> api = ownerStatsService.getMyFavoriteCount("Bearer " + token).execute();
+            if (api.isSuccessful() && api.body() != null
+                    && api.body().has("data") && api.body().getAsJsonObject("data").has("favorite_count")) {
+                return Math.max(0, api.body().getAsJsonObject("data").get("favorite_count").getAsInt());
+            }
+            if (api.code() != 404) {
+                Log.w(TAG, "FastAPI gagal membaca statistik favorit (HTTP " + api.code() + ")");
+                return 0;
+            }
+
+            // Older API deployments may not have this route yet; the migration
+            // also repairs the legacy RPC to use the bigint identity bridge.
+            Response<ResponseBody> legacy = dbService.rpc("owner_favorite_count", new HashMap<>()).execute();
+            if (legacy.isSuccessful() && legacy.body() != null) {
+                String raw = legacy.body().string().trim();
                 return Integer.parseInt(raw.replaceAll("[^0-9]", "").isEmpty() ? "0" : raw.replaceAll("[^0-9]", ""));
             }
         } catch (Exception e) {

@@ -27,11 +27,14 @@ CariKostKita adalah aplikasi pencarian kost berbasis **Android (Mobile Native)**
 ## Setup & Menjalankan Aplikasi
 1. Buka project di Android Studio (Android SDK API 24–34, JDK 17).
 2. Isi `local.properties` dengan `SUPABASE_URL` dan `SUPABASE_ANON_KEY` project Supabase kamu.
-3. Di Supabase Dashboard → SQL Editor, jalankan berurutan:
-   1. **`supabase/migrations/20261005_security_hardening.sql`**: RLS, trigger moderasi, trigger chat, `owner_favorite_count`, `admin_delete_user`.
-   2. **`supabase/migrations/20261006_industry_features.sql`**: peran Moderator, blokir & lapor pengguna, hapus akun sendiri,
-      dokumen verifikasi (bucket privat), rincian biaya & aturan, jadwal survei, ulasan, analitik, laporan crash, rate limit.
-
+3. Jangan jalankan migration database saat setup klien tanpa memeriksa project
+   dan schema target. Migration `20261005_security_hardening.sql` dan
+   `20261006_industry_features.sql` memakai UUID-era; jangan jalankan pada
+   Project A yang memakai ID domain bigint. Migration FastAPI berbasis identity
+   bridge harus ditinjau serta diterapkan berurutan oleh operator Supabase;
+   daftar urutannya ada di `docs/SCHEMA_AUDIT.md` dan `docs/OPEN_QUESTIONS.md`.
+   Migration lokal `20261018_activity_logs_fastapi.sql` belum diverifikasi
+   dengan PostgreSQL fixture atau diterapkan ke production.
    Jangan jalankan `supabase_update_queries.sql` (usang).
 4. Di Supabase → Authentication → URL Configuration, tambahkan Redirect URL
    `carikostkita://reset-callback` (reset kata sandi) dan `carikostkita://login-callback`.

@@ -21,7 +21,6 @@ import com.carikostkita.data.model.ChatConversation;
 import com.carikostkita.data.model.ChatMessage;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.User;
-import com.carikostkita.data.remote.SupabaseRealtimeClient;
 import com.carikostkita.data.repository.ChatRepository;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.data.repository.KostRepository;
@@ -60,7 +59,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     private UserRepository userRepository;
     private SessionManager sessionManager;
     private ChatBubbleAdapter bubbleAdapter;
-    private SupabaseRealtimeClient realtimeClient;
 
     private String conversationId = null;
     private String idKost = null;
@@ -96,7 +94,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         initViews();
         setupRecyclerView();
         setupQuickReplies();
-        setupRealtime();
         loadOrInitializeChat();
         fetchKostContextDetails();
         refreshBlockedState();
@@ -426,37 +423,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         chipQuick4.setOnClickListener(listener);
     }
 
-    private void setupRealtime() {
-        realtimeClient = new SupabaseRealtimeClient();
-        realtimeClient.setListener(new SupabaseRealtimeClient.MessageListener() {
-            @Override
-            public void onMessageReceived(com.carikostkita.data.remote.dto.MessageDto msg) {
-                if (msg == null) return;
-                // Jika pesan dari lawan bicara
-                if (msg.senderId != null && !msg.senderId.equals(currentUserId)) {
-                    ChatMessage chatMsg = new ChatMessage(msg.id, msg.chatId, msg.senderId, msg.message, msg.createdAt, true);
-                    bubbleAdapter.addMessage(chatMsg);
-                    layoutEmpty.setVisibility(View.GONE);
-                    rvMessages.scrollToPosition(bubbleAdapter.getItemCount() - 1);
-                    // Tandai langsung sebagai dibaca karena chat room sedang terbuka
-                    if (conversationId != null && !conversationId.isEmpty()) {
-                        chatRepository.markConversationRead(conversationId, currentUserId);
-                    }
-                }
-            }
-
-            @Override
-            public void onMessageUpdated(com.carikostkita.data.remote.dto.MessageDto msg) {
-                if (msg == null) return;
-                if (msg.isRead != null && msg.isRead) {
-                    if (msg.senderId != null && msg.senderId.equals(currentUserId)) {
-                        bubbleAdapter.updateMessageRead(msg.id);
-                    }
-                }
-            }
-        });
-    }
-
     private void fetchCounterpartProfileIfNeeded() {
         String counterpartId = (currentUserId != null && currentUserId.equals(idPemilik)) ? idPencari : idPemilik;
         if (counterpartId == null || counterpartId.trim().isEmpty()) return;
@@ -486,7 +452,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     private void loadOrInitializeChat() {
         pbLoading.setVisibility(View.VISIBLE);
         if (conversationId != null && !conversationId.isEmpty()) {
-            realtimeClient.connect(conversationId);
             loadMessages();
             if (idPemilik == null || idPemilik.isEmpty() || idPencari == null || idPencari.isEmpty() ||
                     avatarCounterpart == null || avatarCounterpart.isEmpty() || idKost == null || idKost.isEmpty()) {
@@ -562,7 +527,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
         fetchCounterpartProfileIfNeeded();
         refreshBlockedState();
-        realtimeClient.connect(conversationId);
     }
 
     private void loadMessages() {
@@ -709,7 +673,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (conversationId != null && !conversationId.isEmpty()) {
-            realtimeClient.connect(conversationId);
             pollHandler.removeCallbacks(pollRunnable);
             pollHandler.postDelayed(pollRunnable, 3500);
         }
@@ -719,13 +682,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         pollHandler.removeCallbacks(pollRunnable);
-        realtimeClient.disconnect();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         pollHandler.removeCallbacks(pollRunnable);
-        realtimeClient.disconnect();
     }
 }

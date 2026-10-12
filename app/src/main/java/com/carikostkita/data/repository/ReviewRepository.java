@@ -2,73 +2,90 @@ package com.carikostkita.data.repository;
 
 import android.content.Context;
 import com.carikostkita.data.model.Review;
-import com.carikostkita.data.model.SurveyRequest;
-import com.google.gson.JsonObject;
+import com.carikostkita.data.remote.FastApiReviewService;
+import com.carikostkita.data.remote.FastApiSurveyService;
+import com.carikostkita.data.remote.SupabaseClient;
+import com.carikostkita.data.remote.dto.ReviewDto;
+import com.carikostkita.data.remote.dto.ReviewListResponse;
+import com.carikostkita.data.remote.dto.ReviewResponse;
+import com.carikostkita.data.remote.dto.ReviewSubmitRequest;
+import com.carikostkita.data.remote.dto.SurveyEligibilityResponse;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import retrofit2.Response;
 
-/** Ulasan & rating. Hanya pencari dengan survei SELESAI yang boleh menulis (dijaga RLS). */
+/** Reviews read through FastAPI; writing requires a completed survey for the listing. */
 public class ReviewRepository extends BaseRepository {
+
+    private final FastApiReviewService reviewService;
+    private final FastApiSurveyService surveyService;
 
     public ReviewRepository(Context context) {
         super(context);
+        reviewService = SupabaseClient.getInstance().createReviewService();
+        surveyService = SupabaseClient.getInstance().createSurveyService();
+    }
+
+    private String bearer() throws IOException {
+        String token = session.getAccessToken();
+        if (token == null || token.isEmpty()) throw new IOException("Sesi kamu sudah berakhir. Silakan masuk lagi.");
+        if (session.isTokenExpired()) token = SupabaseClient.getInstance().refreshTokenBlocking(token);
+        if (token == null || token.isEmpty()) throw new IOException("Sesi kamu sudah berakhir. Silakan masuk lagi.");
+        return "Bearer " + token;
+    }
+
+    private static long numericId(String value) throws IOException {
+        try {
+            long id = Long.parseLong(value);
+            if (id <= 0) throw new NumberFormatException("non-positive ID");
+            return id;
+        } catch (Exception e) {
+            throw new IOException("ID kost tidak valid.", e);
+        }
     }
 
     public void list(String kostId, DataCallback<List<Review>> callback) {
         async("listReviews", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put("kost_id", "eq." + kostId);
-            List<JsonObject> rows = check("listReviews", db.select("reviews", f, "*", "created_at.desc").execute());
-            List<Review> list = new ArrayList<>();
-            if (rows != null) for (JsonObject o : rows) {
-                Review r = new Review();
-                r.id = str(o, "id");
-                r.kostId = str(o, "kost_id");
-                r.userId = str(o, "user_id");
-                r.namaUser = str(o, "nama_user");
-                r.rating = integer(o, "rating", 0);
-                r.komentar = str(o, "komentar");
-                r.createdAt = str(o, "created_at");
-                list.add(r);
+            Response<ReviewListResponse> response = reviewService
+                    .list(null, numericId(kostId), 1, 100).execute();
+            ReviewListResponse body = check("listReviews", response);
+            List<Review> reviews = new ArrayList<>();
+            if (body != null && body.data != null) {
+                for (ReviewDto dto : body.data) reviews.add(map(dto));
             }
-            return list;
+            return reviews;
         });
     }
 
-    /** Boleh menulis ulasan bila survei pencari untuk kost ini sudah SELESAI. */
     public void canReview(String kostId, DataCallback<Boolean> callback) {
         async("canReview", callback, () -> {
             if (!session.isLoggedIn()) return false;
-            Map<String, String> f = new HashMap<>();
-            f.put("pencari_id", "eq." + session.getUserUid());
-            f.put("kost_id", "eq." + kostId);
-            f.put("status", "eq." + SurveyRequest.SELESAI);
-            List<JsonObject> rows = check("canReview", db.select("survey_requests", f, "id", null).execute());
-            return rows != null && !rows.isEmpty();
+            Response<SurveyEligibilityResponse> response = surveyService
+                    .reviewEligibility(bearer(), numericId(kostId)).execute();
+            SurveyEligibilityResponse body = check("canReview", response);
+            return body != null && body.eligible;
         });
     }
 
-    /** Tulis atau perbarui ulasan milik sendiri (upsert per kost). */
     public void submit(String kostId, int rating, String komentar, DataCallback<Boolean> callback) {
         async("submitReview", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put("kost_id", "eq." + kostId);
-            f.put("user_id", "eq." + session.getUserUid());
-            List<JsonObject> existing = check("findReview", db.select("reviews", f, "id", null).execute());
-            JsonObject body = new JsonObject();
-            body.addProperty("rating", rating);
-            body.addProperty("komentar", komentar);
-            body.addProperty("nama_user", session.getUserName());
-            if (existing != null && !existing.isEmpty()) {
-                check("updateReview", db.patch("reviews", f, body).execute());
-            } else {
-                body.addProperty("kost_id", kostId);
-                body.addProperty("user_id", session.getUserUid());
-                check("insertReview", db.insert("reviews", body).execute());
-            }
-            return true;
+            Response<ReviewResponse> response = reviewService.submit(
+                    bearer(), numericId(kostId), new ReviewSubmitRequest(rating, komentar)
+            ).execute();
+            ReviewResponse body = check("submitReview", response);
+            return body != null && body.data != null;
         });
+    }
+
+    private static Review map(ReviewDto dto) {
+        Review review = new Review();
+        review.id = dto.id;
+        review.kostId = dto.kostId;
+        review.namaUser = dto.namaUser;
+        review.rating = dto.rating;
+        review.komentar = dto.komentar;
+        review.createdAt = dto.createdAt;
+        return review;
     }
 }

@@ -1,13 +1,21 @@
 package com.carikostkita.data.repository;
 
 import android.content.Context;
-import com.google.gson.JsonObject;
+import com.carikostkita.data.remote.FastApiBlockService;
+import com.carikostkita.data.remote.FastApiSafetyService;
+import com.carikostkita.data.remote.SupabaseClient;
+import com.carikostkita.data.remote.dto.BlockStatusResponse;
+import com.carikostkita.data.remote.dto.UserReportCreateRequest;
+import com.carikostkita.data.remote.dto.UserReportResponse;
+import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import retrofit2.Response;
 
 /** Blokir & laporkan pengguna, serta penghapusan akun sendiri. */
 public class SafetyRepository extends BaseRepository {
+
+    private final FastApiBlockService blockService;
+    private final FastApiSafetyService safetyService;
 
     public static final String[] USER_REPORT_REASONS = {
             "Penipuan / minta transfer di luar kesepakatan",
@@ -19,60 +27,76 @@ public class SafetyRepository extends BaseRepository {
 
     public SafetyRepository(Context context) {
         super(context);
+        this.blockService = SupabaseClient.getInstance().createBlockService();
+        this.safetyService = SupabaseClient.getInstance().createSafetyService();
+    }
+
+    private String blockBearer() throws IOException {
+        String token = session.getAccessToken();
+        if (token == null || token.isEmpty()) throw new IOException("Sesi kamu sudah berakhir. Silakan masuk lagi.");
+        if (session.isTokenExpired()) token = SupabaseClient.getInstance().refreshTokenBlocking(token);
+        if (token == null || token.isEmpty()) throw new IOException("Sesi kamu sudah berakhir. Silakan masuk lagi.");
+        return "Bearer " + token;
+    }
+
+    private static long appUserId(String value) throws IOException {
+        try {
+            long id = Long.parseLong(value);
+            if (id <= 0) throw new NumberFormatException("non-positive ID");
+            return id;
+        } catch (Exception e) {
+            throw new IOException("ID pengguna tidak valid.", e);
+        }
     }
 
     /** True bila salah satu pihak memblokir pihak lain. */
     public void isBlockedWith(String otherId, DataCallback<Boolean> callback) {
         async("isBlocked", callback, () -> {
-            String me = session.getUserUid();
-            Map<String, String> f = new HashMap<>();
-            f.put("or", "(and(blocker_id.eq." + me + ",blocked_id.eq." + otherId + "),and(blocker_id.eq." + otherId + ",blocked_id.eq." + me + "))");
-            List<JsonObject> rows = check("isBlocked", db.select("user_blocks", f, "blocker_id", null).execute());
-            return rows != null && !rows.isEmpty();
+            Response<BlockStatusResponse> response = blockService
+                    .readStatus(blockBearer(), appUserId(otherId)).execute();
+            BlockStatusResponse body = check("isBlocked", response);
+            return body != null && (Boolean.TRUE.equals(body.blockedByMe) || Boolean.TRUE.equals(body.blockedMe));
         });
     }
 
     /** True bila SAYA yang memblokir (hanya saya yang bisa membuka blokir). */
     public void isBlockedByMe(String otherId, DataCallback<Boolean> callback) {
         async("isBlockedByMe", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put("blocker_id", "eq." + session.getUserUid());
-            f.put("blocked_id", "eq." + otherId);
-            List<JsonObject> rows = check("isBlockedByMe", db.select("user_blocks", f, "blocker_id", null).execute());
-            return rows != null && !rows.isEmpty();
+            Response<BlockStatusResponse> response = blockService
+                    .readStatus(blockBearer(), appUserId(otherId)).execute();
+            BlockStatusResponse body = check("isBlockedByMe", response);
+            return body != null && Boolean.TRUE.equals(body.blockedByMe);
         });
     }
 
     public void block(String otherId, DataCallback<Boolean> callback) {
         async("block", callback, () -> {
-            JsonObject body = new JsonObject();
-            body.addProperty("blocker_id", session.getUserUid());
-            body.addProperty("blocked_id", otherId);
-            check("block", db.insert("user_blocks", body).execute());
-            return true;
+            Response<BlockStatusResponse> response = blockService
+                    .block(blockBearer(), appUserId(otherId)).execute();
+            BlockStatusResponse body = check("block", response);
+            return body != null && Boolean.TRUE.equals(body.blocked);
         });
     }
 
     public void unblock(String otherId, DataCallback<Boolean> callback) {
         async("unblock", callback, () -> {
-            Map<String, String> f = new HashMap<>();
-            f.put("blocker_id", "eq." + session.getUserUid());
-            f.put("blocked_id", "eq." + otherId);
-            check("unblock", db.remove("user_blocks", f).execute());
-            return true;
+            Response<BlockStatusResponse> response = blockService
+                    .unblock(blockBearer(), appUserId(otherId)).execute();
+            BlockStatusResponse body = check("unblock", response);
+            return body != null && Boolean.FALSE.equals(body.blocked);
         });
     }
 
     public void reportUser(String reportedId, String chatId, String reason, String detail, DataCallback<Boolean> callback) {
         async("reportUser", callback, () -> {
-            JsonObject body = new JsonObject();
-            body.addProperty("reporter_id", session.getUserUid());
-            body.addProperty("reported_id", reportedId);
-            if (chatId != null) body.addProperty("chat_id", chatId);
-            body.addProperty("alasan", reason);
-            if (detail != null && !detail.isEmpty()) body.addProperty("detail", detail);
-            check("reportUser", db.insert("user_reports", body).execute());
-            return true;
+            if (chatId == null) throw new IOException("Percakapan laporan tidak valid.");
+            long verifiedChatId = appUserId(chatId);
+            Response<UserReportResponse> response = safetyService.reportUser(
+                    blockBearer(), verifiedChatId,
+                    new UserReportCreateRequest(appUserId(reportedId), reason, detail)
+            ).execute();
+            UserReportResponse body = check("reportUser", response);
+            return body != null && body.submitted;
         });
     }
 

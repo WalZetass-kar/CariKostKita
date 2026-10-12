@@ -11,7 +11,7 @@ public class ChatDto {
     @SerializedName("kost_id")
     public String kostId;
 
-    @SerializedName("pencari_id")
+    @SerializedName("user_id")
     public String pencariId;
 
     @SerializedName("owner_id")
@@ -22,6 +22,21 @@ public class ChatDto {
 
     @SerializedName("thumbnail_url")
     public String thumbnailUrl;
+
+    @SerializedName("pencari_name")
+    public String pencariName;
+
+    @SerializedName("owner_name")
+    public String ownerName;
+
+    @SerializedName("pencari_avatar_url")
+    public String pencariAvatarUrl;
+
+    @SerializedName("owner_avatar_url")
+    public String ownerAvatarUrl;
+
+    @SerializedName("owner_role")
+    public String ownerRole;
 
     @SerializedName("last_message")
     public String lastMessage;

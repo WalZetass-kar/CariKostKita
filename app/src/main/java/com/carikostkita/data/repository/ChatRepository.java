@@ -6,207 +6,150 @@ import android.os.Looper;
 import android.util.Log;
 import com.carikostkita.data.model.ChatConversation;
 import com.carikostkita.data.model.ChatMessage;
-import com.carikostkita.data.remote.SupabaseAuthService;
+import com.carikostkita.data.remote.FastApiAuthService;
+import com.carikostkita.data.remote.FastApiChatService;
 import com.carikostkita.data.remote.SupabaseClient;
-import com.carikostkita.data.remote.SupabaseDbService;
 import com.carikostkita.data.remote.dto.AuthResponse;
 import com.carikostkita.data.remote.dto.ChatDto;
-import com.carikostkita.data.remote.dto.ChatUpdateDto;
-import com.carikostkita.data.remote.dto.KostDto;
+import com.carikostkita.data.remote.dto.ChatListResponse;
+import com.carikostkita.data.remote.dto.ChatResponse;
+import com.carikostkita.data.remote.dto.CreateChatRequest;
 import com.carikostkita.data.remote.dto.MessageDto;
-import com.carikostkita.data.remote.dto.ReadUpdateDto;
+import com.carikostkita.data.remote.dto.MessageListResponse;
+import com.carikostkita.data.remote.dto.MessageResponse;
 import com.carikostkita.data.remote.dto.RefreshRequest;
-import com.carikostkita.data.remote.dto.UserDto;
-import android.text.TextUtils;
+import com.carikostkita.data.remote.dto.SendMessageRequest;
 import com.carikostkita.util.ErrorMessages;
 import com.carikostkita.util.SessionManager;
-import java.text.SimpleDateFormat;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import retrofit2.Response;
 
+/** Chat data access through FastAPI; no client-supplied participant ID is trusted. */
 public class ChatRepository {
     private static final String TAG = "ChatRepository";
+    private static final int PAGE_SIZE = 100;
 
-    private final SupabaseDbService dbService;
-    private final SupabaseAuthService authService;
+    private final FastApiChatService chatService;
+    private final FastApiAuthService authService;
     private final SessionManager sessionManager;
     private final ExecutorService executor;
     private final Handler mainHandler;
 
     public ChatRepository(Context context) {
-        this.dbService = SupabaseClient.getInstance().createService(SupabaseDbService.class);
-        this.authService = SupabaseClient.getInstance().createService(SupabaseAuthService.class);
+        SupabaseClient client = SupabaseClient.getInstance();
+        this.chatService = client.createChatService();
+        this.authService = client.createAuthService();
         this.sessionManager = new SessionManager(context);
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
     }
 
-    private void ensureValidAuthToken() {
-        String currentToken = sessionManager.getAccessToken();
-        if (currentToken != null && !currentToken.isEmpty()) {
-            SupabaseClient.getInstance().setAccessToken(currentToken);
-        }
+    private String getBearerToken() throws IOException {
+        String token = sessionManager.getAccessToken();
+        if (token == null || token.isEmpty()) throw new IOException(ErrorMessages.SESSION_EXPIRED);
         if (sessionManager.isTokenExpired()) {
             String refreshToken = sessionManager.getRefreshToken();
-            if (refreshToken != null && !refreshToken.isEmpty()) {
-                try {
-                    Response<AuthResponse> refreshRes = authService.refreshToken(new RefreshRequest(refreshToken)).execute();
-                    if (refreshRes.isSuccessful() && refreshRes.body() != null) {
-                        AuthResponse authBody = refreshRes.body();
-                        sessionManager.saveTokens(authBody.accessToken, authBody.refreshToken, authBody.expiresIn);
-                        SupabaseClient.getInstance().setAccessToken(authBody.accessToken);
-                    }
-                } catch (Exception ignored) {}
+            if (refreshToken == null || refreshToken.isEmpty()) throw new IOException(ErrorMessages.SESSION_EXPIRED);
+            try {
+                Response<AuthResponse> refreshed = authService.refreshToken(new RefreshRequest(refreshToken)).execute();
+                if (!refreshed.isSuccessful() || refreshed.body() == null
+                        || refreshed.body().accessToken == null || refreshed.body().accessToken.isEmpty()) {
+                    throw new IOException(ErrorMessages.SESSION_EXPIRED);
+                }
+                AuthResponse auth = refreshed.body();
+                sessionManager.saveTokens(auth.accessToken, auth.refreshToken, auth.expiresIn);
+                token = auth.accessToken;
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException(ErrorMessages.SESSION_EXPIRED, e);
             }
         }
+        return "Bearer " + token;
     }
 
-    public void getOrCreateConversation(String idKost, String idPencari, String idPemilik, DataCallback<ChatConversation> callback) {
-        getOrCreateConversation(idKost, idPencari, idPemilik, true, callback);
-    }
-
-    /**
-     * Cari percakapan pencari-pemilik untuk kost ini. Bila createIfMissing false dan belum
-     * ada, callback menerima null — percakapan baru dibuat saat pesan pertama dikirim.
-     */
-    public void getOrCreateConversation(String idKost, String idPencari, String idPemilik, boolean createIfMissing,
+    public void getOrCreateConversation(String kostId, String seekerId, String ownerId,
                                         DataCallback<ChatConversation> callback) {
+        getOrCreateConversation(kostId, seekerId, ownerId, true, callback);
+    }
+
+    public void getOrCreateConversation(String kostId, String seekerId, String ownerId,
+                                        boolean createIfMissing, DataCallback<ChatConversation> callback) {
         executor.execute(() -> {
             try {
-                ensureValidAuthToken();
-
-                if (idPencari == null || idPencari.trim().isEmpty()) {
-                    postError(callback, "Sesi akun Anda tidak valid. Silakan login kembali.");
-                    return;
-                }
-
-                if (idKost == null || idKost.trim().isEmpty()) {
+                String bearer = getBearerToken();
+                if (kostId == null || !kostId.matches("[0-9]+")) {
                     postError(callback, "Data kost tidak valid.");
                     return;
                 }
-
-                // Jika owner id kosong di intent, ambil dari tabel kosts
-                String resolvedOwnerId = idPemilik;
-                String namaKost = "Informasi Kost";
-                String thumb = "";
-                try {
-                    Response<List<KostDto>> kostRes = dbService.getKostById("eq." + idKost, "owner_id,nama_kost,thumbnail_url").execute();
-                    if (kostRes.isSuccessful() && kostRes.body() != null && !kostRes.body().isEmpty()) {
-                        KostDto kd = kostRes.body().get(0);
-                        if (resolvedOwnerId == null || resolvedOwnerId.trim().isEmpty()) {
-                            resolvedOwnerId = kd.ownerId;
-                        }
-                        if (kd.namaKost != null && !kd.namaKost.isEmpty()) namaKost = kd.namaKost;
-                        if (kd.thumbnailUrl != null) thumb = kd.thumbnailUrl;
-                    }
-                } catch (Exception ignored) {}
-
-                if (resolvedOwnerId == null || resolvedOwnerId.trim().isEmpty()) {
-                    postError(callback, "Pemilik kost ini belum terdaftar di sistem.");
-                    return;
-                }
-
-                // Pencegahan Self-Chat: Pencari tidak boleh chat dengan kost miliknya sendiri
-                if (idPencari.equals(resolvedOwnerId)) {
-                    postError(callback, "Anda tidak dapat memulai percakapan chat dengan properti kost milik Anda sendiri.");
-                    return;
-                }
-
-                // Cek apakah percakapan antara pencari dan pemilik untuk kost ini sudah ada
-                Map<String, String> filters = new HashMap<>();
-                filters.put("kost_id", "eq." + idKost);
-                filters.put("pencari_id", "eq." + idPencari);
-                filters.put("owner_id", "eq." + resolvedOwnerId);
-
-                Response<List<ChatDto>> res = dbService.getChats(filters, "*", null).execute();
-                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(mapDtoToConversation(res.body().get(0))));
-                    return;
-                }
-                if (!res.isSuccessful()) {
-                    postError(callback, ErrorMessages.fromResponse("findChat", res));
+                ChatDto existing = findConversation(bearer, kostId);
+                if (existing != null) {
+                    ChatConversation conversation = mapDtoToConversation(existing);
+                    mainHandler.post(() -> callback.onSuccess(conversation));
                     return;
                 }
                 if (!createIfMissing) {
                     mainHandler.post(() -> callback.onSuccess(null));
                     return;
                 }
-
-                // Ambil nama pencari & nama pemilik
-                String namaPencari = "Pencari Kost";
-                String namaPemilik = "Pemilik Kost";
-                try {
-                    Response<List<UserDto>> uRes = dbService.getUserById("in.(" + idPencari + "," + resolvedOwnerId + ")", "id,nama").execute();
-                    if (uRes.isSuccessful() && uRes.body() != null) {
-                        for (UserDto u : uRes.body()) {
-                            if (idPencari.equals(u.id) && u.nama != null) namaPencari = u.nama;
-                            if (resolvedOwnerId.equals(u.id) && u.nama != null) namaPemilik = u.nama;
-                        }
-                    }
-                } catch (Exception ignored) {}
-
-                ChatDto newChat = new ChatDto();
-                newChat.kostId = idKost;
-                newChat.pencariId = idPencari;
-                newChat.ownerId = resolvedOwnerId;
-                newChat.namaKost = namaKost;
-                newChat.thumbnailUrl = thumb;
-                
-                Response<List<ChatDto>> createRes = dbService.insertChat(newChat).execute();
-                if (createRes.isSuccessful() && createRes.body() != null && !createRes.body().isEmpty()) {
-                    ChatConversation conv = mapDtoToConversation(createRes.body().get(0));
-                    conv.setNamaPencari(namaPencari);
-                    conv.setNamaPemilik(namaPemilik);
-                    mainHandler.post(() -> callback.onSuccess(conv));
+                Response<ChatResponse> response = chatService
+                        .createChat(bearer, new CreateChatRequest(kostId)).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    ChatConversation conversation = mapDtoToConversation(response.body().data);
+                    mainHandler.post(() -> callback.onSuccess(conversation));
                 } else {
-                    String errStr = createRes.errorBody() != null ? createRes.errorBody().string() : "";
-                    Log.e(TAG, "Gagal membuat chat: code=" + createRes.code() + ", error=" + errStr);
-
-                    // Penanganan kondisi duplikat atau race condition
-                    if (errStr.contains("duplicate") || errStr.contains("unique") || errStr.contains("23505")) {
-                        Response<List<ChatDto>> retryRes = dbService.getChats(filters, "*", null).execute();
-                        if (retryRes.isSuccessful() && retryRes.body() != null && !retryRes.body().isEmpty()) {
-                            mainHandler.post(() -> callback.onSuccess(mapDtoToConversation(retryRes.body().get(0))));
-                            return;
-                        }
-                    }
-
-                    postError(callback, ErrorMessages.fromCode("insertChat", createRes.code(), errStr));
+                    postError(callback, ErrorMessages.fromResponse("createChat", response));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Exception membuat chat: " + e.getMessage(), e);
-                postError(callback, ErrorMessages.fromException("Gagal membuat percakapan", e));
+                Log.e(TAG, "Unable to open conversation", e);
+                postError(callback, ErrorMessages.fromException("createChat", e));
             }
         });
     }
 
-    public void getOrCreateConversation(int legacyKostId, int legacyPencariId, int legacyPemilikId, DataCallback<ChatConversation> callback) {
-        getOrCreateConversation(String.valueOf(legacyKostId), sessionManager.getUserUid(), String.valueOf(legacyPemilikId), callback);
+    /** Legacy overloads intentionally ignore client-supplied user IDs. */
+    public void getOrCreateConversation(int legacyKostId, int legacySeekerId, int legacyOwnerId,
+                                        DataCallback<ChatConversation> callback) {
+        getOrCreateConversation(String.valueOf(legacyKostId), sessionManager.getUserUid(),
+                String.valueOf(legacyOwnerId), callback);
     }
 
-    public void getConversationById(String idConversation, DataCallback<ChatConversation> callback) {
+    private ChatDto findConversation(String bearer, String kostId) throws IOException {
+        String currentUserId = sessionManager.getUserUid();
+        for (int page = 1; page <= 20; page++) {
+            Response<ChatListResponse> response = chatService.listChats(bearer, page, PAGE_SIZE, kostId).execute();
+            if (!response.isSuccessful() || response.body() == null) {
+                throw new IOException("Unable to load conversations (HTTP " + response.code() + ").");
+            }
+            ChatListResponse body = response.body();
+            if (body.data != null) {
+                for (ChatDto chat : body.data) {
+                    if (kostId.equals(chat.kostId) && currentUserId != null
+                            && currentUserId.equals(chat.pencariId)) return chat;
+                }
+            }
+            if (body.pagination == null || !body.pagination.has_more) break;
+        }
+        return null;
+    }
+
+    public void getConversationById(String conversationId, DataCallback<ChatConversation> callback) {
         executor.execute(() -> {
             try {
-                Map<String, String> filters = new HashMap<>();
-                filters.put("id", "eq." + idConversation);
-                Response<List<ChatDto>> res = dbService.getChats(filters, "*", null).execute();
-                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(mapDtoToConversation(res.body().get(0))));
+                Response<ChatResponse> response = chatService
+                        .readChat(getBearerToken(), conversationId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    ChatConversation conversation = mapDtoToConversation(response.body().data);
+                    mainHandler.post(() -> callback.onSuccess(conversation));
                 } else {
-                    postError(callback, "Percakapan tidak ditemukan");
+                    postError(callback, ErrorMessages.fromResponse("readChat", response));
                 }
             } catch (Exception e) {
-                postError(callback, ErrorMessages.fromException("Error memuat percakapan", e));
+                postError(callback, ErrorMessages.fromException("readChat", e));
             }
         });
     }
@@ -215,209 +158,132 @@ public class ChatRepository {
         getConversationById(String.valueOf(legacyId), callback);
     }
 
-    public void getConversationsForUser(String idUser, DataCallback<List<ChatConversation>> callback) {
+    public void getConversationsForUser(String ignoredUserId, DataCallback<List<ChatConversation>> callback) {
         executor.execute(() -> {
             try {
-                if (idUser == null || idUser.isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
-                    return;
+                String bearer = getBearerToken();
+                List<ChatConversation> conversations = new ArrayList<>();
+                for (int page = 1; page <= 20; page++) {
+                    Response<ChatListResponse> response = chatService.listChats(bearer, page, PAGE_SIZE, null).execute();
+                    if (!response.isSuccessful() || response.body() == null) {
+                        postError(callback, ErrorMessages.fromResponse("getConversations", response));
+                        return;
+                    }
+                    ChatListResponse body = response.body();
+                    if (body.data != null) {
+                        for (ChatDto dto : body.data) conversations.add(mapDtoToConversation(dto));
+                    }
+                    if (body.pagination == null || !body.pagination.has_more) break;
                 }
-
-                ensureValidAuthToken();
-
-                Map<String, String> filters = new HashMap<>();
-                filters.put("or", "(pencari_id.eq." + idUser + ",owner_id.eq." + idUser + ")");
-
-                Response<List<ChatDto>> res = dbService.getChats(filters, "*", "last_message_at.desc.nullslast,created_at.desc").execute();
-                if (res.isSuccessful() && res.body() != null) {
-                    List<ChatDto> chatDtos = res.body();
-                    Set<String> userIds = new HashSet<>();
-                    for (ChatDto d : chatDtos) {
-                        if (d.pencariId != null && !d.pencariId.isEmpty()) userIds.add(d.pencariId);
-                        if (d.ownerId != null && !d.ownerId.isEmpty()) userIds.add(d.ownerId);
-                    }
-
-                    Map<String, UserDto> userMap = new HashMap<>();
-                    if (!userIds.isEmpty()) {
-                        try {
-                            String inQuery = "in.(" + TextUtils.join(",", userIds) + ")";
-                            Response<List<UserDto>> uRes = dbService.getUserById(inQuery, "id,nama,avatar_url,role").execute();
-                            if (uRes.isSuccessful() && uRes.body() != null) {
-                                for (UserDto u : uRes.body()) {
-                                    if (u.id != null) userMap.put(u.id, u);
-                                }
-                            }
-                        } catch (Exception ignored) {}
-                    }
-
-                    List<ChatConversation> list = new ArrayList<>();
-                    for (ChatDto d : chatDtos) {
-                        ChatConversation conv = mapDtoToConversation(d);
-
-                        boolean isCurrentUserSeeker = idUser.equals(d.pencariId);
-                        String counterpartId = isCurrentUserSeeker ? d.ownerId : d.pencariId;
-                        int unread = isCurrentUserSeeker ? (d.unreadPencari != null ? d.unreadPencari : 0)
-                                : (d.unreadOwner != null ? d.unreadOwner : 0);
-                        conv.setUnreadCount(unread);
-
-                        UserDto counterpartUser = userMap.get(counterpartId);
-                        if (counterpartUser != null) {
-                            if (isCurrentUserSeeker) {
-                                if (counterpartUser.nama != null && !counterpartUser.nama.isEmpty()) {
-                                    conv.setNamaPemilik(counterpartUser.nama);
-                                }
-                            } else {
-                                if (counterpartUser.nama != null && !counterpartUser.nama.isEmpty()) {
-                                    conv.setNamaPencari(counterpartUser.nama);
-                                }
-                            }
-                            conv.setAvatarLawan(counterpartUser.avatarUrl);
-                            conv.setRoleLawan(counterpartUser.role);
-                        }
-                        list.add(conv);
-                    }
-                    mainHandler.post(() -> callback.onSuccess(list));
-                } else {
-                    postError(callback, ErrorMessages.fromResponse("getConversations", res));
-                }
+                mainHandler.post(() -> callback.onSuccess(conversations));
             } catch (Exception e) {
-                postError(callback, ErrorMessages.fromException("Gagal memuat percakapan", e));
+                postError(callback, ErrorMessages.fromException("getConversations", e));
             }
         });
     }
 
-    public void markConversationRead(String idConversation, String currentUserId) {
-        executor.execute(() -> {
-            try {
-                ensureValidAuthToken();
-                dbService.markMessagesRead("eq." + idConversation, "neq." + currentUserId, new ReadUpdateDto()).execute();
-
-                Response<List<ChatDto>> cRes = dbService.getChats(Collections.singletonMap("id", "eq." + idConversation), "pencari_id,owner_id", null).execute();
-                if (cRes.isSuccessful() && cRes.body() != null && !cRes.body().isEmpty()) {
-                    ChatDto convChat = cRes.body().get(0);
-                    ChatUpdateDto updateDto = new ChatUpdateDto();
-                    if (currentUserId.equals(convChat.pencariId)) {
-                        updateDto.unreadPencari = 0;
-                    } else if (currentUserId.equals(convChat.ownerId)) {
-                        updateDto.unreadOwner = 0;
-                    }
-                    dbService.updateChat("eq." + idConversation, updateDto).execute();
-                }
-            } catch (Exception ignored) {}
-        });
-    }
-
-    public void getConversationsForUser(int legacyId, DataCallback<List<ChatConversation>> callback) {
+    public void getConversationsForUser(int ignoredLegacyId, DataCallback<List<ChatConversation>> callback) {
         getConversationsForUser(sessionManager.getUserUid(), callback);
     }
 
-    public void getMessages(String idConversation, String currentUserId, DataCallback<List<ChatMessage>> callback) {
+    public void markConversationRead(String conversationId, String ignoredUserId) {
         executor.execute(() -> {
             try {
-                ensureValidAuthToken();
+                chatService.markRead(getBearerToken(), conversationId).execute();
+            } catch (Exception e) {
+                Log.w(TAG, "Unable to mark conversation read", e);
+            }
+        });
+    }
 
-                // Tandai pesan sudah dibaca
-                try {
-                    dbService.markMessagesRead("eq." + idConversation, "neq." + currentUserId, new ReadUpdateDto()).execute();
-                } catch (Exception ignored) {}
-
-                Response<List<MessageDto>> res = dbService.getMessages("eq." + idConversation, "*", "created_at.asc").execute();
-                if (res.isSuccessful() && res.body() != null) {
-                    List<ChatMessage> list = new ArrayList<>();
-                    for (MessageDto m : res.body()) {
-                        ChatMessage item = new ChatMessage(
-                                m.id,
-                                m.chatId,
-                                m.senderId,
-                                m.message,
-                                m.createdAt != null ? m.createdAt : "",
-                                m.isRead != null && m.isRead
-                        );
-                        list.add(item);
+    public void getMessages(String conversationId, String ignoredUserId,
+                            DataCallback<List<ChatMessage>> callback) {
+        executor.execute(() -> {
+            try {
+                String bearer = getBearerToken();
+                Response<ResponseBody> readResponse = chatService.markRead(bearer, conversationId).execute();
+                if (!readResponse.isSuccessful()) {
+                    postError(callback, ErrorMessages.fromResponse("markChatRead", readResponse));
+                    return;
+                }
+                List<ChatMessage> messages = new ArrayList<>();
+                for (int page = 1; page <= 20; page++) {
+                    Response<MessageListResponse> response = chatService
+                            .listMessages(bearer, conversationId, page, PAGE_SIZE).execute();
+                    if (!response.isSuccessful() || response.body() == null) {
+                        postError(callback, ErrorMessages.fromResponse("getMessages", response));
+                        return;
                     }
-                    mainHandler.post(() -> callback.onSuccess(list));
-                } else {
-                    postError(callback, ErrorMessages.fromResponse("getMessages", res));
+                    MessageListResponse body = response.body();
+                    if (body.data != null) {
+                        for (MessageDto dto : body.data) {
+                            messages.add(new ChatMessage(dto.id, dto.chatId, dto.senderId, dto.message,
+                                    dto.createdAt != null ? dto.createdAt : "", dto.isRead != null && dto.isRead));
+                        }
+                    }
+                    if (body.pagination == null || !body.pagination.has_more) break;
                 }
+                mainHandler.post(() -> callback.onSuccess(messages));
             } catch (Exception e) {
-                postError(callback, ErrorMessages.fromException("Gagal memuat pesan", e));
+                postError(callback, ErrorMessages.fromException("getMessages", e));
             }
         });
     }
 
-    public void getMessages(int legacyIdConversation, int legacyUserId, DataCallback<List<ChatMessage>> callback) {
-        getMessages(String.valueOf(legacyIdConversation), sessionManager.getUserUid(), callback);
+    public void getMessages(int legacyConversationId, int ignoredLegacyUserId,
+                            DataCallback<List<ChatMessage>> callback) {
+        getMessages(String.valueOf(legacyConversationId), sessionManager.getUserUid(), callback);
     }
 
-    public void sendMessage(String idConversation, String idSender, String message, DataCallback<ChatMessage> callback) {
+    public void sendMessage(String conversationId, String ignoredSenderId, String message,
+                            DataCallback<ChatMessage> callback) {
         executor.execute(() -> {
             try {
-                ensureValidAuthToken();
-
-                MessageDto dto = new MessageDto(idConversation, idSender, message);
-                Response<List<MessageDto>> res = dbService.insertMessage(dto).execute();
-                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    MessageDto created = res.body().get(0);
-                    ChatMessage msg = new ChatMessage(
-                            created.id,
-                            created.chatId,
-                            created.senderId,
-                            created.message,
-                            created.createdAt,
-                            false
-                    );
-
-                    // Trigger on_message_inserted di database memperbarui last_message dan unread
-                    // secara atomik. Fallback ini hanya berjalan bila trigger belum dipasang.
-                    try {
-                        Response<List<ChatDto>> cRes = dbService.getChats(Collections.singletonMap("id", "eq." + idConversation),
-                                "pencari_id,owner_id,unread_pencari,unread_owner,last_message", null).execute();
-                        if (cRes.isSuccessful() && cRes.body() != null && !cRes.body().isEmpty()) {
-                            ChatDto currentChat = cRes.body().get(0);
-                            if (!message.equals(currentChat.lastMessage)) {
-                                ChatUpdateDto updateDto = new ChatUpdateDto();
-                                updateDto.lastMessage = message;
-                                updateDto.lastMessageAt = created.createdAt;
-                                if (idSender.equals(currentChat.pencariId)) {
-                                    updateDto.unreadOwner = (currentChat.unreadOwner != null ? currentChat.unreadOwner : 0) + 1;
-                                } else if (idSender.equals(currentChat.ownerId)) {
-                                    updateDto.unreadPencari = (currentChat.unreadPencari != null ? currentChat.unreadPencari : 0) + 1;
-                                }
-                                dbService.updateChat("eq." + idConversation, updateDto).execute();
-                            }
-                        }
-                    } catch (Exception ignored) {}
-
-                    mainHandler.post(() -> callback.onSuccess(msg));
+                Response<MessageResponse> response = chatService
+                        .sendMessage(getBearerToken(), conversationId, new SendMessageRequest(message))
+                        .execute();
+                if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                    MessageDto dto = response.body().data;
+                    ChatMessage sent = new ChatMessage(dto.id, dto.chatId, dto.senderId, dto.message,
+                            dto.createdAt, dto.isRead != null && dto.isRead);
+                    mainHandler.post(() -> callback.onSuccess(sent));
                 } else {
-                    postError(callback, ErrorMessages.fromResponse("sendMessage", res));
+                    postError(callback, ErrorMessages.fromResponse("sendMessage", response));
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Exception sendMessage: " + e.getMessage(), e);
-                postError(callback, ErrorMessages.fromException("Kesalahan pengiriman pesan", e));
+                Log.e(TAG, "Unable to send message", e);
+                postError(callback, ErrorMessages.fromException("sendMessage", e));
             }
         });
     }
 
-    public void sendMessage(int legacyIdConv, int legacyIdSender, String message, DataCallback<ChatMessage> callback) {
-        sendMessage(String.valueOf(legacyIdConv), sessionManager.getUserUid(), message, callback);
+    public void sendMessage(int legacyConversationId, int ignoredLegacySenderId, String message,
+                            DataCallback<ChatMessage> callback) {
+        sendMessage(String.valueOf(legacyConversationId), sessionManager.getUserUid(), message, callback);
     }
 
-    private ChatConversation mapDtoToConversation(ChatDto d) {
-        ChatConversation c = new ChatConversation();
-        c.setId(d.id);
-        c.setKostId(d.kostId);
-        c.setPencariId(d.pencariId);
-        c.setOwnerId(d.ownerId);
-        c.setNamaKost(d.namaKost);
-        c.setThumbnailKost(d.thumbnailUrl);
-        c.setLastMessage(d.lastMessage);
-        c.setLastMessageTime(d.lastMessageAt != null ? d.lastMessageAt : d.createdAt);
-        c.setUnreadCount(d.unreadPencari != null ? d.unreadPencari : 0);
-        return c;
+    private ChatConversation mapDtoToConversation(ChatDto dto) {
+        ChatConversation conversation = new ChatConversation();
+        conversation.setId(dto.id);
+        conversation.setKostId(dto.kostId);
+        conversation.setPencariId(dto.pencariId);
+        conversation.setOwnerId(dto.ownerId);
+        conversation.setNamaKost(dto.namaKost);
+        conversation.setThumbnailKost(dto.thumbnailUrl);
+        conversation.setNamaPencari(dto.pencariName);
+        conversation.setNamaPemilik(dto.ownerName);
+        conversation.setLastMessage(dto.lastMessage);
+        conversation.setLastMessageTime(dto.lastMessageAt != null ? dto.lastMessageAt : dto.createdAt);
+        String currentUserId = sessionManager.getUserUid();
+        boolean isSeeker = currentUserId != null && currentUserId.equals(dto.pencariId);
+        conversation.setAvatarLawan(isSeeker ? dto.ownerAvatarUrl : dto.pencariAvatarUrl);
+        conversation.setRoleLawan(isSeeker ? dto.ownerRole : "user");
+        // Production schema has no unread counters; do not invent them client-side.
+        conversation.setUnreadCount(0);
+        return conversation;
     }
 
-    private <T> void postError(DataCallback<T> callback, String msg) {
-        mainHandler.post(() -> callback.onError(msg));
+    private <T> void postError(DataCallback<T> callback, String message) {
+        mainHandler.post(() -> callback.onError(message));
     }
 }

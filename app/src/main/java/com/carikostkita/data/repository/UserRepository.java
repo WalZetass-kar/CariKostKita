@@ -6,7 +6,12 @@ import android.os.Looper;
 import com.carikostkita.data.model.Role;
 import com.carikostkita.data.model.User;
 import com.carikostkita.data.model.VerificationStatus;
-import com.carikostkita.data.remote.SupabaseAuthService;
+import com.carikostkita.data.remote.FastApiAuthService;
+import com.carikostkita.data.remote.FastApiProfileService;
+import com.carikostkita.data.remote.FastApiUserLookupService;
+import com.carikostkita.data.remote.FastApiOwnerVerificationService;
+import com.carikostkita.data.remote.FastApiAdminUserService;
+import com.carikostkita.data.remote.FastApiAvatarService;
 import com.carikostkita.data.remote.SupabaseClient;
 import com.carikostkita.data.remote.SupabaseDbService;
 import com.carikostkita.data.remote.dto.AuthRequest;
@@ -16,6 +21,18 @@ import com.carikostkita.data.remote.dto.SignUpRequest;
 import com.carikostkita.data.remote.dto.UpdatePasswordRequest;
 import com.carikostkita.data.remote.dto.UserDto;
 import com.carikostkita.data.remote.dto.UserUpdateDto;
+import com.carikostkita.data.remote.dto.ProfileUpdateRequest;
+import com.carikostkita.data.remote.dto.UserProfileResponse;
+import com.carikostkita.data.remote.dto.OwnerVerificationRequest;
+import com.carikostkita.data.remote.dto.OwnerVerificationResponse;
+import com.carikostkita.data.remote.dto.AdminUserDto;
+import com.carikostkita.data.remote.dto.AdminUserListResponse;
+import com.carikostkita.data.remote.dto.AdminUserModerationRequest;
+import com.carikostkita.data.remote.dto.AdminUserModerationResponse;
+import com.carikostkita.data.remote.dto.AvatarUploadResponse;
+import com.carikostkita.data.remote.dto.OwnerVerificationQueueResponse;
+import com.carikostkita.data.remote.dto.OwnerVerificationReviewRequest;
+import com.carikostkita.data.remote.dto.OwnerVerificationReviewResponse;
 import com.carikostkita.util.ErrorMessages;
 import com.carikostkita.util.SessionManager;
 import android.util.Base64;
@@ -26,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.net.Uri;
@@ -34,6 +52,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -47,13 +66,19 @@ public class UserRepository {
     public static final String EMAIL_CONFIRMATION_REQUIRED =
             "Akun berhasil dibuat. Buka email kamu dan ketuk tautan konfirmasi, lalu masuk dengan email dan kata sandi.";
     public static final String RESET_REDIRECT_URL = "carikostkita://reset-callback";
-    private final SupabaseAuthService authService;
+    private final FastApiAuthService authService;
+    private final FastApiProfileService profileService;
+    private final FastApiUserLookupService userLookupService;
+    private final FastApiOwnerVerificationService ownerVerificationService;
+    private final FastApiAdminUserService adminUserService;
+    private final FastApiAvatarService avatarService;
     private final SupabaseDbService dbService;
     private final SupabaseStorageService storageService;
     private final SessionManager sessionManager;
     private final ExecutorService executor;
     private final Handler mainHandler;
     private final Context context;
+    private final Map<String, String> pendingOwnerApplicationIds = new ConcurrentHashMap<>();
 
     public static class UserStats {
         public final int totalUsers;
@@ -78,7 +103,12 @@ public class UserRepository {
 
     public UserRepository(Context context) {
         this.context = context.getApplicationContext();
-        this.authService = SupabaseClient.getInstance().createService(SupabaseAuthService.class);
+        this.authService = SupabaseClient.getInstance().createAuthService();
+        this.profileService = SupabaseClient.getInstance().createProfileService();
+        this.userLookupService = SupabaseClient.getInstance().createUserLookupService();
+        this.ownerVerificationService = SupabaseClient.getInstance().createOwnerVerificationService();
+        this.adminUserService = SupabaseClient.getInstance().createAdminUserService();
+        this.avatarService = SupabaseClient.getInstance().createAvatarService();
         this.dbService = SupabaseClient.getInstance().createService(SupabaseDbService.class);
         this.storageService = SupabaseClient.getInstance().createService(SupabaseStorageService.class);
         this.sessionManager = new SessionManager(context);
@@ -151,9 +181,9 @@ public class UserRepository {
                 String uid = getUserIdFromJwt(accessToken);
                 String userEmail = null;
                 String userName = null;
-
                 try {
-                    Response<AuthResponse.AuthUser> authUserRes = authService.getCurrentAuthUser().execute();
+                    Response<AuthResponse.AuthUser> authUserRes = authService.getCurrentAuthUser(
+                            "Bearer " + accessToken).execute();
                     if (authUserRes.isSuccessful() && authUserRes.body() != null) {
                         AuthResponse.AuthUser authUser = authUserRes.body();
                         if (uid == null) uid = authUser.id;
@@ -173,30 +203,13 @@ public class UserRepository {
                     return;
                 }
 
-                // Ambil profil dari public.users
-                Response<List<UserDto>> profileRes = dbService.getUserById("eq." + uid, "*").execute();
-                if (profileRes.isSuccessful() && profileRes.body() != null && !profileRes.body().isEmpty()) {
-                    User user = mapDtoToUser(profileRes.body().get(0));
-                    sessionManager.createLoginSession(user, accessToken, refreshToken, expiresIn);
-                    mainHandler.post(() -> callback.onSuccess(user));
-                } else {
-                    // Profile belum ada di public.users, buat baru secara mandiri
-                    UserDto newProfile = new UserDto();
-                    newProfile.id = uid;
-                    newProfile.nama = (userName != null && !userName.isEmpty()) ? userName : (userEmail != null ? userEmail.split("@")[0] : "Pengguna Google");
-                    newProfile.email = userEmail != null ? userEmail : "";
-                    newProfile.role = "user";
-                    newProfile.avatarUrl = "avatar_male";
-                    newProfile.authProvider = "GOOGLE";
-
-                    try {
-                        dbService.createUser(newProfile).execute();
-                    } catch (Exception ignored) {}
-
-                    User user = new User(uid, newProfile.nama, newProfile.email, Role.USER, "");
-                    sessionManager.createLoginSession(user, accessToken, refreshToken, expiresIn);
-                    mainHandler.post(() -> callback.onSuccess(user));
+                if ((userName == null || userName.trim().isEmpty()) && userEmail != null) {
+                    userName = userEmail.split("@", 2)[0];
                 }
+                UserDto profile = loadOrCreateMyProfile(accessToken, userName, "");
+                User user = mapDtoToUser(profile);
+                sessionManager.createLoginSession(user, accessToken, refreshToken, expiresIn);
+                mainHandler.post(() -> callback.onSuccess(user));
             } catch (Exception e) {
                 postError(callback, ErrorMessages.fromException("Gagal memproses sesi login", e));
             }
@@ -244,35 +257,42 @@ public class UserRepository {
 
                 String uid = auth.user != null ? auth.user.id : null;
                 if (uid != null) {
-                    // Pastikan profil user sudah ada di public.users, jika belum ada buatkan langsung
-                    try {
-                        Response<List<UserDto>> checkRes = dbService.getUserById("eq." + uid, "*").execute();
-                        if (!checkRes.isSuccessful() || checkRes.body() == null || checkRes.body().isEmpty()) {
-                            UserDto newProfile = new UserDto();
-                            newProfile.id = uid;
-                            newProfile.nama = nama.trim();
-                            newProfile.email = email.trim().toLowerCase();
-                            // Pendaftaran mandiri selalu Pencari Kost; peran lain diberikan developer
-                            newProfile.role = "user";
-                            newProfile.noHp = noHp != null ? noHp.trim() : "";
-                            newProfile.avatarUrl = "avatar_male";
-                            newProfile.authProvider = "EMAIL";
-                            if (requestOwner || role == Role.PEMILIK_KOST) {
-                                newProfile.verificationStatus = VerificationStatus.PENDING.name();
-                                newProfile.pengajuanCatatan = ownerNote != null && !ownerNote.trim().isEmpty() ? ownerNote.trim() : "Pengajuan saat pendaftaran";
+                    loadOrCreateMyProfile(auth.accessToken, nama.trim(), noHp != null ? noHp.trim() : "");
+                    Response<UserProfileResponse> updatedProfile = profileService.updateMyProfile(
+                            "Bearer " + auth.accessToken,
+                            new ProfileUpdateRequest(nama.trim(), noHp != null ? noHp.trim() : "", "", "avatar_male")
+                    ).execute();
+                    if (!updatedProfile.isSuccessful() || updatedProfile.body() == null
+                            || updatedProfile.body().data == null) {
+                        postError(callback, "Akun dibuat, tetapi profil belum tersimpan. Silakan masuk kembali.");
+                        return;
+                    }
+
+                    if (requestOwner || role == Role.PEMILIK_KOST) {
+                        String submissionNote = ownerNote != null && !ownerNote.trim().isEmpty()
+                                ? ownerNote.trim() : "Pengajuan saat pendaftaran";
+                        Response<OwnerVerificationResponse> ownerRequest = ownerVerificationService.submit(
+                                "Bearer " + auth.accessToken,
+                                new OwnerVerificationRequest(submissionNote)
+                        ).execute();
+                        boolean submitted = ownerRequest.isSuccessful() && ownerRequest.body() != null
+                                && ownerRequest.body().submitted;
+                        if (!submitted && ownerRequest.code() == 404) {
+                            // Compatibility for an older API deployment only; RLS/triggers still govern the write.
+                            UserUpdateDto legacyRequest = new UserUpdateDto();
+                            legacyRequest.verificationStatus = VerificationStatus.PENDING.name();
+                            legacyRequest.pengajuanCatatan = submissionNote;
+                            Response<List<UserDto>> legacy = dbService.updateUser("eq." + uid, legacyRequest).execute();
+                            if (!legacy.isSuccessful()) {
+                                postError(callback, "Profil dibuat, tetapi pengajuan pemilik belum tersimpan. Silakan coba lagi.");
+                                return;
                             }
-                            dbService.createUser(newProfile).execute();
-                        } else if (requestOwner || role == Role.PEMILIK_KOST || (noHp != null && !noHp.isEmpty())) {
-                            UserUpdateDto updateDto = new UserUpdateDto();
-                            updateDto.nama = nama.trim();
-                            if (noHp != null && !noHp.isEmpty()) updateDto.noHp = noHp.trim();
-                            if (requestOwner || role == Role.PEMILIK_KOST) {
-                                updateDto.verificationStatus = VerificationStatus.PENDING.name();
-                                updateDto.pengajuanCatatan = ownerNote != null && !ownerNote.trim().isEmpty() ? ownerNote.trim() : "Pengajuan saat pendaftaran";
-                            }
-                            dbService.updateUser("eq." + uid, updateDto).execute();
+                        } else if (!submitted) {
+                            postError(callback, "Profil dibuat, tetapi pengajuan pemilik gagal disimpan. "
+                                    + ErrorMessages.fromResponse("submitOwnerVerification", ownerRequest));
+                            return;
                         }
-                    } catch (Exception ignored) {}
+                    }
 
                     fetchUserProfile(uid, auth, callback);
                 } else {
@@ -333,52 +353,51 @@ public class UserRepository {
 
     private void fetchUserProfile(String uid, AuthResponse auth, DataCallback<User> callback) {
         try {
-            Response<List<UserDto>> profileRes = dbService.getUserById("eq." + uid, "*").execute();
-            if (profileRes.isSuccessful() && profileRes.body() != null && !profileRes.body().isEmpty()) {
-                User user = mapDtoToUser(profileRes.body().get(0));
-                if (!user.isActive()) {
-                    sessionManager.logout();
-                    postError(callback, "Akun Anda dinonaktifkan oleh administrator.");
-                    return;
+            String email = auth.user != null && auth.user.email != null ? auth.user.email : "";
+            String displayName = email.isEmpty() ? "Pengguna" : email.split("@", 2)[0];
+            if (auth.user != null && auth.user.userMetadata != null) {
+                Object metadataName = auth.user.userMetadata.containsKey("full_name")
+                        ? auth.user.userMetadata.get("full_name")
+                        : auth.user.userMetadata.get("name");
+                if (metadataName != null && !String.valueOf(metadataName).trim().isEmpty()) {
+                    displayName = String.valueOf(metadataName).trim();
                 }
-                sessionManager.createLoginSession(user, auth.accessToken, auth.refreshToken, auth.expiresIn);
-                mainHandler.post(() -> callback.onSuccess(user));
-            } else {
-                String email = (auth.user != null && auth.user.email != null) ? auth.user.email : "";
-
-                // Profile belum ada di public.users, buat record baru
-                String displayName = "Pengguna";
-                if (auth.user != null && auth.user.userMetadata != null) {
-                    if (auth.user.userMetadata.containsKey("full_name")) {
-                        displayName = String.valueOf(auth.user.userMetadata.get("full_name"));
-                    } else if (auth.user.userMetadata.containsKey("name")) {
-                        displayName = String.valueOf(auth.user.userMetadata.get("name"));
-                    }
-                } else if (!email.isEmpty()) {
-                    displayName = email.split("@")[0];
-                }
-
-                UserDto newProfile = new UserDto();
-                newProfile.id = uid;
-                newProfile.nama = displayName;
-                newProfile.email = email;
-                newProfile.role = "user";
-                newProfile.avatarUrl = "avatar_male";
-                String provider = auth.user != null && auth.user.appMetadata != null ? auth.user.appMetadata.provider : null;
-                newProfile.authProvider = "google".equalsIgnoreCase(provider) ? "GOOGLE" : "EMAIL";
-
-                try {
-                    dbService.createUser(newProfile).execute();
-                } catch (Exception ignored) {}
-
-                User user = new User(uid, displayName, email, Role.USER, "");
-                user.setAuthProvider(newProfile.authProvider);
-                sessionManager.createLoginSession(user, auth.accessToken, auth.refreshToken, auth.expiresIn);
-                mainHandler.post(() -> callback.onSuccess(user));
             }
+            UserDto profile = loadOrCreateMyProfile(auth.accessToken, displayName, "");
+            User user = mapDtoToUser(profile);
+            if (!user.isActive()) {
+                sessionManager.logout();
+                postError(callback, "Akun Anda dinonaktifkan oleh administrator.");
+                return;
+            }
+            sessionManager.createLoginSession(user, auth.accessToken, auth.refreshToken, auth.expiresIn);
+            mainHandler.post(() -> callback.onSuccess(user));
         } catch (Exception e) {
             postError(callback, ErrorMessages.fromException("fetchUserProfile", e));
         }
+    }
+
+    private UserDto loadOrCreateMyProfile(String accessToken, String name, String noHp) throws IOException {
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new IOException("Authenticated profile session is missing.");
+        }
+        String bearer = "Bearer " + accessToken;
+        Response<UserProfileResponse> existing = profileService.readMyProfile(bearer).execute();
+        if (existing.isSuccessful() && existing.body() != null && existing.body().data != null) {
+            return existing.body().data;
+        }
+        if (existing.code() != 404) {
+            throw new IOException("Unable to read the authenticated profile (HTTP " + existing.code() + ").");
+        }
+
+        String displayName = name == null || name.trim().isEmpty() ? null : name.trim();
+        ProfileUpdateRequest request = new ProfileUpdateRequest(
+                displayName, noHp == null ? "" : noHp, "", "avatar_male");
+        Response<UserProfileResponse> created = profileService.provisionMyProfile(bearer, request).execute();
+        if (created.isSuccessful() && created.body() != null && created.body().data != null) {
+            return created.body().data;
+        }
+        throw new IOException("Unable to provision the authenticated profile (HTTP " + created.code() + ").");
     }
 
     public void getUserById(String uid, DataCallback<User> callback) {
@@ -388,12 +407,52 @@ public class UserRepository {
                     postError(callback, "ID Pengguna tidak valid");
                     return;
                 }
-                Response<List<UserDto>> res = dbService.getUserById("eq." + uid, "*").execute();
-                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    User u = mapDtoToUser(res.body().get(0));
-                    mainHandler.post(() -> callback.onSuccess(u));
+                if (uid.equals(sessionManager.getUserUid())) {
+                    String token = getActiveAccessToken();
+                    if (token == null || token.isEmpty()) {
+                        postError(callback, ErrorMessages.SESSION_EXPIRED);
+                        return;
+                    }
+                    Response<UserProfileResponse> profile = profileService
+                            .readMyProfile("Bearer " + token).execute();
+                    if (profile.isSuccessful() && profile.body() != null && profile.body().data != null) {
+                        User user = mapDtoToUser(profile.body().data);
+                        mainHandler.post(() -> callback.onSuccess(user));
+                    } else {
+                        postError(callback, ErrorMessages.fromResponse("getMyProfile", profile));
+                    }
+                    return;
+                }
+                long numericUid;
+                try {
+                    numericUid = Long.parseLong(uid);
+                    if (numericUid <= 0) throw new NumberFormatException("non-positive user ID");
+                } catch (NumberFormatException invalidId) {
+                    postError(callback, "ID pengguna tidak valid");
+                    return;
+                }
+
+                String token = getActiveAccessToken();
+                if (token != null && !token.isEmpty()) {
+                    Response<UserProfileResponse> contact = userLookupService
+                            .readChatContact("Bearer " + token, numericUid).execute();
+                    if (contact.isSuccessful() && contact.body() != null && contact.body().data != null) {
+                        User user = mapDtoToUser(contact.body().data);
+                        mainHandler.post(() -> callback.onSuccess(user));
+                        return;
+                    }
+                    if (contact.code() != 404) {
+                        postError(callback, ErrorMessages.fromResponse("getChatContact", contact));
+                        return;
+                    }
+                }
+
+                Response<UserProfileResponse> owner = userLookupService.readPublicOwner(numericUid).execute();
+                if (owner.isSuccessful() && owner.body() != null && owner.body().data != null) {
+                    User user = mapDtoToUser(owner.body().data);
+                    mainHandler.post(() -> callback.onSuccess(user));
                 } else {
-                    postError(callback, "Data pengguna tidak ditemukan");
+                    postError(callback, ErrorMessages.fromResponse("getPublicOwner", owner));
                 }
             } catch (Exception e) {
                 postError(callback, ErrorMessages.fromException("Gagal mengambil data user", e));
@@ -412,14 +471,22 @@ public class UserRepository {
                     postError(callback, "Nama tidak boleh kosong");
                     return;
                 }
-                UserUpdateDto dto = new UserUpdateDto();
-                dto.nama = nama.trim();
-                dto.noHp = noHp != null ? noHp.trim() : "";
-                dto.bio = bio != null ? bio.trim() : "";
-                dto.avatarUrl = avatarUrl;
-
-                Response<List<UserDto>> res = dbService.updateUser("eq." + uid, dto).execute();
-                if (res.isSuccessful()) {
+                String currentUid = sessionManager.getUserUid();
+                String token = getActiveAccessToken();
+                if (uid == null || !uid.equals(currentUid)) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
+                    return;
+                }
+                if (token == null || token.isEmpty()) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                ProfileUpdateRequest request = new ProfileUpdateRequest(
+                        nama.trim(), noHp != null ? noHp.trim() : "",
+                        bio != null ? bio.trim() : "", avatarUrl);
+                Response<UserProfileResponse> res = profileService
+                        .updateMyProfile("Bearer " + token, request).execute();
+                if (res.isSuccessful() && res.body() != null && res.body().data != null) {
                     sessionManager.updateProfile(nama, noHp, bio, avatarUrl);
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else {
@@ -433,6 +500,15 @@ public class UserRepository {
 
     public void updateProfile(int legacyId, String nama, String noHp, String bio, String avatarUrl, DataCallback<Boolean> callback) {
         updateProfile(sessionManager.getUserUid(), nama, noHp, bio, avatarUrl, callback);
+    }
+
+    private String getActiveAccessToken() {
+        String token = sessionManager.getAccessToken();
+        if (token == null || token.isEmpty()) return null;
+        if (sessionManager.isTokenExpired()) {
+            return SupabaseClient.getInstance().refreshTokenBlocking(token);
+        }
+        return token;
     }
 
     public void uploadAvatar(Uri imageUri, DataCallback<String> callback) {
@@ -470,15 +546,35 @@ public class UserRepository {
                 }
 
                 String uid = sessionManager.getUserUid();
-                String remoteName = (uid != null ? uid : "anon") + "/avatar_" + UUID.randomUUID() + ".jpg";
                 RequestBody requestBody = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
-                Response<StorageUploadResponse> uploadRes = storageService.uploadFileBinary("kost-images", remoteName, "image/jpeg", requestBody).execute();
-                if (uploadRes.isSuccessful()) {
+                String token = getActiveAccessToken();
+                if (token == null || token.isEmpty()) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                Response<AvatarUploadResponse> upload = avatarService
+                        .uploadMyAvatar("Bearer " + token, requestBody).execute();
+                if (upload.isSuccessful() && upload.body() != null && upload.body().data != null
+                        && upload.body().data.publicUrl != null) {
+                    String publicUrl = upload.body().data.publicUrl;
+                    mainHandler.post(() -> callback.onSuccess(publicUrl));
+                    return;
+                }
+                if (upload.code() != 404) {
+                    postError(callback, "Foto profil gagal diunggah. "
+                            + ErrorMessages.fromResponse("uploadAvatar", upload));
+                    return;
+                }
+
+                // Compatibility for a FastAPI deployment that does not yet have the avatar route.
+                String remoteName = (uid != null ? uid : "anon") + "/avatar_" + UUID.randomUUID() + ".jpg";
+                Response<StorageUploadResponse> legacy = storageService
+                        .uploadFileBinary("kost-images", remoteName, "image/jpeg", requestBody).execute();
+                if (legacy.isSuccessful()) {
                     String publicUrl = SupabaseClient.getStoragePublicUrl("kost-images", remoteName);
                     mainHandler.post(() -> callback.onSuccess(publicUrl));
                 } else {
-                    // Jangan simpan URI lokal: pengguna lain tidak akan bisa melihat fotonya
-                    postError(callback, "Foto profil gagal diunggah. " + ErrorMessages.fromResponse("uploadAvatar", uploadRes));
+                    postError(callback, "Foto profil gagal diunggah. " + ErrorMessages.fromResponse("uploadAvatar", legacy));
                 }
             } catch (Exception e) {
                 postError(callback, ErrorMessages.fromException("uploadAvatar", e));
@@ -510,7 +606,9 @@ public class UserRepository {
                     sessionManager.saveTokens(fresh.accessToken, fresh.refreshToken, fresh.expiresIn);
                 }
 
-                Response<ResponseBody> res = authService.updatePassword(new UpdatePasswordRequest(newPassword)).execute();
+                Response<ResponseBody> res = authService.updatePassword(
+                        "Bearer " + sessionManager.getAccessToken(),
+                        new UpdatePasswordRequest(newPassword)).execute();
                 if (res.isSuccessful()) {
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else {
@@ -550,7 +648,9 @@ public class UserRepository {
                     return;
                 }
                 SupabaseClient.getInstance().setAccessToken(accessToken);
-                Response<ResponseBody> res = authService.updatePassword(new UpdatePasswordRequest(newPassword)).execute();
+                Response<ResponseBody> res = authService.updatePassword(
+                        "Bearer " + accessToken,
+                        new UpdatePasswordRequest(newPassword)).execute();
                 SupabaseClient.getInstance().setAccessToken(sessionManager.getAccessToken());
                 if (res.isSuccessful()) {
                     mainHandler.post(() -> callback.onSuccess(true));
@@ -575,29 +675,52 @@ public class UserRepository {
                     postError(callback, "Belum masuk");
                     return;
                 }
-                Response<List<UserDto>> res = dbService.getUserById("eq." + uid, "*").execute();
-                if (res.code() == 401) {
+                String token = getActiveAccessToken();
+                if (token == null || token.isEmpty()) {
                     sessionManager.logout();
                     postError(callback, ErrorMessages.SESSION_EXPIRED);
                     return;
                 }
-                if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
-                    User user = mapDtoToUser(res.body().get(0));
-                    if (!user.isActive()) {
+                Response<UserProfileResponse> res = profileService
+                        .readMyProfile("Bearer " + token).execute();
+                User user;
+                if (res.isSuccessful() && res.body() != null && res.body().data != null) {
+                    user = mapDtoToUser(res.body().data);
+                } else if (res.code() == 404) {
+                    // Keep the legacy RLS read until profile/identity migration is proven in production.
+                    Response<List<UserDto>> legacy = dbService.getUserById("eq." + uid, "*").execute();
+                    if (legacy.code() == 401) {
                         sessionManager.logout();
-                        postError(callback, "Akun kamu dinonaktifkan oleh tim CariKostKita.");
+                        postError(callback, ErrorMessages.SESSION_EXPIRED);
                         return;
                     }
-                    sessionManager.updateVerificationStatus(user.getVerificationStatus(), user.getRole(), user.getCatatanRevisi());
-                    sessionManager.updateProfile(user.getNama(), user.getNoHp(), user.getBio(), user.getAvatarUrl());
-                    mainHandler.post(() -> callback.onSuccess(user));
-                } else if (res.isSuccessful()) {
-                    // Profil dihapus developer
+                    if (!legacy.isSuccessful()) {
+                        postError(callback, ErrorMessages.fromResponse("refreshCurrentUser", legacy));
+                        return;
+                    }
+                    if (legacy.body() == null || legacy.body().isEmpty()) {
+                        sessionManager.logout();
+                        postError(callback, "Akun kamu sudah tidak terdaftar.");
+                        return;
+                    }
+                    user = mapDtoToUser(legacy.body().get(0));
+                } else if (res.code() == 401 || res.code() == 403) {
                     sessionManager.logout();
-                    postError(callback, "Akun kamu sudah tidak terdaftar.");
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
                 } else {
                     postError(callback, ErrorMessages.fromResponse("refreshCurrentUser", res));
+                    return;
                 }
+                if (!user.isActive()) {
+                    sessionManager.logout();
+                    postError(callback, "Akun kamu dinonaktifkan oleh tim CariKostKita.");
+                    return;
+                }
+                sessionManager.updateVerificationStatus(user.getVerificationStatus(), user.getRole(), user.getCatatanRevisi());
+                sessionManager.updateProfile(user.getNama(), user.getNoHp(), user.getBio(), user.getAvatarUrl());
+                User resolvedUser = user;
+                mainHandler.post(() -> callback.onSuccess(resolvedUser));
             } catch (Exception e) {
                 // Offline: tetap pakai data sesi lokal
                 postError(callback, ErrorMessages.fromException("refreshCurrentUser", e));
@@ -612,16 +735,25 @@ public class UserRepository {
     public void submitOwnerVerification(String uid, String catatan, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
-                UserUpdateDto dto = new UserUpdateDto();
-                dto.verificationStatus = VerificationStatus.PENDING.name();
-                dto.pengajuanCatatan = catatan;
-
-                Response<List<UserDto>> res = dbService.updateUser("eq." + uid, dto).execute();
-                if (res.isSuccessful()) {
+                String currentUid = sessionManager.getUserUid();
+                if (uid == null || !uid.equals(currentUid)) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
+                    return;
+                }
+                String token = getActiveAccessToken();
+                if (token == null || token.isEmpty()) {
+                    postError(callback, ErrorMessages.SESSION_EXPIRED);
+                    return;
+                }
+                Response<OwnerVerificationResponse> res = ownerVerificationService.submit(
+                        "Bearer " + token,
+                        new OwnerVerificationRequest(catatan == null ? "" : catatan.trim())
+                ).execute();
+                if (res.isSuccessful() && res.body() != null && res.body().submitted) {
                     sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
                     mainHandler.post(() -> callback.onSuccess(true));
                 } else {
-                    postError(callback, "Gagal mengajukan verifikasi pemilik kost");
+                    postError(callback, ErrorMessages.fromResponse("submitOwnerVerification", res));
                 }
             } catch (Exception e) {
                 postError(callback, ErrorMessages.fromException("Error pengajuan", e));
@@ -636,6 +768,7 @@ public class UserRepository {
     public void approveOwnerVerification(String uid, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
+                if (reviewOwnerVerificationWithApi(uid, "APPROVED", null, callback)) return;
                 UserUpdateDto dto = new UserUpdateDto();
                 dto.role = "owner";
                 dto.verificationStatus = VerificationStatus.APPROVED.name();
@@ -660,6 +793,7 @@ public class UserRepository {
     public void rejectOwnerVerification(String uid, String alasan, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
+                if (reviewOwnerVerificationWithApi(uid, "REJECTED", alasan, callback)) return;
                 UserUpdateDto dto = new UserUpdateDto();
                 dto.role = "user";
                 dto.verificationStatus = VerificationStatus.REJECTED.name();
@@ -680,6 +814,7 @@ public class UserRepository {
     public void requireRevisionOwnerVerification(String uid, String catatanRevisi, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
+                if (reviewOwnerVerificationWithApi(uid, "REVISION_REQUIRED", catatanRevisi, callback)) return;
                 UserUpdateDto dto = new UserUpdateDto();
                 dto.role = "user";
                 dto.verificationStatus = VerificationStatus.REVISION_REQUIRED.name();
@@ -700,6 +835,7 @@ public class UserRepository {
     public void setRole(String uid, String role, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
+                if (moderateUserWithApi(uid, role, null, null, callback)) return;
                 UserUpdateDto dto = new UserUpdateDto();
                 dto.role = role;
                 Response<List<UserDto>> res = dbService.updateUser("eq." + uid, dto).execute();
@@ -717,8 +853,13 @@ public class UserRepository {
     }
 
     public void setUserActiveStatus(String uid, boolean isActive, DataCallback<Boolean> callback) {
+        setUserActiveStatus(uid, isActive, null, callback);
+    }
+
+    public void setUserActiveStatus(String uid, boolean isActive, String reason, DataCallback<Boolean> callback) {
         executor.execute(() -> {
             try {
+                if (moderateUserWithApi(uid, null, isActive, reason, callback)) return;
                 UserUpdateDto dto = new UserUpdateDto();
                 dto.isActive = isActive;
 
@@ -734,9 +875,68 @@ public class UserRepository {
         });
     }
 
+    /**
+     * Returns false only for HTTP 404, when an older API deployment has not
+     * acquired the moderation route yet. Auth, validation, server, and network
+     * failures fail closed instead of silently writing outside the audit RPC.
+     */
+    private boolean moderateUserWithApi(
+            String uid, String role, Boolean isActive, String reason, DataCallback<Boolean> callback
+    ) {
+        String token = getActiveAccessToken();
+        if (token == null || token.isEmpty()) {
+            postError(callback, ErrorMessages.SESSION_EXPIRED);
+            return true;
+        }
+        try {
+            AdminUserModerationRequest request = new AdminUserModerationRequest(role, isActive, reason);
+            Response<AdminUserModerationResponse> response = adminUserService
+                    .moderateUser("Bearer " + token, uid, request).execute();
+            if (response.isSuccessful() && response.body() != null && response.body().updated) {
+                mainHandler.post(() -> callback.onSuccess(true));
+                return true;
+            }
+            int code = response.code();
+            String errorBody = "";
+            try {
+                if (response.errorBody() != null) errorBody = response.errorBody().string();
+            } catch (IOException ignored) {}
+            String message = ErrorMessages.fromCode("moderateAdminUser", code, errorBody);
+            if (code == 404 && !errorBody.contains("USER_NOT_FOUND")) return false;
+            postError(callback, message);
+            return true;
+        } catch (Exception error) {
+            postError(callback, ErrorMessages.fromException("moderateAdminUser", error));
+            return true;
+        }
+    }
+
     public void getPendingVerifications(DataCallback<List<User>> callback) {
         executor.execute(() -> {
             try {
+                List<OwnerVerificationQueueResponse.Application> applications = fetchPendingOwnerApplications();
+                if (applications != null) {
+                    pendingOwnerApplicationIds.clear();
+                    List<User> users = new ArrayList<>();
+                    for (OwnerVerificationQueueResponse.Application application : applications) {
+                        if (application.owner == null || application.owner.id == null) continue;
+                        pendingOwnerApplicationIds.put(application.owner.id, application.id);
+                        User user = mapAdminDtoToUser(application.owner);
+                        user.setPengajuanCatatan(application.submissionNote);
+                        user.setPengajuanAt(application.createdAt);
+                        users.add(user);
+                    }
+                    mainHandler.post(() -> callback.onSuccess(users));
+                    return;
+                }
+                pendingOwnerApplicationIds.clear();
+                List<AdminUserDto> apiUsers = fetchAdminUsers(null, "PENDING");
+                if (apiUsers != null) {
+                    List<User> users = new ArrayList<>();
+                    for (AdminUserDto dto : apiUsers) users.add(mapAdminDtoToUser(dto));
+                    mainHandler.post(() -> callback.onSuccess(users));
+                    return;
+                }
                 Map<String, String> filters = new HashMap<>();
                 filters.put("verification_status", "eq.PENDING");
 
@@ -759,6 +959,13 @@ public class UserRepository {
     public void getOwners(DataCallback<List<User>> callback) {
         executor.execute(() -> {
             try {
+                List<AdminUserDto> apiUsers = fetchAdminUsers("owner", null);
+                if (apiUsers != null) {
+                    List<User> users = new ArrayList<>();
+                    for (AdminUserDto dto : apiUsers) users.add(mapAdminDtoToUser(dto));
+                    mainHandler.post(() -> callback.onSuccess(users));
+                    return;
+                }
                 Map<String, String> filters = new HashMap<>();
                 filters.put("role", "in.(owner,pemilik,pemilik_kost)");
 
@@ -798,6 +1005,13 @@ public class UserRepository {
     public void getAllUsers(DataCallback<List<User>> callback) {
         executor.execute(() -> {
             try {
+                List<AdminUserDto> apiUsers = fetchAdminUsers(null, null);
+                if (apiUsers != null) {
+                    List<User> users = new ArrayList<>();
+                    for (AdminUserDto dto : apiUsers) users.add(mapAdminDtoToUser(dto));
+                    mainHandler.post(() -> callback.onSuccess(users));
+                    return;
+                }
                 Response<List<UserDto>> res = dbService.getUsers(new HashMap<>(), "*", "created_at.desc").execute();
                 if (res.isSuccessful() && res.body() != null) {
                     List<User> list = new ArrayList<>();
@@ -817,6 +1031,22 @@ public class UserRepository {
     public void getUserStats(DataCallback<UserStats> callback) {
         executor.execute(() -> {
             try {
+                List<AdminUserDto> apiUsers = fetchAdminUsers(null, null);
+                if (apiUsers != null) {
+                    int owners = 0;
+                    int pending = 0;
+                    List<UserDto> legacyUsers = new ArrayList<>();
+                    for (AdminUserDto dto : apiUsers) {
+                        if ("owner".equalsIgnoreCase(dto.role)) owners++;
+                        if ("PENDING".equalsIgnoreCase(dto.verificationStatus)) pending++;
+                        legacyUsers.add(mapAdminDtoToLegacy(dto));
+                    }
+                    UserStats stats = new UserStats(apiUsers.size(), owners, pending);
+                    stats.userList.addAll(legacyUsers);
+                    UserStats finalStats = stats;
+                    mainHandler.post(() -> callback.onSuccess(finalStats));
+                    return;
+                }
                 Response<List<UserDto>> res = dbService.getUsers(new HashMap<>(), "*", null).execute();
                 if (res.isSuccessful() && res.body() != null) {
                     int total = res.body().size();
@@ -840,6 +1070,135 @@ public class UserRepository {
                 postError(callback, ErrorMessages.fromException("Gagal memuat statistik user", e));
             }
         });
+    }
+
+    /**
+     * Return null only when FastAPI is not deployed yet/unreachable, allowing
+     * the existing caller-JWT/RLS query to remain as a compatibility fallback.
+     * Authentication/authorization and other API errors are never downgraded.
+     */
+    private List<AdminUserDto> fetchAdminUsers(String role, String verificationStatus) {
+        String token = getActiveAccessToken();
+        if (token == null || token.isEmpty()) return null;
+        List<AdminUserDto> users = new ArrayList<>();
+        String bearer = "Bearer " + token;
+        boolean hasMore = false;
+        for (int page = 1; page <= 100; page++) {
+            Response<AdminUserListResponse> response;
+            try {
+                response = adminUserService.listUsers(bearer, page, 100, role, verificationStatus).execute();
+            } catch (IOException networkError) {
+                if (page == 1) return null;
+                throw new IllegalStateException("Koneksi API terputus saat memuat direktori pengguna.", networkError);
+            }
+            if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
+                int code = response.code();
+                String message = ErrorMessages.fromResponse("listAdminUsers", response);
+                if (response.errorBody() != null) response.errorBody().close();
+                // A 503 is a live FastAPI route whose data dependency failed;
+                // only a missing route may select the legacy RLS read.
+                if (page == 1 && code == 404) return null;
+                throw new IllegalStateException(message);
+            }
+            users.addAll(response.body().data);
+            hasMore = response.body().pagination != null && response.body().pagination.hasMore;
+            if (!hasMore) return users;
+        }
+        throw new IllegalStateException("Direktori pengguna terlalu besar untuk dimuat sekaligus.");
+    }
+
+    private List<OwnerVerificationQueueResponse.Application> fetchPendingOwnerApplications() {
+        String token = getActiveAccessToken();
+        if (token == null || token.isEmpty()) return null;
+        List<OwnerVerificationQueueResponse.Application> applications = new ArrayList<>();
+        boolean hasMore = false;
+        for (int page = 1; page <= 100; page++) {
+            Response<OwnerVerificationQueueResponse> response;
+            try {
+                response = ownerVerificationService
+                        .listAdminQueue("Bearer " + token, "PENDING", page, 100).execute();
+            } catch (IOException networkError) {
+                if (page == 1) return null;
+                throw new IllegalStateException("Koneksi API terputus saat memuat antrean verifikasi.", networkError);
+            }
+            if (!response.isSuccessful() || response.body() == null || response.body().data == null) {
+                int code = response.code();
+                String message = ErrorMessages.fromResponse("listOwnerVerificationQueue", response);
+                if (response.errorBody() != null) response.errorBody().close();
+                // Keep the compatibility read for an older deployment only;
+                // do not hide a database failure reported by the live API.
+                if (page == 1 && code == 404) return null;
+                throw new IllegalStateException(message);
+            }
+            applications.addAll(response.body().data);
+            hasMore = response.body().pagination != null && response.body().pagination.hasMore;
+            if (!hasMore) return applications;
+        }
+        throw new IllegalStateException("Antrean verifikasi terlalu besar untuk dimuat sekaligus.");
+    }
+
+    /** True means the API handled the decision (success or terminal HTTP failure). */
+    private boolean reviewOwnerVerificationWithApi(
+            String userId, String status, String note, DataCallback<Boolean> callback
+    ) {
+        String applicationId = pendingOwnerApplicationIds.get(userId);
+        if (applicationId == null) return false;
+        String token = getActiveAccessToken();
+        if (token == null || token.isEmpty()) {
+            postError(callback, ErrorMessages.SESSION_EXPIRED);
+            return true;
+        }
+        try {
+            Response<OwnerVerificationReviewResponse> response = ownerVerificationService.review(
+                    "Bearer " + token,
+                    applicationId,
+                    new OwnerVerificationReviewRequest(status, note)
+            ).execute();
+            if (response.isSuccessful() && response.body() != null && response.body().reviewed) {
+                pendingOwnerApplicationIds.remove(userId);
+                mainHandler.post(() -> callback.onSuccess(true));
+                return true;
+            }
+            String message = ErrorMessages.fromResponse("reviewOwnerVerification", response);
+            if (response.errorBody() != null) response.errorBody().close();
+            postError(callback, message);
+            return true;
+        } catch (IOException networkError) {
+            postError(callback, ErrorMessages.fromException("reviewOwnerVerification", networkError));
+            return true;
+        }
+    }
+
+    private User mapAdminDtoToUser(AdminUserDto dto) {
+        User user = new User();
+        user.setUid(dto.id);
+        user.setNama(dto.name);
+        user.setEmail(dto.email);
+        user.setRole(Role.fromString(dto.role));
+        user.setNoHp(dto.noHp);
+        user.setAvatarUrl(dto.avatarUrl);
+        user.setBio(dto.bio);
+        user.setVerificationStatus(VerificationStatus.fromString(dto.verificationStatus));
+        user.setCatatanRevisi(dto.catatanRevisi);
+        user.setActive(dto.isActive != null ? dto.isActive : true);
+        user.setCreatedAt(dto.createdAt);
+        return user;
+    }
+
+    private UserDto mapAdminDtoToLegacy(AdminUserDto dto) {
+        UserDto user = new UserDto();
+        user.id = dto.id;
+        user.nama = dto.name;
+        user.email = dto.email;
+        user.role = dto.role;
+        user.noHp = dto.noHp;
+        user.avatarUrl = dto.avatarUrl;
+        user.bio = dto.bio;
+        user.isActive = dto.isActive;
+        user.verificationStatus = dto.verificationStatus;
+        user.catatanRevisi = dto.catatanRevisi;
+        user.createdAt = dto.createdAt;
+        return user;
     }
 
     private User mapDtoToUser(UserDto dto) {

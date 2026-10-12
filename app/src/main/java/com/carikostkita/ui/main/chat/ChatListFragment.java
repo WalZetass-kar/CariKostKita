@@ -19,7 +19,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.carikostkita.R;
 import com.carikostkita.data.model.ChatConversation;
-import com.carikostkita.data.remote.SupabaseRealtimeClient;
 import com.carikostkita.data.repository.ChatRepository;
 import com.carikostkita.data.repository.DataCallback;
 import com.carikostkita.ui.adapter.ChatConversationAdapter;
@@ -36,7 +35,6 @@ public class ChatListFragment extends Fragment {
     private ChatRepository chatRepository;
     private SessionManager sessionManager;
     private ChatConversationAdapter adapter;
-    private SupabaseRealtimeClient realtimeClient;
 
     private View layoutSkeleton;
 
@@ -68,8 +66,6 @@ public class ChatListFragment extends Fragment {
         swipeRefresh.setColorSchemeResources(R.color.primary);
 
         setupRecyclerView();
-        setupRealtime();
-
         swipeRefresh.setOnRefreshListener(() -> loadConversations(false));
     }
 
@@ -101,17 +97,6 @@ public class ChatListFragment extends Fragment {
                 });
     }
 
-    private void setupRealtime() {
-        realtimeClient = new SupabaseRealtimeClient();
-        // Event realtime memuat ulang daftar tanpa skeleton agar tidak berkedip
-        realtimeClient.setChatUpdateListener(() -> loadConversations(false));
-        realtimeClient.setListener(msg -> {
-            if (isAdded()) {
-                loadConversations(false);
-            }
-        });
-    }
-
     private final Handler pollHandler = new Handler(Looper.getMainLooper());
     private final Runnable pollRunnable = new Runnable() {
         @Override
@@ -126,9 +111,6 @@ public class ChatListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (realtimeClient != null && sessionManager.isLoggedIn()) {
-            realtimeClient.connect(null);
-        }
         loadConversations(!hasLoadedOnce);
         pollHandler.removeCallbacks(pollRunnable);
         pollHandler.postDelayed(pollRunnable, 7000);
@@ -138,18 +120,12 @@ public class ChatListFragment extends Fragment {
     public void onPause() {
         super.onPause();
         pollHandler.removeCallbacks(pollRunnable);
-        if (realtimeClient != null) {
-            realtimeClient.disconnect();
-        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         pollHandler.removeCallbacks(pollRunnable);
-        if (realtimeClient != null) {
-            realtimeClient.disconnect();
-        }
     }
 
     private void setupRecyclerView() {

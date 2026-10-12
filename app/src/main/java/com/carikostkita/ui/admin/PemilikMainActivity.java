@@ -1297,7 +1297,7 @@ public class PemilikMainActivity extends AppCompatActivity implements
                 "Ubah ketersediaan properti \"" + kost.getNamaKost() + "\" menjadi " + nextStatus.getDisplayName() + "?",
                 "Ya, Ubah",
                 () -> {
-                    kostRepository.updateStatus(kost.getIdKost(), nextStatus, new DataCallback<Boolean>() {
+                    kostRepository.updateOwnerStatus(kost.getIdKost(), nextStatus, new DataCallback<Boolean>() {
                         @Override
                         public void onSuccess(Boolean success) {
                             kost.setStatus(nextStatus);

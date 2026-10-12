@@ -311,6 +311,36 @@ public class SessionManager {
     }
 
     public void logout() {
+        // Best-effort server-side revocation through FastAPI; clear local state
+        // immediately so logout still completes when the network is unavailable.
+        String accessToken = SupabaseClient.getInstance().getAccessToken();
+        if (accessToken != null && !accessToken.isEmpty()) {
+            SupabaseClient.getInstance().createAuthService()
+                    .signOut("Bearer " + accessToken, "local")
+                    .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+                        @Override
+                        public void onResponse(
+                                retrofit2.Call<okhttp3.ResponseBody> call,
+                                retrofit2.Response<okhttp3.ResponseBody> response
+                        ) {
+                            if (response.body() != null) {
+                                response.body().close();
+                            }
+                            if (response.errorBody() != null) {
+                                response.errorBody().close();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(
+                                retrofit2.Call<okhttp3.ResponseBody> call,
+                                Throwable error
+                        ) {
+                            // Local logout must not depend on network availability.
+                        }
+                    });
+        }
+
         boolean onboardingDone = isOnboardingCompleted();
         boolean askedLoc = hasAskedLocationPermission();
         boolean notifChat = isChatNotificationEnabled();

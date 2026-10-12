@@ -3,7 +3,6 @@ package com.carikostkita.data.remote;
 import com.carikostkita.data.remote.dto.ActivityLogDto;
 import com.carikostkita.data.remote.dto.ChatDto;
 import com.carikostkita.data.remote.dto.ChatUpdateDto;
-import com.carikostkita.data.remote.dto.FavoriteDto;
 import com.carikostkita.data.remote.dto.KostDto;
 import com.carikostkita.data.remote.dto.KostUpdateDto;
 import com.carikostkita.data.remote.dto.MessageDto;
@@ -86,23 +85,6 @@ public interface SupabaseDbService {
 
     @DELETE("rest/v1/kosts")
     Call<ResponseBody> deleteKost(@Query("id") String idFilter);
-
-    // ==================== FAVORITES ====================
-
-    @GET("rest/v1/favorites")
-    Call<List<FavoriteDto>> getFavorites(
-            @QueryMap(encoded = true) Map<String, String> filters,
-            @Query("select") String select
-    );
-
-    @POST("rest/v1/favorites")
-    Call<List<FavoriteDto>> addFavorite(@Body FavoriteDto body);
-
-    @DELETE("rest/v1/favorites")
-    Call<ResponseBody> removeFavorite(
-            @Query("user_id") String userIdFilter,
-            @Query("kost_id") String kostIdFilter
-    );
 
     // ==================== CHATS ====================
 

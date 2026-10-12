@@ -684,7 +684,7 @@ public class DetailKostActivity extends AppCompatActivity {
                 String iso = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(local.getTime());
                 AppDialogHelper.showInput(this, "Catatan untuk pemilik",
                         "Opsional. Jadwal: " + formatJadwal(iso), "Contoh: saya datang berdua", "", "Ajukan Survei",
-                        note -> new com.carikostkita.data.repository.SurveyRepository(this).request(kost.getId(), kost.getOwnerId(), iso, note,
+                        note -> new com.carikostkita.data.repository.SurveyRepository(this).request(kost.getId(), iso, note,
                                 new DataCallback<com.carikostkita.data.model.SurveyRequest>() {
                                     @Override
                                     public void onSuccess(com.carikostkita.data.model.SurveyRequest r) {

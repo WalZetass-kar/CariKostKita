@@ -1720,7 +1720,7 @@ public class AdminMainActivity extends AppCompatActivity implements
                 "Ubah status properti \"" + kost.getNamaKost() + "\" menjadi " + nextStatus.getDisplayName() + "?",
                 "Ya, Ubah Status",
                 () -> {
-                    kostRepository.updateStatus(kost.getIdKost(), nextStatus, new DataCallback<Boolean>() {
+                    kostRepository.updateAdminStatus(kost.getIdKost(), nextStatus, new DataCallback<Boolean>() {
                         @Override
                         public void onSuccess(Boolean success) {
                             activityLogRepository.logActivity(sessionManager.getUserUid(), "UPDATE_KOST_STATUS",
@@ -1886,7 +1886,7 @@ public class AdminMainActivity extends AppCompatActivity implements
             com.carikostkita.util.ModerationReasons.pick(this, "Tangguhkan " + user.getNama(),
                     com.carikostkita.util.ModerationReasons.USER_SUSPEND, "Tangguhkan",
                     suspendReason -> {
-                        userRepository.setUserActiveStatus(user.getUid(), false, new DataCallback<Boolean>() {
+                        userRepository.setUserActiveStatus(user.getUid(), false, suspendReason, new DataCallback<Boolean>() {
                             @Override
                             public void onSuccess(Boolean result) {
                                 activityLogRepository.logActivity(sessionManager.getUserUid(), "SUSPEND_USER",

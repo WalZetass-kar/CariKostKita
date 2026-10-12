@@ -17,7 +17,6 @@ import android.widget.Toast;
 import android.net.Uri;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.browser.customtabs.CustomTabsIntent;
-import com.carikostkita.BuildConfig;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Role;
 import com.carikostkita.data.model.User;
@@ -343,14 +342,14 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void launchCustomTabOAuth() {
         try {
-            String oauthUrl = BuildConfig.SUPABASE_URL + "/auth/v1/authorize?provider=google&redirect_to=carikostkita://login-callback";
+            String oauthUrl = com.carikostkita.data.remote.FastApiAuthService.googleAuthorizationUrl();
             CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
                     .setShowTitle(true)
                     .build();
             customTabsIntent.launchUrl(this, Uri.parse(oauthUrl));
         } catch (Exception e) {
             try {
-                String oauthUrl = BuildConfig.SUPABASE_URL + "/auth/v1/authorize?provider=google&redirect_to=carikostkita://login-callback";
+                String oauthUrl = com.carikostkita.data.remote.FastApiAuthService.googleAuthorizationUrl();
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(oauthUrl));
                 startActivity(browserIntent);
             } catch (Exception ex) {
