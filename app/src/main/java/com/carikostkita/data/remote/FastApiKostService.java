@@ -16,6 +16,11 @@ public interface FastApiKostService {
             @Query("kota") String kota,
             @Query("kecamatan") String kecamatan,
             @Query("tipe_kost") String tipeKost,
+            @Query("harga_min") Double hargaMin,
+            @Query("harga_max") Double hargaMax,
+            @Query("fasilitas") String fasilitas,
+            @Query("hanya_tersedia") Boolean hanyaTersedia,
+            @Query("sort") String sort,
             @Query("page") int page,
             @Query("page_size") int pageSize
     );

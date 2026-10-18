@@ -163,7 +163,7 @@ public class KostRepository {
             try {
                 try {
                     Response<com.carikostkita.data.remote.dto.KostListResponse> apiRes =
-                            kostService.listPublicKosts(null, null, null, null, null, 1, 50).execute();
+                            kostService.listPublicKosts(null, null, null, null, null, null, null, null, null, "TERBARU", 1, 50).execute();
                     if (apiRes.isSuccessful() && apiRes.body() != null && apiRes.body().data != null) {
                         List<Kost> list = mapDtoListToKost(apiRes.body().data);
                         populateFavorites(list, currentUserId);
@@ -205,6 +205,72 @@ public class KostRepository {
     public void filterKost(KostFilterCriteria criteria, String currentUserId, DataCallback<List<Kost>> callback) {
         executor.execute(() -> {
             try {
+                // 1. Coba kueri filter komprehensif melalui FastAPI
+                try {
+                    String queryParam = criteria != null ? sanitizeKeyword(criteria.getKeyword()) : null;
+                    if (queryParam != null && queryParam.isEmpty()) queryParam = null;
+
+                    String kecamatanParam = criteria != null && criteria.getKecamatan() != null && !criteria.getKecamatan().trim().isEmpty()
+                            ? criteria.getKecamatan().trim() : null;
+
+                    String tipeKostParam = criteria != null && criteria.getTipeKost() != null
+                            ? criteria.getTipeKost().name() : null;
+
+                    Double hargaMinParam = criteria != null && criteria.getMinHarga() != null && criteria.getMinHarga() > 0
+                            ? criteria.getMinHarga() : null;
+
+                    Double hargaMaxParam = criteria != null && criteria.getMaxHarga() != null && criteria.getMaxHarga() > 0
+                            ? criteria.getMaxHarga() : null;
+
+                    Boolean hanyaTersediaParam = criteria != null && criteria.getStatus() == StatusKost.TERSEDIA
+                            ? true : null;
+
+                    String sortParam = criteria != null && criteria.getSortBy() != null
+                            ? criteria.getSortBy() : "TERBARU";
+
+                    String fasilitasParam = null;
+                    if (criteria != null && criteria.getFasilitasIds() != null && !criteria.getFasilitasIds().isEmpty()) {
+                        List<String> names = new ArrayList<>();
+                        for (Integer fid : criteria.getFasilitasIds()) {
+                            String fname = Fasilitas.nameForId(fid);
+                            if (fname != null && !fname.isEmpty()) {
+                                names.add(fname);
+                            }
+                        }
+                        if (!names.isEmpty()) {
+                            fasilitasParam = android.text.TextUtils.join(",", names);
+                        }
+                    }
+
+                    Response<com.carikostkita.data.remote.dto.KostListResponse> apiRes =
+                            kostService.listPublicKosts(
+                                    queryParam,
+                                    null,
+                                    null,
+                                    kecamatanParam,
+                                    tipeKostParam,
+                                    hargaMinParam,
+                                    hargaMaxParam,
+                                    fasilitasParam,
+                                    hanyaTersediaParam,
+                                    sortParam,
+                                    1,
+                                    100
+                            ).execute();
+
+                    if (apiRes.isSuccessful() && apiRes.body() != null && apiRes.body().data != null) {
+                        List<Kost> list = mapDtoListToKost(apiRes.body().data);
+                        list = applyDistance(list, criteria);
+                        populateFavorites(list, currentUserId);
+                        final List<Kost> resultList = list;
+                        mainHandler.post(() -> callback.onSuccess(resultList));
+                        return;
+                    }
+                } catch (Exception apiEx) {
+                    Log.w(TAG, "FastAPI filterKost fallback to PostgREST: " + apiEx.getMessage());
+                }
+
+                // 2. Fallback aman ke PostgREST jika FastAPI mengalami kendala jaringan
                 Map<String, String> filters = publicCatalogFilters();
                 List<String> andConditions = new ArrayList<>();
 

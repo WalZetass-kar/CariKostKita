@@ -83,6 +83,13 @@ BEGIN
     ) THEN
         RAISE EXCEPTION 'Identity bridge preflight failed: public.users profile columns are incomplete';
     END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'password'
+    ) THEN
+        ALTER TABLE public.users ALTER COLUMN password DROP NOT NULL;
+    END IF;
 END;
 $$;
 
