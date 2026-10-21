@@ -3,8 +3,6 @@ package com.carikostkita.ui.adapter;
 import android.content.Context;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,20 +10,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
+import com.carikostkita.util.ImageLoaderUtil;
 import com.google.android.material.snackbar.Snackbar;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +34,7 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
     public KostCarouselAdapter(OnCarouselKostClickListener listener) {
         this.kostList = new ArrayList<>();
         this.listener = listener;
+        setHasStableIds(true);
     }
 
     public void submitList(List<Kost> newList) {
@@ -50,6 +43,14 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
             this.kostList.addAll(newList);
         }
         notifyDataSetChanged();
+    }
+
+    @Override
+    public long getItemId(int position) {
+        if (position >= 0 && position < kostList.size()) {
+            String id = kostList.get(position).getId(); return id != null ? (long) id.hashCode() : (long) position;
+        }
+        return RecyclerView.NO_ID;
     }
 
     @NonNull
@@ -63,6 +64,12 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
     public void onBindViewHolder(@NonNull CarouselViewHolder holder, int position) {
         Kost kost = kostList.get(position);
         holder.bind(kost, listener, position);
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull CarouselViewHolder holder) {
+        super.onViewRecycled(holder);
+        holder.recycle();
     }
 
     @Override
@@ -94,6 +101,10 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
             tvFacilities = itemView.findViewById(R.id.tv_compact_facilities);
             tvPrice = itemView.findViewById(R.id.tv_compact_price);
             tvStatus = itemView.findViewById(R.id.tv_compact_status);
+        }
+
+        public void recycle() {
+            ImageLoaderUtil.clear(ivThumbnail);
         }
 
         public void bind(Kost kost, OnCarouselKostClickListener listener, int position) {
@@ -156,35 +167,20 @@ public class KostCarouselAdapter extends RecyclerView.Adapter<KostCarouselAdapte
             if (path != null && !path.trim().isEmpty()) {
                 if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
                 ivThumbnail.setVisibility(View.VISIBLE);
-
-                Object loadTarget;
-                if (path.startsWith("content://") || path.startsWith("file://")) {
-                    loadTarget = Uri.parse(path);
-                } else if (path.startsWith("http://") || path.startsWith("https://")) {
-                    loadTarget = path;
-                } else {
-                    File file = new File(path);
-                    loadTarget = file.exists() ? file : path;
-                }
-
-                Glide.with(context)
-                        .load(loadTarget)
-                        .centerCrop()
-                        .listener(new RequestListener<Drawable>() {
-                            @Override
-                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
-                                return false;
-                            }
-
-                            @Override
-                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
-                                return false;
-                            }
-                        })
-                        .into(ivThumbnail);
+                ImageLoaderUtil.loadKostImage(
+                        ivThumbnail,
+                        path,
+                        400,
+                        280,
+                        () -> {
+                            if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
+                        },
+                        () -> {
+                            if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
+                        }
+                );
             } else {
+                ImageLoaderUtil.clear(ivThumbnail);
                 ivThumbnail.setImageDrawable(null);
                 if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
             }

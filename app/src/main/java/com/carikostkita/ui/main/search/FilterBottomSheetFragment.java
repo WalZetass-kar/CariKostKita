@@ -47,7 +47,7 @@ public class FilterBottomSheetFragment extends BottomSheetDialogFragment {
         void onFilterApplied(KostFilterCriteria criteria);
     }
 
-    private static final float PRICE_MAX = 5_000_000f;
+    private static final float PRICE_MAX = 10_000_000f;
     private static final String[] SORT_KEYS = {"TERBARU", "TERMURAH", "TERMAHAL", "TERDEKAT"};
     private static final String[] SORT_LABELS = {"Terbaru", "Termurah", "Termahal", "Terdekat"};
     private static final double[] DISTANCES = {0, 1, 3, 5, 10};
@@ -254,7 +254,7 @@ public class FilterBottomSheetFragment extends BottomSheetDialogFragment {
     private void updatePriceLabel() {
         List<Float> v = rsPrice.getValues();
         float min = v.get(0), max = v.get(1);
-        String right = max >= PRICE_MAX ? "Rp 5 jt+" : FormatUtil.formatRupiah(max);
+        String right = max >= PRICE_MAX ? "Rp 10 jt+" : FormatUtil.formatRupiah(max);
         tvPriceLabel.setText(min <= 0 && max >= PRICE_MAX ? "Semua harga" : FormatUtil.formatRupiah(min) + " – " + right);
     }
 

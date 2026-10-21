@@ -248,11 +248,11 @@ public class RegisterActivity extends AppCompatActivity {
                     Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                     startActivityForResult(signInIntent, RC_GOOGLE_SIGN_UP);
                 } catch (Exception e) {
-                    AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
+                    launchCustomTabOAuth();
                 }
             });
         } catch (Exception e) {
-            AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
+            launchCustomTabOAuth();
         }
     }
 
@@ -295,13 +295,8 @@ public class RegisterActivity extends AppCompatActivity {
         } catch (ApiException e) {
             int statusCode = e.getStatusCode();
             if (statusCode == 12501) return;
-            if (statusCode == 10 && !isRetryingBasicGoogle) {
-                isRetryingBasicGoogle = true;
-                launchBasicGoogleSignUp();
-                return;
-            }
-            AppDialogHelper.showError(this, "Gagal Masuk Google (" + statusCode + ")",
-                    "Akun Google belum bisa dihubungkan. Coba lagi, atau masuk memakai email dan kata sandi.");
+            android.util.Log.w("RegisterActivity", "Google Play Services SignUp error (" + statusCode + "), falling back to Supabase OAuth browser");
+            launchCustomTabOAuth();
         }
     }
 
@@ -337,7 +332,7 @@ public class RegisterActivity extends AppCompatActivity {
      */
     private void registerWithGoogleProfile(GoogleSignInAccount account) {
         setLoading(false);
-        AppDialogHelper.showError(this, "Gagal Daftar Google", "Masuk dengan Google belum tersedia di perangkat ini. Silakan masuk memakai email dan kata sandi.");
+        launchCustomTabOAuth();
     }
 
     private void launchCustomTabOAuth() {

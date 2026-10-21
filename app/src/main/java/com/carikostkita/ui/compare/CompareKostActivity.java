@@ -88,7 +88,7 @@ public class CompareKostActivity extends AppCompatActivity {
             lp.setMargins(dp(4), dp(4), dp(4), dp(4));
             iv.setLayoutParams(lp);
             iv.setBackgroundResource(R.drawable.bg_thumb_placeholder);
-            Glide.with(this).load(k.getThumbnailUrl()).centerCrop().into(iv);
+            com.carikostkita.util.ImageLoaderUtil.loadKostImage(iv, k.getThumbnailUrl(), 300, 200, null, null);
             iv.setOnClickListener(v -> startActivity(new Intent(this, DetailKostActivity.class).putExtra("kost_id", k.getId())));
             photos.addView(iv);
         }

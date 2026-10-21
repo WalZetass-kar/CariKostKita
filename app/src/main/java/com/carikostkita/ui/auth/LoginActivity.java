@@ -259,11 +259,11 @@ public class LoginActivity extends AppCompatActivity {
                     Intent signInIntent = mGoogleSignInClient.getSignInIntent();
                     startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN);
                 } catch (Exception e) {
-                    AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
+                    launchCustomTabOAuth();
                 }
             });
         } catch (Exception e) {
-            AppDialogHelper.showError(this, "Google Sign-In Tidak Tersedia", "Pastikan Layanan Google Play aktif, atau masuk memakai email dan kata sandi.");
+            launchCustomTabOAuth();
         }
     }
 
@@ -306,14 +306,8 @@ public class LoginActivity extends AppCompatActivity {
         } catch (ApiException e) {
             int statusCode = e.getStatusCode();
             if (statusCode == 12501) return;
-            if (statusCode == 10 && !isRetryingBasicGoogle) {
-                // Jika requestIdToken gagal (mismatch Web Client ID), coba dengan Google profile dasar
-                isRetryingBasicGoogle = true;
-                launchBasicGoogleSignIn();
-                return;
-            }
-            AppDialogHelper.showError(this, "Gagal Masuk Google (" + statusCode + ")",
-                    "Akun Google belum bisa dihubungkan. Coba lagi, atau masuk memakai email dan kata sandi.");
+            android.util.Log.w("LoginActivity", "Google Play Services SignIn error (" + statusCode + "), falling back to Supabase OAuth browser");
+            launchCustomTabOAuth();
         }
     }
 
@@ -345,7 +339,7 @@ public class LoginActivity extends AppCompatActivity {
      */
     private void loginWithGoogleProfile(GoogleSignInAccount account) {
         setLoading(false);
-        AppDialogHelper.showError(this, "Gagal Masuk Google", "Masuk dengan Google belum tersedia di perangkat ini. Silakan masuk memakai email dan kata sandi.");
+        launchCustomTabOAuth();
     }
 
     private void launchCustomTabOAuth() {

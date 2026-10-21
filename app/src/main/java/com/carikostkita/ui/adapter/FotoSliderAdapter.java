@@ -6,9 +6,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide;
 import com.carikostkita.R;
 import com.carikostkita.data.model.FotoKost;
+import com.carikostkita.util.ImageLoaderUtil;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,18 +41,28 @@ public class FotoSliderAdapter extends RecyclerView.Adapter<FotoSliderAdapter.Sl
             FotoKost foto = fotoList.get(position);
             String path = foto != null ? foto.getPathFile() : null;
             if (path != null && !path.trim().isEmpty()) {
-                Glide.with(holder.itemView.getContext())
-                        .load(path.trim())
-                        .centerCrop()
-                        .placeholder(R.drawable.bg_thumb_placeholder)
-                        .error(R.drawable.bg_thumb_placeholder)
-                        .into(holder.ivImage);
+                ImageLoaderUtil.loadKostImage(
+                        holder.ivImage,
+                        path.trim(),
+                        1080,
+                        720,
+                        null,
+                        () -> holder.ivImage.setImageResource(R.drawable.bg_thumb_placeholder)
+                );
             } else {
+                ImageLoaderUtil.clear(holder.ivImage);
                 holder.ivImage.setImageResource(R.drawable.bg_thumb_placeholder);
             }
         } else {
+            ImageLoaderUtil.clear(holder.ivImage);
             holder.ivImage.setImageResource(R.drawable.bg_thumb_placeholder);
         }
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull SliderViewHolder holder) {
+        super.onViewRecycled(holder);
+        ImageLoaderUtil.clear(holder.ivImage);
     }
 
     @Override

@@ -22,9 +22,9 @@ import com.carikostkita.util.SessionManager;
 @SuppressLint("CustomSplashScreen")
 public class SplashActivity extends AppCompatActivity {
 
-    /** Splash minimal agar logo tidak berkedip, dan batas tunggu server agar tidak terasa lambat. */
-    private static final long MIN_SPLASH_MS = 900;
-    private static final long MAX_WAIT_MS = 2500;
+    /** Splash cepat dan responsif tanpa jeda waktu lama. */
+    private static final long MIN_SPLASH_MS = 0;
+    private static final long MAX_WAIT_MS = 600;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean routed = false;
@@ -120,14 +120,23 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void routeAfterMinimum(Runnable navigation) {
-        long remaining = MIN_SPLASH_MS - (System.currentTimeMillis() - startedAt);
-        handler.postDelayed(() -> {
-            if (routed || isFinishing()) return;
+        if (routed || isFinishing()) return;
+        long elapsed = System.currentTimeMillis() - startedAt;
+        long remaining = MIN_SPLASH_MS - elapsed;
+        if (remaining <= 0) {
             routed = true;
             navigation.run();
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
             finish();
-        }, Math.max(0, remaining));
+        } else {
+            handler.postDelayed(() -> {
+                if (routed || isFinishing()) return;
+                routed = true;
+                navigation.run();
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                finish();
+            }, remaining);
+        }
     }
 
     @Override

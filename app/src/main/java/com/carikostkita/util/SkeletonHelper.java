@@ -5,13 +5,13 @@ import android.os.Looper;
 import android.os.SystemClock;
 
 /**
- * Utilitas pengatur durasi minimum tampilan Skeleton Loading.
- * Sesuai panduan desain sistem CariKostKita:
- * Skeleton wajib tampil minimal 200ms agar mencegah layar berkedip (content flashing/layout jump).
+ * Utilitas pengatur durasi tampilan Skeleton Loading.
+ * Dioptimalkan agar langsung menampilkan konten riil segera setelah data selesai dimuat
+ * tanpa penundaan atau jeda waktu buatan.
  */
 public final class SkeletonHelper {
 
-    public static final long MIN_SKELETON_DURATION_MS = 200L;
+    public static final long MIN_SKELETON_DURATION_MS = 0L;
 
     private SkeletonHelper() {
         // private constructor
@@ -25,25 +25,18 @@ public final class SkeletonHelper {
     }
 
     /**
-     * Memastikan aksi penyelesaian (menutup skeleton & menampilkan konten riil)
-     * hanya dieksekusi setelah durasi minimal 200ms terpenuhi.
+     * Langsung eksekusi aksi penyelesaian (menutup skeleton & menampilkan konten riil)
+     * segera setelah data selesai dimuat tanpa delay.
      *
      * @param startTime Waktu mulai dari {@link #markStart()}
      * @param onComplete Runnable yang menampilkan konten asli & menyembunyikan skeleton
      */
     public static void complete(long startTime, Runnable onComplete) {
         if (onComplete == null) return;
-        long elapsed = SystemClock.elapsedRealtime() - startTime;
-        long remaining = MIN_SKELETON_DURATION_MS - elapsed;
-
-        if (remaining > 0) {
-            new Handler(Looper.getMainLooper()).postDelayed(onComplete, remaining);
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            onComplete.run();
         } else {
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                onComplete.run();
-            } else {
-                new Handler(Looper.getMainLooper()).post(onComplete);
-            }
+            new Handler(Looper.getMainLooper()).post(onComplete);
         }
     }
 
@@ -52,18 +45,12 @@ public final class SkeletonHelper {
      */
     public static void complete(long startTime, Handler handler, Runnable onComplete) {
         if (onComplete == null) return;
-        if (handler == null) {
-            complete(startTime, onComplete);
-            return;
-        }
-
-        long elapsed = SystemClock.elapsedRealtime() - startTime;
-        long remaining = MIN_SKELETON_DURATION_MS - elapsed;
-
-        if (remaining > 0) {
-            handler.postDelayed(onComplete, remaining);
-        } else {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            onComplete.run();
+        } else if (handler != null) {
             handler.post(onComplete);
+        } else {
+            new Handler(Looper.getMainLooper()).post(onComplete);
         }
     }
 }

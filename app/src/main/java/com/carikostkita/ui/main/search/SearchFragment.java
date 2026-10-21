@@ -45,7 +45,7 @@ import java.util.List;
 public class SearchFragment extends Fragment implements KostAdapter.OnKostClickListener {
 
     private static final String ARG_CATEGORY = "initial_category";
-    private static final long SEARCH_DEBOUNCE_MS = 350;
+    private static final long SEARCH_DEBOUNCE_MS = 150;
 
     private EditText etSearch;
     private ImageButton btnClear;
@@ -190,6 +190,8 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
     private void setupRecyclerView() {
         kostAdapter = new KostAdapter(this);
         rvResults.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvResults.setHasFixedSize(true);
+        rvResults.setItemViewCacheSize(10);
         rvResults.setAdapter(kostAdapter);
         double lat = sessionManager.getUserSelectedLat();
         double lng = sessionManager.getUserSelectedLng();

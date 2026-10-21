@@ -9,10 +9,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.util.FormatUtil;
+import com.carikostkita.util.ImageLoaderUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +38,7 @@ public class MapKostSheetAdapter extends RecyclerView.Adapter<MapKostSheetAdapte
 
     public MapKostSheetAdapter(OnMapKostClickListener listener) {
         this.listener = listener;
+        setHasStableIds(true);
     }
 
     public void submitList(List<MapKostItem> newItems) {
@@ -46,6 +47,14 @@ public class MapKostSheetAdapter extends RecyclerView.Adapter<MapKostSheetAdapte
             items.addAll(newItems);
         }
         notifyDataSetChanged();
+    }
+
+    @Override
+    public long getItemId(int position) {
+        if (position >= 0 && position < items.size() && items.get(position).kost != null) {
+            String id = items.get(position).kost.getId(); return id != null ? (long) id.hashCode() : (long) position;
+        }
+        return RecyclerView.NO_ID;
     }
 
     @NonNull
@@ -98,18 +107,31 @@ public class MapKostSheetAdapter extends RecyclerView.Adapter<MapKostSheetAdapte
         }
 
         String thumb = (kost.getFotoUtama() != null && !kost.getFotoUtama().isEmpty()) ? kost.getFotoUtama() : null;
-        Glide.with(holder.itemView.getContext())
-                .load(thumb)
-                .placeholder(R.drawable.bg_thumb_placeholder)
-                .error(R.drawable.bg_thumb_placeholder)
-                .centerCrop()
-                .into(holder.ivThumb);
+        if (thumb != null && !thumb.trim().isEmpty()) {
+            ImageLoaderUtil.loadKostImage(
+                    holder.ivThumb,
+                    thumb.trim(),
+                    320,
+                    240,
+                    null,
+                    () -> holder.ivThumb.setImageResource(R.drawable.bg_thumb_placeholder)
+            );
+        } else {
+            ImageLoaderUtil.clear(holder.ivThumb);
+            holder.ivThumb.setImageResource(R.drawable.bg_thumb_placeholder);
+        }
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onKostSelected(entry);
             }
         });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull ViewHolder holder) {
+        super.onViewRecycled(holder);
+        ImageLoaderUtil.clear(holder.ivThumb);
     }
 
     @Override

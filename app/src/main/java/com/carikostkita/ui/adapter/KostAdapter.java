@@ -3,8 +3,6 @@ package com.carikostkita.ui.adapter;
 import android.content.Context;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,19 +10,13 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Kost;
 import com.carikostkita.data.model.StatusKost;
 import com.carikostkita.data.model.TipeKost;
-import java.io.File;
+import com.carikostkita.util.ImageLoaderUtil;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +35,7 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
     public KostAdapter(OnKostClickListener listener) {
         this.kostList = new ArrayList<>();
         this.listener = listener;
+        setHasStableIds(true);
     }
 
     /** Titik acuan untuk menampilkan jarak di kartu; (0,0) menyembunyikan jarak. */
@@ -59,6 +52,14 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
         notifyDataSetChanged();
     }
 
+    @Override
+    public long getItemId(int position) {
+        if (position >= 0 && position < kostList.size()) {
+            String id = kostList.get(position).getId(); return id != null ? (long) id.hashCode() : (long) position;
+        }
+        return RecyclerView.NO_ID;
+    }
+
     @NonNull
     @Override
     public KostViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -70,6 +71,12 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
     public void onBindViewHolder(@NonNull KostViewHolder holder, int position) {
         Kost kost = kostList.get(position);
         holder.bind(kost, listener, position, originLat, originLng);
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull KostViewHolder holder) {
+        super.onViewRecycled(holder);
+        holder.recycle();
     }
 
     @Override
@@ -105,6 +112,10 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             tvStatus = itemView.findViewById(R.id.tv_kost_status);
         }
 
+        public void recycle() {
+            ImageLoaderUtil.clear(ivThumbnail);
+        }
+
         public void bind(Kost kost, OnKostClickListener listener, int position, double originLat, double originLng) {
             Context context = itemView.getContext();
             tvName.setText(kost.getNamaKost());
@@ -117,16 +128,36 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             String rating = kost.getRatingLabel();
             tvPrice.setText(rating != null ? kost.getFormattedHarga() + "   " + rating : kost.getFormattedHarga());
 
-            // Ukuran kamar hanya tampil bila pemilik mengisinya
+            // Spesifikasi Kamar (Ukuran & Sisa Kamar)
             if (tvRoomSpecs != null) {
-                String ukuran = kost.getUkuranKamar();
-                tvRoomSpecs.setText(ukuran != null ? ukuran : "");
-                tvRoomSpecs.setVisibility(ukuran != null ? View.VISIBLE : View.GONE);
+                StringBuilder spec = new StringBuilder();
+                if (kost.getUkuranKamar() != null && !kost.getUkuranKamar().trim().isEmpty()) {
+                    spec.append(kost.getUkuranKamar().trim());
+                }
+                if (kost.hasRoomInfo()) {
+                    if (spec.length() > 0) spec.append(" • ");
+                    spec.append(kost.getKamarTersedia()).append(" kamar tersisa");
+                }
+                if (spec.length() > 0) {
+                    tvRoomSpecs.setText(spec.toString());
+                    tvRoomSpecs.setVisibility(View.VISIBLE);
+                } else {
+                    tvRoomSpecs.setVisibility(View.GONE);
+                }
             }
 
-            // Facilities
+            // Fasilitas Utama
             if (tvFacilities != null) {
-                if (kost.getListFasilitas() != null && !kost.getListFasilitas().isEmpty()) {
+                List<String> top = kost.getTopFacilities();
+                if (top != null && !top.isEmpty()) {
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < top.size(); i++) {
+                        if (i > 0) sb.append(" • ");
+                        sb.append(top.get(i));
+                    }
+                    tvFacilities.setText(sb.toString());
+                    tvFacilities.setVisibility(View.VISIBLE);
+                } else if (kost.getListFasilitas() != null && !kost.getListFasilitas().isEmpty()) {
                     StringBuilder sb = new StringBuilder();
                     int max = Math.min(3, kost.getListFasilitas().size());
                     for (int i = 0; i < max; i++) {
@@ -168,50 +199,37 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             } else {
                 if (cardRoot != null) cardRoot.setAlpha(1.0f);
                 ivThumbnail.clearColorFilter();
-                tvStatus.setText(kost.hasRoomInfo() ? kost.getKamarTersedia() + " kamar" : "Tersedia");
+                if (kost.hasRoomInfo() && kost.getKamarTersedia() <= 3 && kost.getKamarTersedia() > 0) {
+                    tvStatus.setText("Sisa " + kost.getKamarTersedia() + " kamar");
+                } else {
+                    tvStatus.setText(kost.hasRoomInfo() ? kost.getKamarTersedia() + " kamar" : "Tersedia");
+                }
                 tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
                 tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
             }
 
-            // Thumbnail Loading via Glide
+            // Thumbnail Loading via ImageLoaderUtil
             String path = kost.getThumbnailPath();
             if (path != null && !path.trim().isEmpty()) {
                 if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
                 ivThumbnail.setVisibility(View.VISIBLE);
-
-                Object loadTarget;
-                if (path.startsWith("content://") || path.startsWith("file://")) {
-                    loadTarget = Uri.parse(path);
-                } else if (path.startsWith("http://") || path.startsWith("https://")) {
-                    loadTarget = path;
-                } else {
-                    File file = new File(path);
-                    loadTarget = file.exists() ? file : path;
-                }
-
-                Glide.with(context)
-                        .load(loadTarget)
-                        .centerCrop()
-                        .listener(new RequestListener<Drawable>() {
-                            @Override
-                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
-                                return false;
-                            }
-
-                            @Override
-                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                                if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
-                                return false;
-                            }
-                        })
-                        .into(ivThumbnail);
+                ImageLoaderUtil.loadKostThumbnail(
+                        ivThumbnail,
+                        path,
+                        () -> {
+                            if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.GONE);
+                        },
+                        () -> {
+                            if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
+                        }
+                );
             } else {
+                ImageLoaderUtil.clear(ivThumbnail);
                 ivThumbnail.setImageDrawable(null);
                 if (layoutPlaceholder != null) layoutPlaceholder.setVisibility(View.VISIBLE);
             }
 
-            // Favorite Icon & Pop Animation + Feedback Snackbar
+            // Favorite Icon & Pop Animation
             if (kost.isFavorite()) {
                 btnFavorite.setImageResource(R.drawable.ic_heart_filled);
                 btnFavorite.setContentDescription("Hapus " + kost.getNamaKost() + " dari favorit");

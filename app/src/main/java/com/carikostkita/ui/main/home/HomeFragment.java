@@ -210,11 +210,15 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
         carouselAdapter = new KostCarouselAdapter(this);
         rvCarousel.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        rvCarousel.setHasFixedSize(true);
+        rvCarousel.setItemViewCacheSize(6);
         rvCarousel.setAdapter(carouselAdapter);
 
         kostAdapter = new KostAdapter(this);
         rvKost.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvKost.setNestedScrollingEnabled(false);
+        rvKost.setHasFixedSize(true);
+        rvKost.setItemViewCacheSize(12);
         rvKost.setAdapter(kostAdapter);
 
         chipSemua.setOnClickListener(v -> filterByCategory("SEMUA"));
@@ -515,7 +519,7 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             @Override
             public void onSuccess(Boolean isFavorite) {
                 kost.setFavorite(isFavorite);
-                kostAdapter.notifyDataSetChanged();
+                kostAdapter.notifyItemChanged(position);
                 carouselAdapter.notifyDataSetChanged();
             }
 

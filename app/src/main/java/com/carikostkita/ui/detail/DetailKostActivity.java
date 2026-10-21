@@ -371,12 +371,29 @@ public class DetailKostActivity extends AppCompatActivity {
 
         // Setup Facilities List
         layoutFacilities.removeAllViews();
+        java.util.List<String> displayFasilitas = new java.util.ArrayList<>();
         if (kost.getListFasilitas() != null && !kost.getListFasilitas().isEmpty()) {
-            LayoutInflater inflater = LayoutInflater.from(this);
             for (Fasilitas f : kost.getListFasilitas()) {
+                if (f != null && f.getNamaFasilitas() != null) {
+                    displayFasilitas.add(f.getNamaFasilitas());
+                }
+            }
+        } else if (kost.getFasilitas() != null && !kost.getFasilitas().isEmpty()) {
+            for (String s : kost.getFasilitas()) {
+                if (s != null && !s.trim().isEmpty()) {
+                    displayFasilitas.add(s.trim());
+                }
+            }
+        } else if (kost.getTopFacilities() != null && !kost.getTopFacilities().isEmpty()) {
+            displayFasilitas.addAll(kost.getTopFacilities());
+        }
+
+        if (!displayFasilitas.isEmpty()) {
+            LayoutInflater inflater = LayoutInflater.from(this);
+            for (String fName : displayFasilitas) {
                 View chip = inflater.inflate(R.layout.item_fasilitas_chip, layoutFacilities, false);
                 TextView tv = chip.findViewById(R.id.tv_fasilitas_name);
-                tv.setText(f.getNamaFasilitas());
+                tv.setText(fName);
                 layoutFacilities.addView(chip);
             }
         } else {

@@ -386,7 +386,7 @@ public class UserRepository {
         if (existing.isSuccessful() && existing.body() != null && existing.body().data != null) {
             return existing.body().data;
         }
-        if (existing.code() != 404) {
+        if (existing.code() != 404 && existing.code() != 409) {
             throw new IOException("Unable to read the authenticated profile (HTTP " + existing.code() + ").");
         }
 
