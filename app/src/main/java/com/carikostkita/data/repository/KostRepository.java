@@ -318,6 +318,59 @@ public class KostRepository {
 
 
 
+
+
+    /**
+     * Ambil seluruh halaman katalog dari FastAPI.
+     *
+     * Endpoint publik membatasi satu halaman maksimal 100 baris dan hanya
+     * mengembalikan penunjuk {@code has_more}. Tanpa berjalan naik halaman,
+     * aplikasi hanya menampilkan 50 listing pertama sementara dashboard admin
+     * menampilkan seluruh katalog.
+     */
+    private List<com.carikostkita.data.remote.dto.KostDto> fetchAllKostPages(
+            String query,
+            String province,
+            String city,
+            String district,
+            String type,
+            Double minPrice,
+            Double maxPrice,
+            String facilities,
+            Boolean onlyAvailable,
+            String sort,
+            int pageSize) throws java.io.IOException {
+
+        java.util.List<com.carikostkita.data.remote.dto.KostDto> all = new java.util.ArrayList<>();
+        int page = 1;
+        final int maxPages = 20; // batas aman: 20 x 100 = 2000 baris
+
+        while (page <= maxPages) {
+            Response<com.carikostkita.data.remote.dto.KostListResponse> res =
+                    kostService.listPublicKosts(
+                            query, province, city, district, type, minPrice, maxPrice,
+                            facilities, onlyAvailable, sort, page, pageSize).execute();
+
+            if (!res.isSuccessful() || res.body() == null) {
+                if (page == 1) {
+                    throw new java.io.IOException("Gagal memuat katalog kost dari FastAPI (HTTP "
+                            + (res.isSuccessful() ? "kosong" : res.code()) + ").");
+                }
+                // Halaman berikutnya gagal: gunakan data yang sudah terkumpul.
+                break;
+            }
+
+            java.util.List<com.carikostkita.data.remote.dto.KostDto> data = res.body().data;
+            if (data != null) all.addAll(data);
+
+            com.carikostkita.data.remote.dto.KostListResponse.Pagination pagination = res.body().pagination;
+            if (pagination == null || !pagination.hasMore || data == null || data.isEmpty()) break;
+            page++;
+        }
+
+        return all;
+    }
+
     public void getAllActiveKost(String currentUserId, DataCallback<List<Kost>> callback) {
 
         executor.execute(() -> {
@@ -326,13 +379,12 @@ public class KostRepository {
 
                 try {
 
-                    Response<com.carikostkita.data.remote.dto.KostListResponse> apiRes =
+                    List<com.carikostkita.data.remote.dto.KostDto> kostDtos = fetchAllKostPages(
+                            null, null, null, null, null, null, null, null, null, "TERBARU", 100);
 
-                            kostService.listPublicKosts(null, null, null, null, null, null, null, null, null, "TERBARU", 1, 50).execute();
+                    if (kostDtos != null && !kostDtos.isEmpty()) {
 
-                    if (apiRes.isSuccessful() && apiRes.body() != null && apiRes.body().data != null) {
-
-                        List<Kost> list = mapDtoListToKost(apiRes.body().data);
+                        List<Kost> list = mapDtoListToKost(kostDtos);
 
                         boolean allZero = !list.isEmpty() && list.stream().allMatch(k -> k.getHarga() <= 0);
 
@@ -494,41 +546,35 @@ public class KostRepository {
 
 
 
-                    Response<com.carikostkita.data.remote.dto.KostListResponse> apiRes =
+                    List<com.carikostkita.data.remote.dto.KostDto> kostDtos = fetchAllKostPages(
 
-                            kostService.listPublicKosts(
+                            queryParam,
 
-                                    queryParam,
+                            null,
 
-                                    null,
+                            null,
 
-                                    null,
+                            kecamatanParam,
 
-                                    kecamatanParam,
+                            tipeKostParam,
 
-                                    tipeKostParam,
+                            hargaMinParam,
 
-                                    hargaMinParam,
+                            hargaMaxParam,
 
-                                    hargaMaxParam,
+                            fasilitasParam,
 
-                                    fasilitasParam,
+                            hanyaTersediaParam,
 
-                                    hanyaTersediaParam,
+                            sortParam,
 
-                                    sortParam,
-
-                                    1,
-
-                                    100
-
-                            ).execute();
+                            100);
 
 
 
-                    if (apiRes.isSuccessful() && apiRes.body() != null && apiRes.body().data != null) {
+                    if (kostDtos != null && !kostDtos.isEmpty()) {
 
-                        List<Kost> list = mapDtoListToKost(apiRes.body().data);
+                        List<Kost> list = mapDtoListToKost(kostDtos);
 
                         boolean allZero = !list.isEmpty() && list.stream().allMatch(k -> k.getHarga() <= 0);
 
