@@ -210,14 +210,18 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
         carouselAdapter = new KostCarouselAdapter(this);
         rvCarousel.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
-        rvCarousel.setHasFixedSize(true);
+        // Height of the carousel is wrap_content: it changes when a card with
+        // a different content height is bound, so the RecyclerView size is
+        // NOT fixed. setHasFixedSize(true) would be wrong here (and lint
+        // rejects it for a wrap_content scrolling dimension).
         rvCarousel.setItemViewCacheSize(6);
         rvCarousel.setAdapter(carouselAdapter);
 
         kostAdapter = new KostAdapter(this);
         rvKost.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvKost.setNestedScrollingEnabled(false);
-        rvKost.setHasFixedSize(true);
+        // Same reasoning as the carousel: the list grows with the number of
+        // items, so its height is not fixed.
         rvKost.setItemViewCacheSize(12);
         rvKost.setAdapter(kostAdapter);
 
