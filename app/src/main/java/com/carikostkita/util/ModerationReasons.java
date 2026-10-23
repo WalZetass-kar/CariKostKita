@@ -25,15 +25,15 @@ public final class ModerationReasons {
             "Deskripsi terlalu singkat, tambahkan aturan kost"
     };
     public static final String[] OWNER_REJECT = {
-            "Foto KTP tidak terbaca atau tidak sesuai nama akun",
-            "Selfie dengan KTP tidak sesuai",
-            "Bukti kepemilikan / kuasa kelola tidak ada",
+            "Foto properti tidak menunjukkan bangunan atau nama kost",
+            "Foto kode verifikasi tidak terlihat atau tidak sesuai",
+            "Foto kamar atau area umum tidak jelas",
             "Data properti tidak dapat diverifikasi"
     };
     public static final String[] OWNER_REVISION = {
-            "Unggah ulang foto KTP yang jelas",
-            "Unggah selfie sambil memegang KTP",
-            "Lampirkan bukti kepemilikan atau surat kuasa",
+            "Unggah ulang foto tampak depan properti yang jelas",
+            "Tulis dan foto kode verifikasi di lokasi properti",
+            "Lengkapi foto kamar atau area umum",
             "Lengkapi nomor WhatsApp aktif dan alamat kost"
     };
     public static final String[] USER_SUSPEND = {

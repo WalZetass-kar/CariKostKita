@@ -66,6 +66,7 @@ public class ProfileFragment extends Fragment {
     private String pendingDocType;
     private View pendingDocRow;
     private final java.util.Set<String> uploadedDocs = new java.util.HashSet<>();
+    private String verificationCode;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -109,6 +110,17 @@ public class ProfileFragment extends Fragment {
             pendingDocRow = row;
             docPicker.launch("image/*");
         });
+    }
+
+    /** Kode acak yang ditulis di lokasi properti; bukan data pribadi. */
+    private String generateVerificationCode() {
+        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder code = new StringBuilder("CKK-");
+        for (int i = 0; i < 4; i++) {
+            code.append(alphabet.charAt(random.nextInt(alphabet.length())));
+        }
+        return code.toString();
     }
 
     @Nullable
@@ -386,6 +398,9 @@ public class ProfileFragment extends Fragment {
     private void showOwnerApplicationDialog() {
         if (getContext() == null) return;
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_pengajuan_pemilik, null);
+        verificationCode = generateVerificationCode();
+        android.widget.TextView tvKode = dialogView.findViewById(R.id.tv_kode_verifikasi);
+        if (tvKode != null) tvKode.setText(verificationCode);
 
         com.google.android.material.textfield.TextInputEditText etNama = dialogView.findViewById(R.id.et_pengajuan_nama_kost);
         com.google.android.material.textfield.TextInputEditText etAlamat = dialogView.findViewById(R.id.et_pengajuan_alamat);
@@ -426,9 +441,9 @@ public class ProfileFragment extends Fragment {
             behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
         });
         uploadedDocs.clear();
-        bindDocRow(dialogView, R.id.doc_ktp, R.id.doc_ktp_status, com.carikostkita.data.repository.VerificationRepository.DOC_KTP);
-        bindDocRow(dialogView, R.id.doc_selfie, R.id.doc_selfie_status, com.carikostkita.data.repository.VerificationRepository.DOC_SELFIE);
-        bindDocRow(dialogView, R.id.doc_kepemilikan, R.id.doc_kepemilikan_status, com.carikostkita.data.repository.VerificationRepository.DOC_KEPEMILIKAN);
+        bindDocRow(dialogView, R.id.doc_properti, R.id.doc_properti_status, com.carikostkita.data.repository.VerificationRepository.DOC_FACADE);
+        bindDocRow(dialogView, R.id.doc_kode, R.id.doc_kode_status, com.carikostkita.data.repository.VerificationRepository.DOC_CODE);
+        bindDocRow(dialogView, R.id.doc_kamar, R.id.doc_kamar_status, com.carikostkita.data.repository.VerificationRepository.DOC_ROOM);
         View band = dialogView.findViewById(R.id.pengajuan_band);
         if (band != null) band.setClipToOutline(true);
         com.carikostkita.util.SettingRowBinder.bindValue(dialogView.findViewById(R.id.pengajuan_benefit_1),
@@ -465,17 +480,18 @@ public class ProfileFragment extends Fragment {
                 return;
             }
 
-            // Normalisasi nomor whatsapp
-            if (!uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_KTP)
-                    || !uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_SELFIE)) {
-                AppDialogHelper.showInfo(requireContext(), "Lengkapi Dokumen",
-                        "Unggah foto KTP dan selfie sambil memegang KTP. Ini mencegah listing palsu dan melindungi pencari kost.");
+            // Wajib: foto properti + kode verifikasi di lokasi.
+            if (!uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_FACADE)
+                    || !uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_CODE)) {
+                AppDialogHelper.showInfo(requireContext(), "Lengkapi Bukti Properti",
+                        "Unggah foto tampak depan properti dan foto kode verifikasi di lokasi. Kami tidak meminta KTP atau surat pribadi.");
                 return;
             }
             String fullWa = "+62" + waDigits;
 
             StringBuilder noteBuilder = new StringBuilder();
-            noteBuilder.append("Nama Kost: ").append(namaKost)
+            noteBuilder.append("[verifikasi-properti] Kode: ").append(verificationCode)
+                    .append(" | Nama Kost: ").append(namaKost)
                     .append(" | Alamat: ").append(alamatKost)
                     .append(" | WA: ").append(fullWa);
             if (!catatan.isEmpty()) {

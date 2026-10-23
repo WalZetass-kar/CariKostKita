@@ -1929,14 +1929,18 @@ public class AdminMainActivity extends AppCompatActivity implements
         }
     }
 
-    /** Dokumen verifikasi dibuka lewat URL bertanda tangan (berlaku 10 menit). */
+    /** Bukti verifikasi dibuka lewat URL bertanda tangan (berlaku 10 menit). */
     @Override
     public void onViewDocuments(User user) {
         com.carikostkita.data.repository.VerificationRepository repo = new com.carikostkita.data.repository.VerificationRepository(this);
         repo.docPaths(user.getUid(), new DataCallback<String[]>() {
             @Override
             public void onSuccess(String[] paths) {
-                String[] labels = {"Foto KTP", "Selfie dengan KTP", "Bukti kepemilikan / kuasa"};
+                String note = user.getPengajuanCatatan();
+                boolean propertyFlow = note != null && note.contains("[verifikasi-properti]");
+                String[] labels = propertyFlow
+                        ? new String[]{"Foto properti", "Foto kode verifikasi", "Foto kamar"}
+                        : new String[]{"Foto KTP", "Selfie dengan KTP", "Bukti kepemilikan / kuasa"};
                 List<String> names = new ArrayList<>();
                 List<String> available = new ArrayList<>();
                 for (int i = 0; i < paths.length; i++) {

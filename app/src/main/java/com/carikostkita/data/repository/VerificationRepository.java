@@ -15,14 +15,21 @@ import okhttp3.MediaType;
 import okhttp3.RequestBody;
 
 /**
- * Dokumen verifikasi pemilik (KTP, selfie, bukti kepemilikan) di bucket PRIVAT verification-docs.
- * File hanya bisa dibuka pemiliknya dan staf lewat URL bertanda tangan yang kedaluwarsa.
+ * Bukti verifikasi PROPERTI pemilik di bucket PRIVAT verification-docs.
+ * Tidak ada KTP/selfie identitas: yang difoto adalah tampak depan properti,
+ * kode verifikasi di lokasi, dan kamar/area umum.
+ *
+ * Nama kolom lama dipertahankan agar rilis ini tidak memerlukan migrasi DB:
+ *   ktp_path         -> foto tampak depan properti
+ *   selfie_path      -> foto kode verifikasi di lokasi
+ *   kepemilikan_path -> foto kamar/area umum
  */
 public class VerificationRepository extends BaseRepository {
     public static final String BUCKET = "verification-docs";
-    public static final String DOC_KTP = "ktp";
-    public static final String DOC_SELFIE = "selfie";
-    public static final String DOC_KEPEMILIKAN = "kepemilikan";
+    // Nilai string = nama kolom lama di tabel users; lihat komentar kelas.
+    public static final String DOC_FACADE = "ktp";
+    public static final String DOC_CODE = "selfie";
+    public static final String DOC_ROOM = "kepemilikan";
 
     private final SupabaseStorageService storage;
 
@@ -31,7 +38,7 @@ public class VerificationRepository extends BaseRepository {
         storage = SupabaseClient.getInstance().createService(SupabaseStorageService.class);
     }
 
-    /** Unggah satu dokumen (dikompres) dan simpan path-nya di profil. Hasil: path di bucket. */
+    /** Unggah satu bukti properti (dikompres) dan simpan path-nya di profil. Hasil: path di bucket. */
     public void upload(Uri uri, String docType, DataCallback<String> callback) {
         async("uploadVerification", callback, () -> {
             byte[] bytes;
@@ -53,7 +60,7 @@ public class VerificationRepository extends BaseRepository {
                 bmp.recycle();
                 bytes = out.toByteArray();
             }
-            String path = session.getUserUid() + "/" + docType + "_" + System.currentTimeMillis() + ".jpg";
+            String path = session.getUserUid() + "/" + storagePrefix(docType) + "_" + System.currentTimeMillis() + ".jpg";
             check("uploadVerification", storage.uploadFileBinary(BUCKET, path, "image/jpeg",
                     RequestBody.create(bytes, MediaType.parse("image/jpeg"))).execute());
 
@@ -64,6 +71,14 @@ public class VerificationRepository extends BaseRepository {
             check("saveVerificationPath", db.patch("users", f, body).execute());
             return path;
         });
+    }
+
+    /** Prefix nama file baru yang netral; nama kolom database tetap memakai nama lama. */
+    private static String storagePrefix(String docType) {
+        if (DOC_FACADE.equals(docType)) return "properti";
+        if (DOC_CODE.equals(docType)) return "kode";
+        if (DOC_ROOM.equals(docType)) return "kamar";
+        return "bukti";
     }
 
     /** URL bertanda tangan berlaku 10 menit, untuk ditinjau staf. */
@@ -78,7 +93,7 @@ public class VerificationRepository extends BaseRepository {
         });
     }
 
-    /** Path dokumen milik user tertentu (untuk staf). Hasil: [ktp, selfie, kepemilikan]. */
+    /** Path bukti properti milik user tertentu (untuk staf). Hasil: [fasad, kode, kamar]. */
     public void docPaths(String userId, DataCallback<String[]> callback) {
         async("docPaths", callback, () -> {
             Map<String, String> f = new HashMap<>();

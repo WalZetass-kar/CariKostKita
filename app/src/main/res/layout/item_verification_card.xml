@@ -103,7 +103,7 @@
             android:layout_width="wrap_content"
             android:layout_height="44dp"
             android:layout_marginTop="4dp"
-            android:text="Lihat dokumen KTP &amp; selfie"
+            android:text="Lihat bukti properti"
             android:textColor="@color/primary"
             app:icon="@drawable/ic_visibility"
             app:iconTint="@color/primary" />

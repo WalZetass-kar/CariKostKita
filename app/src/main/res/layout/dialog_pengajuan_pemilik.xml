@@ -287,19 +287,57 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_marginTop="20dp"
-            android:text="DOKUMEN VERIFIKASI" />
+            android:text="VERIFIKASI PROPERTI" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginStart="4dp"
-            android:text="Disimpan di penyimpanan privat dan hanya dilihat tim verifikasi."
+            android:text="Tanpa KTP. Foto properti disimpan privat dan hanya dilihat tim verifikasi."
             android:textColor="@color/text_muted"
             android:textSize="12sp" />
 
         <LinearLayout
-            android:id="@+id/doc_ktp"
+            android:id="@+id/kode_verifikasi_box"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_skeleton_card"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kode verifikasi properti"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_kode_verifikasi"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.12"
+                android:text="CKK-XXXX"
+                android:textColor="@color/primary_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Tulis kode ini di kertas, letakkan di depan properti, lalu foto. Kode ini membuktikan kamu mengelola properti tersebut."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/doc_properti"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -313,7 +351,7 @@
             android:padding="12dp">
 
             <ImageView
-                android:id="@+id/doc_ktp_icon"
+                android:id="@+id/doc_properti_icon"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/bg_icon_bubble_gold"
@@ -332,23 +370,23 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Foto KTP *"
+                    android:text="Foto tampak depan properti *"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/doc_ktp_status"
+                    android:id="@+id/doc_properti_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ketuk untuk memilih foto"
+                    android:text="Ketuk untuk memilih foto (terlihat nama/nomor kost)"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/doc_selfie"
+            android:id="@+id/doc_kode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -362,7 +400,7 @@
             android:padding="12dp">
 
             <ImageView
-                android:id="@+id/doc_selfie_icon"
+                android:id="@+id/doc_kode_icon"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/bg_icon_bubble_gold"
@@ -381,23 +419,23 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Selfie sambil memegang KTP *"
+                    android:text="Foto kode verifikasi *"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/doc_selfie_status"
+                    android:id="@+id/doc_kode_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ketuk untuk memilih foto"
+                    android:text="Ketuk untuk memilih foto kode di lokasi"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/doc_kepemilikan"
+            android:id="@+id/doc_kamar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -411,7 +449,7 @@
             android:padding="12dp">
 
             <ImageView
-                android:id="@+id/doc_kepemilikan_icon"
+                android:id="@+id/doc_kamar_icon"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/bg_icon_bubble_gold"
@@ -430,16 +468,16 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Bukti kepemilikan / surat kuasa"
+                    android:text="Foto kamar / area umum"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/doc_kepemilikan_status"
+                    android:id="@+id/doc_kamar_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Disarankan: sertifikat, PBB, atau surat kuasa kelola"
+                    android:text="Disarankan: 1 foto kamar atau area bersama"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
