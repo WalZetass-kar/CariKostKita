@@ -857,7 +857,7 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Main Vertical RecyclerView for Baru Ditambahkan -->
+                <!-- Daftar cuplikan: maksimal 10 kost terdekat -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_home_kost"
                     android:layout_width="match_parent"
@@ -865,6 +865,25 @@
                     android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
                     android:overScrollMode="never" />
+
+                <!-- Cuplikan beranda: buka daftar lengkap di tab Cari -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_home_see_all"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="24dp"
+                    android:backgroundTint="@color/surface"
+                    android:text="Lihat selengkapnya"
+                    android:textAllCaps="false"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:cornerRadius="12dp"
+                    app:strokeColor="@color/border_subtle"
+                    app:strokeWidth="1dp" />
 
             </LinearLayout>
 

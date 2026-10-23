@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -78,6 +77,7 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
     private RecyclerView rvCarousel;
     private RecyclerView rvKost;
+    private View btnHomeSeeAll;
 
     private KostAdapter kostAdapter;
     private KostCarouselAdapter carouselAdapter;
@@ -89,16 +89,13 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     private boolean hasLoadedOnce = false;
 
     /**
-     * Beranda hanya menampilkan 10 kost terdekat lebih dulu; sisanya menyusul
-     * saat pengguna menggulir ke bawah (infinite scroll). Daftar lengkapnya
-     * sudah ada di memori, jadi "memuat halaman berikutnya" cukup dengan
-     * melebarkan irisan yang dikirim ke adapter -- tanpa permintaan jaringan
-     * tambahan dan tanpa susutan urutan terdekat.
+     * Beranda hanya menampilkan 10 kost terdekat sebagai cuplikan. Daftar
+     * lengkap dibuka lewat tombol "Lihat selengkapnya" ke tab Cari; tidak ada
+     * auto-load saat menggulir agar beranda tetap ringkas dan urutan terdekat
+     * tidak berubah diam-diam.
      */
-    private static final int HOME_PAGE_SIZE = 10;
-    private NestedScrollView homeScrollView;
+    private static final int HOME_PREVIEW_LIMIT = 10;
     private List<Kost> sortedKostList = new ArrayList<>();
-    private int displayedCount = HOME_PAGE_SIZE;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -233,13 +230,13 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         kostAdapter = new KostAdapter(this);
         rvKost.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvKost.setNestedScrollingEnabled(false);
-        // Same reasoning as the carousel: the list grows with the number of
-        // items, so its height is not fixed.
+        // Tinggi RecyclerView mengikuti isi (maksimal 10 kartu); jangan
+        // setHasFixedSize(true) karena tingginya bukan nilai tetap.
         rvKost.setItemViewCacheSize(12);
         rvKost.setAdapter(kostAdapter);
 
-        homeScrollView = view.findViewById(R.id.scroll_home_root);
-        setupInfiniteScroll();
+        btnHomeSeeAll = view.findViewById(R.id.btn_home_see_all);
+        if (btnHomeSeeAll != null) btnHomeSeeAll.setOnClickListener(v -> openSearchTab(null));
 
         chipSemua.setOnClickListener(v -> filterByCategory("SEMUA"));
         chipPutra.setOnClickListener(v -> filterByCategory("PUTRA"));
@@ -405,6 +402,7 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     private void showEmptyState(boolean isError, String errorMessage) {
         layoutEmpty.setVisibility(View.VISIBLE);
         rvKost.setVisibility(View.GONE);
+        if (btnHomeSeeAll != null) btnHomeSeeAll.setVisibility(View.GONE);
         if (bannerKamarKosong != null) bannerKamarKosong.setVisibility(View.GONE);
         if (layoutSectionTerjangkau != null) layoutSectionTerjangkau.setVisibility(View.GONE);
         if (layoutSectionNew != null) layoutSectionNew.setVisibility(View.GONE);
@@ -494,46 +492,29 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         }
         carouselAdapter.notifyDataSetChanged();
         sortedKostList = filtered;
-        // Ganti kategori menghitung ulang urutan, jadi pengguna mulai dari
-        // 10 teratas lagi.
-        displayedCount = HOME_PAGE_SIZE;
+        // Ganti kategori menghitung ulang urutan dan selalu mulai dari 10 teratas.
         renderVisibleSlice();
     }
 
     /**
-     * Kirim sebagian kecil daftar ke adapter lebih dulu supaya beranda tampil
-     * cepat; baris berikutnya menyusul saat pengguliran mendekati akhir.
+     * Kirim 10 kost teratas ke adapter. Daftar lengkap tidak dimuat di beranda;
+     * tombol "Lihat selengkapnya" membuka tab Cari.
      */
     private void renderVisibleSlice() {
         if (!isAdded() || kostAdapter == null) return;
-        int end = Math.min(displayedCount, sortedKostList.size());
+        int end = Math.min(HOME_PREVIEW_LIMIT, sortedKostList.size());
         kostAdapter.submitList(new ArrayList<>(sortedKostList.subList(0, end)));
         updateSectionTitle(sessionManager.getUserSelectedLat() != 0 && sessionManager.getUserSelectedLng() != 0);
+        updateSeeAllButton();
     }
 
     /**
-     * Wadah induk beranda yang menggulir (NestedScrollView), bukan RecyclerView
-     * itu sendiri -- nested scrolling pada rvKost sengaja dimatikan karena
-     * tingginya mengikuti isi.
+     * Tombol footer hanya muncul jika masih ada kost di luar 10 teratas.
+     * Menekannya membuka tab Cari dengan daftar lengkap.
      */
-    private void setupInfiniteScroll() {
-        if (homeScrollView == null) return;
-        // Ambang 600px: halaman berikutnya mulai disiapkan sebelum pengguna
-        // benar-benar menyentuh baris terakhir, supaya tidak terasa tersendat.
-        homeScrollView.setOnScrollChangeListener(
-                (NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                    View content = v.getChildAt(0);
-                    if (content == null) return;
-                    if (scrollY + v.getHeight() >= content.getHeight() - 600) {
-                        revealNextPage();
-                    }
-                });
-    }
-
-    private void revealNextPage() {
-        if (displayedCount >= sortedKostList.size()) return;
-        displayedCount = Math.min(displayedCount + HOME_PAGE_SIZE, sortedKostList.size());
-        renderVisibleSlice();
+    private void updateSeeAllButton() {
+        if (btnHomeSeeAll == null) return;
+        btnHomeSeeAll.setVisibility(sortedKostList.size() > HOME_PREVIEW_LIMIT ? View.VISIBLE : View.GONE);
     }
 
     private void updateSectionTitle(boolean sortedByDistance) {
@@ -543,9 +524,9 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         String base = sortedByDistance
                 ? (hasLabel ? "Terdekat dari " + shortLocation(loc) : "Terdekat dari lokasimu")
                 : "Baru ditambahkan";
-        // Menandai bahwa daftar bertambah bertahap, bukan berhenti di 10.
+        // Beranda adalah cuplikan: tampilkan "10 dari N" saat masih ada sisa.
         int total = sortedKostList.size();
-        int shown = Math.min(displayedCount, total);
+        int shown = Math.min(HOME_PREVIEW_LIMIT, total);
         tvSectionNewTitle.setText(total > shown ? base + " \u00b7 " + shown + " dari " + total : base);
     }
 
