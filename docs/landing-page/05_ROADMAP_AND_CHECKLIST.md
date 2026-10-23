@@ -1,5 +1,10 @@
 # Roadmap & Checklist Peluncuran — CariKostKita Landing Page & Pre-Release
 
+> **Dokumen historis (spesifikasi v1.0.0-beta).** Nilai versi, ukuran APK,
+> dan tautan di dokumen ini bukan kondisi terkini. Status rilis yang berlaku
+> ada di `docs/SETTINGS_SINGLE_SOURCE.md` (repo FastAPI) dan halaman GitHub
+> Release. Ringkasan terkini ada di [README.md](./README.md).
+
 - **Tujuan**: Memberikan panduan kerja terstruktur (*step-by-step actionable checklist*) mulai dari persiapan aset aplikasi Android, perakitan website landing page, uji coba unduhan di berbagai merek smartphone, hingga transisi ke Google Play Store.
 - **Status**: Panduan Operasional Siap Dijalankan
 
@@ -53,9 +58,9 @@
 ### Fase 1: Persiapan APK & Aset Visual
 - [ ] **Generate Build APK Bersih**:
   - Pastikan APK terbaru sudah mencakup fitur 3 role lengkap (Pencari Kost, Pemilik Kost, Admin/Developer), multi-foto, koordinat Maps, dan in-app chat.
-  - Periksa ukuran file APK agar tetap ramping (~6.9 MB hingga <10 MB).
+  - Periksa ukuran file APK agar tetap ramping (3–5 MB).
 - [ ] **Tentukan Penamaan Berkas**:
-  - Format standar: `CariKostKita-v1.0.0-beta.apk`.
+  - Format standar: `CariKostKita-v<versi>-release.apk` (contoh: `CariKostKita-v1.1.2-release.apk`).
 - [ ] **Hitung Checksum SHA-256**:
   - Jalankan di terminal:
     ```bash
@@ -110,8 +115,8 @@
 ### Fase 4: Deployment & Distribusi Publik (Beta Testing)
 - [ ] **Unggah APK ke GitHub Releases**:
   - Buka GitHub repository `WalZetass-kar/CariKostKita`.
-  - Buat release baru dengan tag `v1.0.0-beta`.
-  - Lampirkan file `CariKostKita-v1.0.0-beta.apk` dan sertakan changelog fitur.
+  - Buat release baru dengan tag `v<versi>` (contoh: `v1.1.2`).
+  - Lampirkan file `CariKostKita-v<versi>-release.apk` dan sertakan changelog fitur.
 - [ ] **Deploy Website**:
   - Sambungkan repositori website ke Vercel atau Cloudflare Pages.
   - Pasang custom domain (misalnya `carikostkita.com` atau subdomain sementara `beta.carikostkita.com` atau domain gratis `.vercel.app`).

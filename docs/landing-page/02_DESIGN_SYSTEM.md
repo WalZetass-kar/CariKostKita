@@ -1,5 +1,10 @@
 # Design System & UI/UX Guidelines — CariKostKita Landing Page
 
+> **Dokumen historis (spesifikasi v1.0.0-beta).** Nilai versi, ukuran APK,
+> dan tautan di dokumen ini bukan kondisi terkini. Status rilis yang berlaku
+> ada di `docs/SETTINGS_SINGLE_SOURCE.md` (repo FastAPI) dan halaman GitHub
+> Release. Ringkasan terkini ada di [README.md](./README.md).
+
 - **Tujuan**: Memastikan tampilan website konsisten dengan identitas visual aplikasi Android CariKostKita, ramah pengguna, berfokus *mobile-first*, serta memenuhi standar aksesibilitas tinggi (*anti-slop*).
 - **Status**: Siap Digunakan untuk Implementasi Antarmuka (CSS / Tailwind / Component Framework)
 

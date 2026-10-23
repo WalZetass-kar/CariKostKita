@@ -1,5 +1,10 @@
 # Rekomendasi Tech Stack, Arsitektur & Deployment — CariKostKita Landing Page
 
+> **Dokumen historis (spesifikasi v1.0.0-beta).** Nilai versi, ukuran APK,
+> dan tautan di dokumen ini bukan kondisi terkini. Status rilis yang berlaku
+> ada di `docs/SETTINGS_SINGLE_SOURCE.md` (repo FastAPI) dan halaman GitHub
+> Release. Ringkasan terkini ada di [README.md](./README.md).
+
 - **Tujuan**: Menentukan fondasi teknologi pembuatan website yang cepat, ringan, mudah dirawat, hemat biaya (atau gratis 100%), serta memiliki mekanisme hosting file APK yang stabil dan aman.
 - **Status**: Siap untuk Implementasi Teknis
 

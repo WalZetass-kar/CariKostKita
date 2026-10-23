@@ -6,7 +6,7 @@ Isi formulir **App content → Data safety** sesuai fitur yang benar-benar ada d
 | --- | --- | --- | --- | --- | --- |
 | Personal info | Name, Email address | Ya | Tidak | Tidak | Account management, App functionality |
 | Personal info | Phone number | Ya | Tidak* | Ya | App functionality |
-| Personal info | Other info (KTP/selfie pemilik) | Ya | Tidak | Ya (hanya pemilik) | Fraud prevention, security |
+| Photos and videos | Photos (bukti properti pemilik) | Ya | Tidak | Ya (hanya pemilik) | Fraud prevention, security |
 | Location | Approximate & precise location | Ya | Tidak | Ya | App functionality (kost terdekat) |
 | Messages | Other in-app messages | Ya | Tidak | Ya | App functionality |
 | Photos and videos | Photos | Ya | Tidak | Ya | App functionality |

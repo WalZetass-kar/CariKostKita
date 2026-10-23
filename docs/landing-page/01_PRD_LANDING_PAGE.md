@@ -1,5 +1,10 @@
 # Product Requirements Document (PRD) — Landing Page CariKostKita (Pre-Release Hub)
 
+> **Dokumen historis (spesifikasi v1.0.0-beta).** Nilai versi, ukuran APK,
+> dan tautan di dokumen ini bukan kondisi terkini. Status rilis yang berlaku
+> ada di `docs/SETTINGS_SINGLE_SOURCE.md` (repo FastAPI) dan halaman GitHub
+> Release. Ringkasan terkini ada di [README.md](./README.md).
+
 - **Nama Produk**: CariKostKita Pre-Release Web Hub
 - **Tipe Proyek**: Web Landing Page & APK Distribution Platform
 - **Versi Rilis Awal**: 1.0.0-beta

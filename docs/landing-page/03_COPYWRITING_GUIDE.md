@@ -1,5 +1,10 @@
 # Panduan Teks & Copywriting (Anti-Slop) — CariKostKita Landing Page
 
+> **Dokumen historis (spesifikasi v1.0.0-beta).** Nilai versi, ukuran APK,
+> dan tautan di dokumen ini bukan kondisi terkini. Status rilis yang berlaku
+> ada di `docs/SETTINGS_SINGLE_SOURCE.md` (repo FastAPI) dan halaman GitHub
+> Release. Ringkasan terkini ada di [README.md](./README.md).
+
 - **Prinsip Utama**: Bahasa Indonesia alami, hangat, transparan, dan tidak menggunakan kata klise AI (*anti-slop*).
 - **Target Pembaca**: Mahasiswa dan perantau di Kota Pekanbaru serta bapak/ibu pemilik kost.
 
@@ -13,7 +18,7 @@
 2. **Jujur Mengenai Wilayah Operasional**:
    - Sebutkan secara jelas bahwa aplikasi ini berfokus pada area **Kota Pekanbaru** (khususnya wilayah sekitar kampus UIR, UNRI, UIN Suska, dan Kecamatan Bukit Raya).
 3. **Penjelasan Teknis Ramah Pemula**:
-   - Istilah "Install dari Sumber Tidak Dikenal" (*Install Unknown Apps*) dijelaskan sebagai prosedur baku Android untuk aplikasi pra-rilis, bukan indikasi bahwa file tersebut berbahaya.
+   - Istilah "Install dari Sumber Tidak Dikenal" (*Install Unknown Apps*) dijelaskan sebagai prosedur baku Android untuk aplikasi yang dirilis resmi, bukan indikasi bahwa file tersebut berbahaya.
 4. **Gaya Bahasa**:
    - Lugas, santun, terstruktur, dan tidak bertele-tele.
 
@@ -36,14 +41,14 @@
 
 ### 2.2 Hero Section (Bagian Utama)
 - **Badge Status**:
-  - `🟢 Versi Pra-Rilis v1.0.0-beta • Khusus Android`
+  - `🟢 Rilis Resmi v1.1.2 • Khusus Android`
 - **Headline Utama**:
   > **Cari Kost di Pekanbaru Tanpa Perlu Capek Keliling.**
 - **Sub-headline**:
   > Temukan kamar kost yang sesuai kebutuhan Anda di sekitar kampus dan pusat kota. Dilengkapi foto kamar asli, patokan lokasi Google Maps yang presisi, dan kontak langsung ke pemilik kost tanpa perantara.
 - **Tombol Utama (CTA 1)**:
   - **Download APK Sekarang**
-  - Sub-teks tombol: *Ukuran ~6.9 MB • Android 8.0 ke atas • Gratis*
+  - Sub-teks tombol: *Ukuran ~3.3 MB • Android 8.0 ke atas • Gratis*
 - **Tombol Sekunder (CTA 2)**:
   - *Panduan Pasang APK*
 - **Catatan Keamanan (Microcopy)**:
@@ -52,11 +57,11 @@
 ---
 
 ### 2.3 Seksi Keamanan & Kepercayaan (Security & Trust)
-- **Judul**: Mengapa Mengunduh Versi Pra-Rilis CariKostKita?
+- **Judul**: Mengapa Mengunduh Rilis Resmi CariKostKita?
 - **Poin 1: Berkas Resmi & Terverifikasi**:
   - File APK ditandatangani (*signed*) langsung oleh pengembang resmi. Tidak disisipi iklan pihak ketiga atau program mencurigakan.
 - **Poin 2: Ringan & Hemat Kuota**:
-  - Ukuran file hanya sekitar 6.9 MB, sehingga cepat diunduh dan tidak membebani memori ponsel Anda.
+  - Ukuran file hanya sekitar 3.3 MB, sehingga cepat diunduh dan tidak membebani memori ponsel Anda.
 - **Poin 3: Izin Aplikasi yang Masuk Akal**:
   - Aplikasi hanya meminta izin lokasi (untuk menampilkan kost terdekat dan membuka Google Maps) serta izin galeri foto jika Anda pemilik kost yang ingin mengunggah foto kamar.
 
@@ -146,7 +151,7 @@
 - **Brand**: CariKostKita Pekanbaru
 - **Deskripsi Singkat**: Platform pencarian hunian kost berbasis aplikasi Android untuk mahasiswa dan perantau di Kota Pekanbaru, Riau.
 - **Tautan Cepat**:
-  - Unduh APK (v1.0.0-beta)
+  - Unduh APK (v1.1.2)
   - Panduan Instalasi
   - Ketentuan Layanan & Privasi
   - Repositori GitHub
