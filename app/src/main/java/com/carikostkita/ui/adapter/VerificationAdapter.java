@@ -99,6 +99,9 @@ public class VerificationAdapter extends RecyclerView.Adapter<VerificationAdapte
 
         String catatan = user.getPengajuanCatatan();
         if (catatan != null && !catatan.isEmpty()) {
+            // Penanda internal tidak perlu terlihat admin; kode tetap ditampilkan.
+            catatan = catatan.replaceFirst("^\\[verifikasi-properti\\]\\s*", "");
+            if (catatan.isEmpty()) catatan = "Pengajuan verifikasi properti.";
             holder.tvCatatan.setText("Info Pengajuan: " + catatan);
             holder.tvCatatan.setVisibility(View.VISIBLE);
         } else {
