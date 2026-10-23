@@ -2,8 +2,8 @@
 
 Selamat datang di folder dokumentasi spesifikasi website resmi **CariKostKita Pre-Release Hub**. 
 
-> **Status terkini (Oktober 2026):** rilis resmi **v1.1.2** tersedia di
-> GitHub Release. APK berukuran **3.3 MB** (3.502.505 byte), `versionCode 4`,
+> **Status terkini (Oktober 2026):** rilis resmi **v1.1.3** tersedia di
+> GitHub Release. APK berukuran **3.3 MB** (3.502.729 byte), `versionCode 5`,
 > Android 8.0+. Dokumen di folder ini adalah spesifikasi historis
 > v1.0.0-beta; nilai versi/ukuran di dalamnya bukan kondisi terkini.
 
@@ -27,8 +27,8 @@ Folder ini berisi panduan lengkap untuk merancang, menulis teks (*copywriting*),
 
 - **Aplikasi**: CariKostKita (Mobile Android, Java SDK)
 - **Target Wilayah**: Pekanbaru, Riau (Kecamatan Bukit Raya dan sekitarnya)
-- **Versi Saat Ini**: `1.1.2` (`versionCode 4`)
-- **Ukuran File APK**: 3.3 MB (3.502.505 byte)
+- **Versi Saat Ini**: `1.1.3` (`versionCode 5`)
+- **Ukuran File APK**: 3.3 MB (3.502.729 byte)
 - **Sistem Operasi Didukung**: Android 8.0 (Oreo) ke atas
 - **Warna Utama**: Crimson Maroon (`#A30D18`), Canvas Warm Off-White (`#F8F8F6`), Ink Slate (`#18202F`), WhatsApp Green (`#16834B`)
-- **Distribusi File**: GitHub Releases CDN (tag `v1.1.2`)
+- **Distribusi File**: GitHub Releases CDN (tag `v1.1.3`)
