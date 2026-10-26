@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.carikostkita.R;
+import com.carikostkita.data.local.KostDiskCache;
 import com.carikostkita.data.location.IndonesiaLocationData;
 import com.carikostkita.data.location.UserLocationManager;
 import com.carikostkita.data.model.Kost;
@@ -329,6 +330,15 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
     private void loadData(boolean showSkeleton) {
         long startTime = SkeletonHelper.markStart();
+
+        // 1. Tampilkan data dari disk cache secara instan (0ms skeleton) jika ada
+        if (!hasLoadedOnce && getContext() != null) {
+            List<Kost> cached = KostDiskCache.load(requireContext());
+            if (cached != null && !cached.isEmpty()) {
+                onDataLoaded(cached);
+                showSkeleton = false; // Hindari skeleton menutupi data cache
+            }
+        }
 
         if (showSkeleton && !swipeRefresh.isRefreshing()) {
             if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);

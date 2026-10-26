@@ -36,6 +36,8 @@ import com.carikostkita.data.model.TipeKost;
 
 import com.carikostkita.data.model.Wilayah;
 
+import com.carikostkita.data.local.KostDiskCache;
+
 import com.carikostkita.data.remote.SupabaseClient;
 
 import com.carikostkita.data.remote.SupabaseDbService;
@@ -276,7 +278,7 @@ public class KostRepository {
 
         this.sessionManager = new SessionManager(context);
 
-        this.executor = Executors.newSingleThreadExecutor();
+        this.executor = Executors.newFixedThreadPool(4);
 
         this.mainHandler = new Handler(Looper.getMainLooper());
 
@@ -343,7 +345,7 @@ public class KostRepository {
 
         java.util.List<com.carikostkita.data.remote.dto.KostDto> all = new java.util.ArrayList<>();
         int page = 1;
-        final int maxPages = 20; // batas aman: 20 x 100 = 2000 baris
+        final int maxPages = 3; // batas wajar filter/search: 3 x 100 = 300 baris untuk respons cepat
 
         while (page <= maxPages) {
             Response<com.carikostkita.data.remote.dto.KostListResponse> res =
@@ -379,18 +381,24 @@ public class KostRepository {
 
                 try {
 
-                    List<com.carikostkita.data.remote.dto.KostDto> kostDtos = fetchAllKostPages(
-                            null, null, null, null, null, null, null, null, null, "TERBARU", 100);
+                    // Cepat: Halaman pertama (100 item) cukup untuk mengisi katalog instan tanpa delay 20 request beruntun
+                    Response<com.carikostkita.data.remote.dto.KostListResponse> firstPageRes =
+                            kostService.listPublicKosts(
+                                    null, null, null, null, null, null, null, null, null, "TERBARU", 1, 100).execute();
 
-                    if (kostDtos != null && !kostDtos.isEmpty()) {
+                    if (firstPageRes.isSuccessful() && firstPageRes.body() != null && firstPageRes.body().data != null && !firstPageRes.body().data.isEmpty()) {
 
-                        List<Kost> list = mapDtoListToKost(kostDtos);
+                        List<Kost> list = mapDtoListToKost(firstPageRes.body().data);
 
                         boolean allZero = !list.isEmpty() && list.stream().allMatch(k -> k.getHarga() <= 0);
 
                         if (!allZero) {
 
                             populateFavorites(list, currentUserId);
+
+                            if (appContext != null) {
+                                KostDiskCache.save(appContext, list);
+                            }
 
                             mainHandler.post(() -> callback.onSuccess(list));
 
@@ -417,6 +425,10 @@ public class KostRepository {
                     List<Kost> list = mapDtoListToKost(res.body());
 
                     populateFavorites(list, currentUserId);
+
+                    if (appContext != null) {
+                        KostDiskCache.save(appContext, list);
+                    }
 
                     mainHandler.post(() -> callback.onSuccess(list));
 
