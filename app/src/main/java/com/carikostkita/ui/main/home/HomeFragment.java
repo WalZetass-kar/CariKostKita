@@ -62,6 +62,13 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
     private TextView chipSemua, chipPutra, chipPutri, chipCampur;
+    private TextView chipCampusAll, chipCampusUnri, chipCampusUir, chipCampusUin, chipCampusSudirman;
+    private String selectedCampus = "ALL";
+    private static final double LAT_UNRI = 0.4791, LNG_UNRI = 101.3789;
+    private static final double LAT_UIR = 0.4431, LNG_UIR = 101.4552;
+    private static final double LAT_UIN = 0.4578, LNG_UIN = 101.3655;
+    private static final double LAT_SUDIRMAN = 0.5255, LNG_SUDIRMAN = 101.4475;
+    private static final double CAMPUS_RADIUS_KM = 3.5;
     private View bannerKamarKosong;
     private TextView tvBannerText;
     private View badgeNotification;
@@ -154,6 +161,12 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         chipPutri = view.findViewById(R.id.chip_home_putri);
         chipCampur = view.findViewById(R.id.chip_home_campur);
 
+        chipCampusAll = view.findViewById(R.id.chip_campus_all);
+        chipCampusUnri = view.findViewById(R.id.chip_campus_unri);
+        chipCampusUir = view.findViewById(R.id.chip_campus_uir);
+        chipCampusUin = view.findViewById(R.id.chip_campus_uin);
+        chipCampusSudirman = view.findViewById(R.id.chip_campus_sudirman);
+
         bannerKamarKosong = view.findViewById(R.id.banner_kamar_kosong);
         tvBannerText = view.findViewById(R.id.tv_banner_text);
 
@@ -243,6 +256,12 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         chipPutra.setOnClickListener(v -> filterByCategory("PUTRA"));
         chipPutri.setOnClickListener(v -> filterByCategory("PUTRI"));
         chipCampur.setOnClickListener(v -> filterByCategory("CAMPUR"));
+
+        if (chipCampusAll != null) chipCampusAll.setOnClickListener(v -> filterByCampus("ALL"));
+        if (chipCampusUnri != null) chipCampusUnri.setOnClickListener(v -> filterByCampus("UNRI"));
+        if (chipCampusUir != null) chipCampusUir.setOnClickListener(v -> filterByCampus("UIR"));
+        if (chipCampusUin != null) chipCampusUin.setOnClickListener(v -> filterByCampus("UIN"));
+        if (chipCampusSudirman != null) chipCampusSudirman.setOnClickListener(v -> filterByCampus("SUDIRMAN"));
 
         if (bannerKamarKosong != null) {
             bannerKamarKosong.setOnClickListener(v -> openSearchTab("AVAILABLE"));
@@ -451,11 +470,59 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         applyCategoryFilter();
     }
 
+    private void filterByCampus(String campus) {
+        selectedCampus = campus;
+        updateCampusChipsVisual();
+        applyCategoryFilter();
+    }
+
     private void updateChipsVisual() {
         setChipStyle(chipSemua, "SEMUA".equals(selectedCategory));
         setChipStyle(chipPutra, "PUTRA".equals(selectedCategory));
         setChipStyle(chipPutri, "PUTRI".equals(selectedCategory));
         setChipStyle(chipCampur, "CAMPUR".equals(selectedCategory));
+    }
+
+    private void updateCampusChipsVisual() {
+        setChipStyle(chipCampusAll, "ALL".equals(selectedCampus));
+        setChipStyle(chipCampusUnri, "UNRI".equals(selectedCampus));
+        setChipStyle(chipCampusUir, "UIR".equals(selectedCampus));
+        setChipStyle(chipCampusUin, "UIN".equals(selectedCampus));
+        setChipStyle(chipCampusSudirman, "SUDIRMAN".equals(selectedCampus));
+    }
+
+    private boolean matchesCampus(Kost k, String campus) {
+        if ("ALL".equals(campus) || campus == null) return true;
+        double targetLat = 0, targetLng = 0;
+        String[] keywords;
+        if ("UNRI".equals(campus)) {
+            targetLat = LAT_UNRI; targetLng = LNG_UNRI;
+            keywords = new String[]{"unri", "panam", "bangau sakti", "bina widya", "tampan", "subrantas", "soebrantas"};
+        } else if ("UIR".equals(campus)) {
+            targetLat = LAT_UIR; targetLng = LNG_UIR;
+            keywords = new String[]{"uir", "marpoyan", "kaharuddin", "bukit raya", "pasir putih", "simpang tiga"};
+        } else if ("UIN".equals(campus)) {
+            targetLat = LAT_UIN; targetLng = LNG_UIN;
+            keywords = new String[]{"uin", "suska", "simpang baru", "tuah karya", "garuda sakti"};
+        } else if ("SUDIRMAN".equals(campus)) {
+            targetLat = LAT_SUDIRMAN; targetLng = LNG_SUDIRMAN;
+            keywords = new String[]{"sudirman", "sukajadi", "senapelan", "pekanbaru kota", "tuanku tambusai", "nangka"};
+        } else {
+            return true;
+        }
+
+        // Cek koordinat spasial jika tersedia
+        if (k.hasCoordinates()) {
+            double dist = GeoUtil.distanceKm(targetLat, targetLng, k.getLatitude(), k.getLongitude());
+            if (dist <= CAMPUS_RADIUS_KM) return true;
+        }
+
+        // Cek fallback kata kunci di alamat, nama, atau deskripsi
+        String haystack = (k.getNamaKost() + " " + k.getAlamat() + " " + k.getKelurahan() + " " + k.getKecamatan() + " " + k.getDeskripsi()).toLowerCase(java.util.Locale.ROOT);
+        for (String kw : keywords) {
+            if (haystack.contains(kw)) return true;
+        }
+        return false;
     }
 
     private void setChipStyle(TextView chip, boolean isActive) {
@@ -476,8 +543,10 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     private void applyCategoryFilter() {
         List<Kost> filtered = new ArrayList<>();
         for (Kost k : masterKostList) {
-            if ("SEMUA".equals(selectedCategory)
-                    || (k.getTipeKost() != null && k.getTipeKost().name().equals(selectedCategory))) {
+            boolean catMatch = "SEMUA".equals(selectedCategory)
+                    || (k.getTipeKost() != null && k.getTipeKost().name().equals(selectedCategory));
+            boolean campusMatch = matchesCampus(k, selectedCampus);
+            if (catMatch && campusMatch) {
                 filtered.add(k);
             }
         }
@@ -600,11 +669,22 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     }
 
     private void showLocationPicker() {
-        LocationPickerBottomSheet.show(requireContext(), (city, district, display) -> {
-            updateLocationUI();
-            updateDiscoveryArea(city);
-            applyCategoryFilter();
-        });
+        LocationPickerBottomSheet.show(
+                requireContext(),
+                (city, district, display) -> {
+                    updateLocationUI();
+                    updateDiscoveryArea(city);
+                    applyCategoryFilter();
+                },
+                () -> {
+                    if (locationPermissionLauncher != null) {
+                        locationPermissionLauncher.launch(new String[]{
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                        });
+                    }
+                }
+        );
     }
 
     private void detectDeviceLocation() {

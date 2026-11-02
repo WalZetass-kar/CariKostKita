@@ -206,8 +206,13 @@ public class DetailKostActivity extends AppCompatActivity {
 
         btnActionWhatsApp.setOnClickListener(v -> {
             if (currentKost != null) {
-                String template = "Halo pemilik " + currentKost.getNamaKost() +
-                        ", saya melihat informasi kost Anda di aplikasi CariKostKita. Apakah kamar masih tersedia?";
+                String tipe = currentKost.getTipeKost() != null ? currentKost.getTipeKost().getDisplayName() : "Kost";
+                String harga = currentKost.getFormattedHarga();
+                String template = "Halo pemilik " + currentKost.getNamaKost() + ",\n" +
+                        "Saya menemukan kost Anda melalui aplikasi CariKostKita.\n" +
+                        "• Tipe: " + tipe + "\n" +
+                        "• Biaya sewa: " + harga + "\n" +
+                        "Apakah saat ini masih tersedia kamar kosong? Saya tertarik untuk bertanya info lebih lanjut dan menjadwalkan survei lokasi. Terima kasih!";
                 IntentHelper.openWhatsApp(
                         DetailKostActivity.this,
                         currentKost.getNoWhatsapp(),
@@ -605,6 +610,11 @@ public class DetailKostActivity extends AppCompatActivity {
         com.google.android.material.chip.ChipGroup cg = findViewById(R.id.cg_detail_aturan);
         if (section == null || tv == null || cg == null) return;
         StringBuilder sb = new StringBuilder();
+        if (kost.isListrikTermasuk()) {
+            sb.append("⚡ Listrik: Sudah termasuk dalam harga sewa (All-in)\n");
+        } else {
+            sb.append("🔌 Listrik: Token mandiri (dibayar terpisah sesuai pemakaian)\n");
+        }
         if (kost.getDeposit() != null) sb.append("Deposit: ").append(com.carikostkita.util.FormatUtil.formatRupiah(kost.getDeposit())).append("\n");
         if (kost.getMinimalSewaBulan() != null) sb.append("Minimal sewa: ").append(kost.getMinimalSewaBulan()).append(" bulan\n");
         if (kost.getBiayaTambahan() != null) sb.append("Biaya lain: ").append(kost.getBiayaTambahan());

@@ -22,6 +22,10 @@ public class LocationPickerBottomSheet {
     }
 
     public static void show(@NonNull Context context, OnLocationSelectedListener listener) {
+        show(context, listener, null);
+    }
+
+    public static void show(@NonNull Context context, OnLocationSelectedListener listener, Runnable onPermissionRequest) {
         BottomSheetDialog dialog = new BottomSheetDialog(context);
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_location_picker, null);
         dialog.setContentView(view);
@@ -71,7 +75,12 @@ public class LocationPickerBottomSheet {
         // 4. GPS Button
         btnUseGps.setOnClickListener(v -> {
             if (!locationManager.hasLocationPermission()) {
-                Toast.makeText(context, "Izin lokasi diperlukan untuk deteksi GPS otomatis", Toast.LENGTH_SHORT).show();
+                if (onPermissionRequest != null) {
+                    dialog.dismiss();
+                    onPermissionRequest.run();
+                } else {
+                    Toast.makeText(context, "Izin lokasi diperlukan untuk deteksi GPS otomatis", Toast.LENGTH_SHORT).show();
+                }
                 return;
             }
             pbGps.setVisibility(View.VISIBLE);

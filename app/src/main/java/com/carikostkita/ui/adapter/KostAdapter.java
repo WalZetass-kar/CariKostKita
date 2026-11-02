@@ -94,6 +94,7 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
         private final TextView tvLocation;
         private final TextView tvFacilities;
         private final TextView tvRoomSpecs;
+        private final TextView tvElectricity;
         private final TextView tvPrice;
         private final TextView tvStatus;
 
@@ -108,6 +109,7 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             tvLocation = itemView.findViewById(R.id.tv_kost_location);
             tvFacilities = itemView.findViewById(R.id.tv_kost_facilities);
             tvRoomSpecs = itemView.findViewById(R.id.tv_kost_room_specs);
+            tvElectricity = itemView.findViewById(R.id.tv_kost_electricity);
             tvPrice = itemView.findViewById(R.id.tv_kost_price);
             tvStatus = itemView.findViewById(R.id.tv_kost_status);
         }
@@ -143,6 +145,18 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
                     tvRoomSpecs.setVisibility(View.VISIBLE);
                 } else {
                     tvRoomSpecs.setVisibility(View.GONE);
+                }
+            }
+
+            // Badge Transparansi Listrik
+            if (tvElectricity != null) {
+                if (kost.isListrikTermasuk()) {
+                    tvElectricity.setText("⚡ All-in Listrik");
+                    tvElectricity.setBackgroundResource(R.drawable.bg_pill_listrik);
+                    tvElectricity.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
+                    tvElectricity.setVisibility(View.VISIBLE);
+                } else {
+                    tvElectricity.setVisibility(View.GONE);
                 }
             }
 
@@ -199,13 +213,19 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             } else {
                 if (cardRoot != null) cardRoot.setAlpha(1.0f);
                 ivThumbnail.clearColorFilter();
-                if (kost.hasRoomInfo() && kost.getKamarTersedia() <= 3 && kost.getKamarTersedia() > 0) {
+                if (kost.hasUrgentRooms()) {
+                    tvStatus.setText("🔥 Sisa 1 kamar!");
+                    tvStatus.setBackgroundResource(R.drawable.bg_pill_pending);
+                    tvStatus.setTextColor(android.graphics.Color.parseColor("#E65100"));
+                } else if (kost.hasRoomInfo() && kost.getKamarTersedia() <= 3 && kost.getKamarTersedia() > 0) {
                     tvStatus.setText("Sisa " + kost.getKamarTersedia() + " kamar");
+                    tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
+                    tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
                 } else {
                     tvStatus.setText(kost.hasRoomInfo() ? kost.getKamarTersedia() + " kamar" : "Tersedia");
+                    tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
+                    tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
                 }
-                tvStatus.setBackgroundResource(R.drawable.bg_pill_tersedia);
-                tvStatus.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
             }
 
             // Thumbnail Loading via ImageLoaderUtil

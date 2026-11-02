@@ -2,6 +2,7 @@ package com.carikostkita.ui.survey;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.CalendarContract;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -158,11 +159,15 @@ public class SurveyListActivity extends AppCompatActivity {
                 addAction(h.actions, "Konfirmasi", true, v -> change(s, SurveyRequest.DIKONFIRMASI, null));
             } else if (asOwner && SurveyRequest.DIKONFIRMASI.equals(s.status)) {
                 addAction(h.actions, "Batalkan", false, v -> askReason(s, SurveyRequest.DITOLAK));
+                addAction(h.actions, "📅 Kalender", false, v -> addToCalendar(s));
                 addAction(h.actions, "Tandai selesai", true, v -> change(s, SurveyRequest.SELESAI, null));
             } else if (!asOwner && s.isActive()) {
                 addAction(h.actions, "Batalkan", false, v -> AppDialogHelper.showConfirm(SurveyListActivity.this,
                         "Batalkan survei?", "Pemilik akan melihat bahwa kamu membatalkan jadwal ini.", "Batalkan",
                         () -> change(s, SurveyRequest.DIBATALKAN, null)));
+                if (SurveyRequest.DIKONFIRMASI.equals(s.status)) {
+                    addAction(h.actions, "📅 Kalender", false, v -> addToCalendar(s));
+                }
                 addAction(h.actions, "Lihat kost", true, v -> openKost(s));
             } else if (!asOwner && SurveyRequest.SELESAI.equals(s.status)) {
                 addAction(h.actions, "Tulis ulasan", true, v -> openKost(s));
@@ -186,6 +191,34 @@ public class SurveyListActivity extends AppCompatActivity {
         Intent i = new Intent(this, DetailKostActivity.class);
         i.putExtra("kost_id", s.kostId);
         startActivity(i);
+    }
+
+    private void addToCalendar(SurveyRequest s) {
+        if (s == null || s.jadwal == null || s.jadwal.length() < 19) {
+            Toast.makeText(this, "Jadwal survei belum ditentukan", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            Date d = in.parse(s.jadwal.substring(0, 19));
+            long startTime = d != null ? d.getTime() : System.currentTimeMillis();
+            long endTime = startTime + (60 * 60 * 1000); // 1 jam
+
+            Intent intent = new Intent(Intent.ACTION_INSERT)
+                    .setData(CalendarContract.Events.CONTENT_URI)
+                    .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startTime)
+                    .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime)
+                    .putExtra(CalendarContract.Events.TITLE, "Survei Kost: " + (s.namaKost != null ? s.namaKost : "CariKostKita"))
+                    .putExtra(CalendarContract.Events.DESCRIPTION, "Jadwal survei kost melalui CariKostKita." +
+                            (s.namaPencari != null ? "\nPencari: " + s.namaPencari : "") +
+                            (s.catatan != null && !s.catatan.isEmpty() ? "\nCatatan: " + s.catatan : ""))
+                    .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY);
+
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Gagal membuka aplikasi kalender", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void addAction(LinearLayout parent, String label, boolean primary, View.OnClickListener click) {

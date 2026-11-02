@@ -610,6 +610,60 @@ public class Kost implements Serializable {
 
 
 
+    /** Penanda urgensi: sisa 1 kamar kosong. */
+
+    public boolean hasUrgentRooms() {
+
+        return isAvailable() && hasRoomInfo() && kamarTersedia == 1;
+
+    }
+
+
+
+    /** Cek apakah biaya sewa sudah termasuk listrik (All-in Listrik). */
+
+    public boolean isListrikTermasuk() {
+
+        if (fasilitas != null) {
+
+            for (String f : fasilitas) {
+
+                if (f != null && f.toLowerCase(Locale.ROOT).contains("listrik")) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+        if (listFasilitas != null) {
+
+            for (Fasilitas f : listFasilitas) {
+
+                if (f != null && (f.getIdFasilitas() == 10 || (f.getNamaFasilitas() != null && f.getNamaFasilitas().toLowerCase(Locale.ROOT).contains("listrik")))) {
+
+                    return true;
+
+                }
+
+            }
+
+        }
+
+        if (deskripsi != null && deskripsi.toLowerCase(Locale.ROOT).contains("termasuk listrik")) {
+
+            return true;
+
+        }
+
+        return false;
+
+    }
+
+
+
     /** Label ketersediaan untuk kartu: "3 kamar kosong", "Tersedia", "Penuh", atau "Nonaktif". */
 
     public String getAvailabilityLabel() {

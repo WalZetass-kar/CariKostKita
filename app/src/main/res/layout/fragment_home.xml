@@ -373,6 +373,103 @@
                     </LinearLayout>
                 </HorizontalScrollView>
 
+                <!-- Campus & Popular Area Quick Filter Chips -->
+                <HorizontalScrollView
+                    android:id="@+id/scroll_campus_chips"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:clipToPadding="false"
+                    android:overScrollMode="never"
+                    android:paddingHorizontal="20dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <!-- Chip Semua Area -->
+                        <TextView
+                            android:id="@+id/chip_campus_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_badge_kategori_selected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:text="🏛️ Semua Area"
+                            android:textColor="@color/white"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <!-- Chip UNRI Panam -->
+                        <TextView
+                            android:id="@+id/chip_campus_unri"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_badge_kategori_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:text="🎓 UNRI Panam"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <!-- Chip UIR Marpoyan -->
+                        <TextView
+                            android:id="@+id/chip_campus_uir"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_badge_kategori_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:text="🎓 UIR Marpoyan"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <!-- Chip UIN Suska -->
+                        <TextView
+                            android:id="@+id/chip_campus_uin"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_badge_kategori_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:text="🎓 UIN Suska"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <!-- Chip Pusat Kota -->
+                        <TextView
+                            android:id="@+id/chip_campus_sudirman"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_badge_kategori_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="12dp"
+                            android:text="🏢 Pusat Kota"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </HorizontalScrollView>
+
                 <!-- Informational Banner: "8 kamar kosong baru minggu ini" -->
                 <LinearLayout
                     android:id="@+id/banner_kamar_kosong"

@@ -163,6 +163,20 @@
                     android:textSize="11sp" />
 
                 <TextView
+                    android:id="@+id/tv_kost_electricity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/bg_pill_listrik"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:text="⚡ Inc. Listrik"
+                    android:textColor="#2E7D32"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/tv_kost_facilities"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
