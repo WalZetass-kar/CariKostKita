@@ -10,4 +10,5 @@ public class ReviewDto {
     @SerializedName("rating") public int rating;
     @SerializedName("komentar") public String komentar;
     @SerializedName("created_at") public String createdAt;
+    @SerializedName("is_verified_resident") public boolean isVerifiedResident = true;
 }

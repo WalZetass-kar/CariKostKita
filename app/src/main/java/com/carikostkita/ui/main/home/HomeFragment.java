@@ -267,6 +267,14 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             bannerKamarKosong.setOnClickListener(v -> openSearchTab("AVAILABLE"));
         }
 
+        View bannerRoommate = view.findViewById(R.id.banner_roommate_community);
+        if (bannerRoommate != null) {
+            bannerRoommate.setOnClickListener(v -> {
+                Intent intent = new Intent(requireContext(), com.carikostkita.ui.roommate.RoommateActivity.class);
+                startActivity(intent);
+            });
+        }
+
         View btnSeeAllTerjangkau = view.findViewById(R.id.btn_see_all_terjangkau);
         View btnSeeAllNew = view.findViewById(R.id.btn_see_all_new);
         if (btnSeeAllTerjangkau != null) btnSeeAllTerjangkau.setOnClickListener(v -> openSearchTab("SORT_CHEAPEST"));

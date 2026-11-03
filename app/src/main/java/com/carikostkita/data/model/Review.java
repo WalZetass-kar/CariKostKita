@@ -9,4 +9,5 @@ public class Review {
     public int rating;
     public String komentar;
     public String createdAt;
+    public boolean isVerifiedResident = true;
 }

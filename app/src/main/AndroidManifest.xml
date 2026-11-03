@@ -141,6 +141,16 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.roommate.RoommateActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.roommate.AddRoommateActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.compare.CompareKostActivity"
             android:exported="false" />
 
