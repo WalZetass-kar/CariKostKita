@@ -151,7 +151,7 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
             // Badge Transparansi Listrik
             if (tvElectricity != null) {
                 if (kost.isListrikTermasuk()) {
-                    tvElectricity.setText("⚡ All-in Listrik");
+                    tvElectricity.setText("All-in Listrik");
                     tvElectricity.setBackgroundResource(R.drawable.bg_pill_listrik);
                     tvElectricity.setTextColor(ContextCompat.getColor(context, R.color.status_tersedia));
                     tvElectricity.setVisibility(View.VISIBLE);
@@ -214,7 +214,7 @@ public class KostAdapter extends RecyclerView.Adapter<KostAdapter.KostViewHolder
                 if (cardRoot != null) cardRoot.setAlpha(1.0f);
                 ivThumbnail.clearColorFilter();
                 if (kost.hasUrgentRooms()) {
-                    tvStatus.setText("🔥 Sisa 1 kamar!");
+                    tvStatus.setText("Sisa 1 kamar!");
                     tvStatus.setBackgroundResource(R.drawable.bg_pill_pending);
                     tvStatus.setTextColor(android.graphics.Color.parseColor("#E65100"));
                 } else if (kost.hasRoomInfo() && kost.getKamarTersedia() <= 3 && kost.getKamarTersedia() > 0) {

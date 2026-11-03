@@ -101,12 +101,12 @@ public class RoommateAdapter extends RecyclerView.Adapter<RoommateAdapter.ViewHo
 
             // Gender badge
             boolean isPutri = "PUTRI".equalsIgnoreCase(item.getGender());
-            tvGender.setText(isPutri ? "👧 Putri" : "👦 Putra");
+            tvGender.setText(isPutri ? "Putri" : "Putra");
             tvGender.setBackgroundResource(isPutri ? R.drawable.bg_badge_putri : R.drawable.bg_badge_putra);
             tvGender.setTextColor(ContextCompat.getColor(context, isPutri ? R.color.badge_putri : R.color.badge_putra));
 
             // Campus
-            tvCampus.setText("🎓 " + item.getCampus());
+            tvCampus.setText(item.getCampus());
 
             // Room spec
             String spec = item.getRoomType();
@@ -152,12 +152,12 @@ public class RoommateAdapter extends RecyclerView.Adapter<RoommateAdapter.ViewHo
 
             // Share Action
             btnShare.setOnClickListener(v -> {
-                String shareText = "🤝 Cari Teman Sekamar Kampus!\n\n"
+                String shareText = "Cari Teman Sekamar Kampus!\n\n"
                         + item.getName() + " (" + (isPutri ? "Mahasiswi Putri" : "Mahasiswa Putra") + ") sedang mencari teman sekamar di sekitar "
                         + item.getCampus() + ".\n"
-                        + "💰 Budget patungan: " + item.getFormattedBudget() + "\n"
-                        + "📍 Lokasi diincar: " + item.getTargetArea() + "\n"
-                        + "📝 Kriteria: \"" + item.getDescription() + "\"\n\n"
+                        + "Budget patungan: " + item.getFormattedBudget() + "\n"
+                        + "Lokasi diincar: " + item.getTargetArea() + "\n"
+                        + "Kriteria: \"" + item.getDescription() + "\"\n\n"
                         + "Temukan dan hubungi langsung melalui aplikasi CariKostKita!";
 
                 Intent sendIntent = new Intent();

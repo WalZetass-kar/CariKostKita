@@ -58,7 +58,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="🏛️ Semua Kampus"
+                    android:text="Semua Kampus"
                     android:textColor="@color/white"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -73,7 +73,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="🎓 UNRI Panam"
+                    android:text="UNRI Panam"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
@@ -87,7 +87,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="🎓 UIR Marpoyan"
+                    android:text="UIR Marpoyan"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
@@ -101,7 +101,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="🎓 UIN Suska"
+                    android:text="UIN Suska"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
@@ -115,7 +115,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="👦 Putra"
+                    android:text="Putra"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
@@ -129,7 +129,7 @@
                     android:focusable="true"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="👧 Putri"
+                    android:text="Putri"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -174,11 +174,12 @@
                 android:padding="32dp"
                 android:visibility="gone">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🤝"
-                    android:textSize="48sp" />
+                <ImageView
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:src="@drawable/ic_group"
+                    app:tint="@color/text_muted"
+                    android:importantForAccessibility="no" />
 
                 <TextView
                     android:layout_width="wrap_content"

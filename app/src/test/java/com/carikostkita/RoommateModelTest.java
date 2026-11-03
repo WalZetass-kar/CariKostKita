@@ -27,11 +27,11 @@ public class RoommateModelTest {
         assertEquals(450000, post.getBudget());
         assertTrue(post.isAvailable());
 
-        assertEquals("👦 Mahasiswa (Putra)", post.getGenderLabel());
+        assertEquals("Mahasiswa (Putra)", post.getGenderLabel());
         assertTrue(post.getFormattedBudget().contains("450.000"));
 
         RoommatePost putriPost = new RoommatePost();
         putriPost.setGender("PUTRI");
-        assertEquals("👧 Mahasiswi (Putri)", putriPost.getGenderLabel());
+        assertEquals("Mahasiswi (Putri)", putriPost.getGenderLabel());
     }
 }

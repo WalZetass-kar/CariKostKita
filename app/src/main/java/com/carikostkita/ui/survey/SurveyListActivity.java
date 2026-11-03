@@ -159,14 +159,14 @@ public class SurveyListActivity extends AppCompatActivity {
                 addAction(h.actions, "Konfirmasi", true, v -> change(s, SurveyRequest.DIKONFIRMASI, null));
             } else if (asOwner && SurveyRequest.DIKONFIRMASI.equals(s.status)) {
                 addAction(h.actions, "Batalkan", false, v -> askReason(s, SurveyRequest.DITOLAK));
-                addAction(h.actions, "📅 Kalender", false, v -> addToCalendar(s));
+                addAction(h.actions, "Kalender", false, v -> addToCalendar(s));
                 addAction(h.actions, "Tandai selesai", true, v -> change(s, SurveyRequest.SELESAI, null));
             } else if (!asOwner && s.isActive()) {
                 addAction(h.actions, "Batalkan", false, v -> AppDialogHelper.showConfirm(SurveyListActivity.this,
                         "Batalkan survei?", "Pemilik akan melihat bahwa kamu membatalkan jadwal ini.", "Batalkan",
                         () -> change(s, SurveyRequest.DIBATALKAN, null)));
                 if (SurveyRequest.DIKONFIRMASI.equals(s.status)) {
-                    addAction(h.actions, "📅 Kalender", false, v -> addToCalendar(s));
+                    addAction(h.actions, "Kalender", false, v -> addToCalendar(s));
                 }
                 addAction(h.actions, "Lihat kost", true, v -> openKost(s));
             } else if (!asOwner && SurveyRequest.SELESAI.equals(s.status)) {

@@ -155,7 +155,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="👦 Putra"
+                    android:text="Putra"
                     android:textColor="@color/text_primary" />
 
                 <RadioButton
@@ -163,7 +163,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="24dp"
-                    android:text="👧 Putri"
+                    android:text="Putri"
                     android:textColor="@color/text_primary" />
             </RadioGroup>
 

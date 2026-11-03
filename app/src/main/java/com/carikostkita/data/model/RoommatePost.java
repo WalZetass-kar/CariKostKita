@@ -110,12 +110,12 @@ public class RoommatePost implements Serializable {
     }
 
     /**
-     * Formatted gender label, e.g. "👦 Putra" or "👧 Putri"
+     * Formatted gender label, e.g. "Putra" or "Putri"
      */
     public String getGenderLabel() {
         if ("PUTRI".equalsIgnoreCase(gender)) {
-            return "👧 Mahasiswi (Putri)";
+            return "Mahasiswi (Putri)";
         }
-        return "👦 Mahasiswa (Putra)";
+        return "Mahasiswa (Putra)";
     }
 }

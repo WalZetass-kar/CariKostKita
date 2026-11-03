@@ -611,9 +611,9 @@ public class DetailKostActivity extends AppCompatActivity {
         if (section == null || tv == null || cg == null) return;
         StringBuilder sb = new StringBuilder();
         if (kost.isListrikTermasuk()) {
-            sb.append("⚡ Listrik: Sudah termasuk dalam harga sewa (All-in)\n");
+            sb.append("Listrik: Sudah termasuk dalam harga sewa (All-in)\n");
         } else {
-            sb.append("🔌 Listrik: Token mandiri (dibayar terpisah sesuai pemakaian)\n");
+            sb.append("Listrik: Token mandiri (dibayar terpisah sesuai pemakaian)\n");
         }
         if (kost.getDeposit() != null) sb.append("Deposit: ").append(com.carikostkita.util.FormatUtil.formatRupiah(kost.getDeposit())).append("\n");
         if (kost.getMinimalSewaBulan() != null) sb.append("Minimal sewa: ").append(kost.getMinimalSewaBulan()).append(" bulan\n");

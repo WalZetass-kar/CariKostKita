@@ -170,7 +170,7 @@
                     android:background="@drawable/bg_pill_listrik"
                     android:paddingHorizontal="6dp"
                     android:paddingVertical="2dp"
-                    android:text="⚡ Inc. Listrik"
+                    android:text="All-in Listrik"
                     android:textColor="#2E7D32"
                     android:textSize="10sp"
                     android:textStyle="bold"

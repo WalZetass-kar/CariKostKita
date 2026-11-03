@@ -73,7 +73,7 @@
                 android:textColor="@color/badge_putra"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                tools:text="👦 Putra" />
+                tools:text="Putra" />
         </LinearLayout>
 
         <!-- Campus & Spec Tags -->
@@ -93,7 +93,7 @@
                 android:textColor="@color/primary"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                tools:text="🎓 UNRI Panam" />
+                tools:text="UNRI Panam" />
 
             <TextView
                 android:id="@+id/tv_roommate_room_spec"
@@ -106,7 +106,7 @@
                 android:textColor="#2E7D32"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                tools:text="⚡ Kamar Mandi Dalam" />
+                tools:text="Kamar Mandi Dalam" />
         </LinearLayout>
 
         <!-- Area Target -->

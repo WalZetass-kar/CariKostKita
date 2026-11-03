@@ -83,7 +83,7 @@ public class ProfileFragment extends Fragment {
                     if (!isAdded()) return;
                     uploadedDocs.add(type);
                     if (status != null) {
-                        status.setText("Terunggah ✓");
+                        status.setText("Terunggah");
                         status.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_tersedia));
                     }
                 }
