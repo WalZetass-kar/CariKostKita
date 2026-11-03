@@ -345,7 +345,7 @@ public class KostRepository {
 
         java.util.List<com.carikostkita.data.remote.dto.KostDto> all = new java.util.ArrayList<>();
         int page = 1;
-        final int maxPages = 3; // batas wajar filter/search: 3 x 100 = 300 baris untuk respons cepat
+        final int maxPages = 20; // izinkan loop sampai seluruh katalog selesai (hingga 20 halaman)
 
         while (page <= maxPages) {
             Response<com.carikostkita.data.remote.dto.KostListResponse> res =
@@ -381,33 +381,49 @@ public class KostRepository {
 
                 try {
 
-                    // Cepat: Halaman pertama (100 item) cukup untuk mengisi katalog instan tanpa delay 20 request beruntun
-                    Response<com.carikostkita.data.remote.dto.KostListResponse> firstPageRes =
-                            kostService.listPublicKosts(
-                                    null, null, null, null, null, null, null, null, null, "TERBARU", 1, 100).execute();
+                    // Muat seluruh katalog secara bertahap: batch pertama langsung tampil, batch berikutnya melengkapi hingga 1000+ item
+                    List<com.carikostkita.data.remote.dto.KostDto> allDtos = new ArrayList<>();
+                    int page = 1;
+                    int pageSize = 1000;
+                    boolean hasMore = true;
 
-                    if (firstPageRes.isSuccessful() && firstPageRes.body() != null && firstPageRes.body().data != null && !firstPageRes.body().data.isEmpty()) {
+                    while (hasMore && page <= 10) {
+                        Response<com.carikostkita.data.remote.dto.KostListResponse> pageRes =
+                                kostService.listPublicKosts(
+                                        null, null, null, null, null, null, null, null, null, "TERBARU", page, pageSize).execute();
 
-                        List<Kost> list = mapDtoListToKost(firstPageRes.body().data);
+                        if (!pageRes.isSuccessful() || pageRes.body() == null || pageRes.body().data == null || pageRes.body().data.isEmpty()) {
+                            break;
+                        }
 
-                        boolean allZero = !list.isEmpty() && list.stream().allMatch(k -> k.getHarga() <= 0);
+                        allDtos.addAll(pageRes.body().data);
+
+                        // Kirim batch pertama ke UI agar layar langsung terisi tanpa menunggu seluruh halaman
+                        if (page == 1) {
+                            List<Kost> firstBatch = mapDtoListToKost(new ArrayList<>(allDtos));
+                            populateFavorites(firstBatch, currentUserId);
+                            mainHandler.post(() -> callback.onSuccess(firstBatch));
+                        }
+
+                        com.carikostkita.data.remote.dto.KostListResponse.Pagination pagination = pageRes.body().pagination;
+                        hasMore = pagination != null && pagination.hasMore;
+                        page++;
+                    }
+
+                    if (!allDtos.isEmpty()) {
+                        List<Kost> fullList = mapDtoListToKost(allDtos);
+                        boolean allZero = !fullList.isEmpty() && fullList.stream().allMatch(k -> k.getHarga() <= 0);
 
                         if (!allZero) {
-
-                            populateFavorites(list, currentUserId);
-
+                            populateFavorites(fullList, currentUserId);
                             if (appContext != null) {
-                                KostDiskCache.save(appContext, list);
+                                KostDiskCache.save(appContext, fullList);
                             }
-
-                            mainHandler.post(() -> callback.onSuccess(list));
-
+                            mainHandler.post(() -> callback.onSuccess(fullList));
                             return;
-
                         }
 
                         Log.w(TAG, "FastAPI listPublicKosts returned zero-price items, falling back to PostgREST");
-
                     }
 
                 } catch (Exception apiEx) {
