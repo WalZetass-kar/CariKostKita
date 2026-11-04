@@ -281,7 +281,6 @@ public class UserRepository {
                             // Compatibility for an older API deployment only; RLS/triggers still govern the write.
                             UserUpdateDto legacyRequest = new UserUpdateDto();
                             legacyRequest.verificationStatus = VerificationStatus.PENDING.name();
-                            legacyRequest.pengajuanCatatan = submissionNote;
                             Response<List<UserDto>> legacy = dbService.updateUser("eq." + uid, legacyRequest).execute();
                             if (!legacy.isSuccessful()) {
                                 postError(callback, "Profil dibuat, tetapi pengajuan pemilik belum tersimpan. Silakan coba lagi.");
@@ -778,7 +777,6 @@ public class UserRepository {
                     try {
                         UserUpdateDto fallbackDto = new UserUpdateDto();
                         fallbackDto.verificationStatus = VerificationStatus.PENDING.name();
-                        fallbackDto.pengajuanCatatan = safeCatatan;
                         Response<List<UserDto>> directRes = dbService.updateUser("eq." + uid, fallbackDto).execute();
                         if (directRes.isSuccessful()) {
                             sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
@@ -794,11 +792,8 @@ public class UserRepository {
             } catch (Exception e) {
                 // Fallback bila terjadi error jaringan ke FastAPI
                 try {
-                    String safeCatatan = catatan == null ? "" : catatan.trim();
-                    if (safeCatatan.length() > 3800) safeCatatan = safeCatatan.substring(0, 3800);
                     UserUpdateDto fallbackDto = new UserUpdateDto();
                     fallbackDto.verificationStatus = VerificationStatus.PENDING.name();
-                    fallbackDto.pengajuanCatatan = safeCatatan;
                     Response<List<UserDto>> directRes = dbService.updateUser("eq." + uid, fallbackDto).execute();
                     if (directRes.isSuccessful()) {
                         sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);

@@ -20,9 +20,6 @@ public class UserUpdateDto {
     @SerializedName("verification_status")
     public String verificationStatus;
 
-    @SerializedName("pengajuan_catatan")
-    public String pengajuanCatatan;
-
     @SerializedName("catatan_revisi")
     public String catatanRevisi;
 
