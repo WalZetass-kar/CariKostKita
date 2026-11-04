@@ -21,12 +21,13 @@
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 
-    <!-- Splash Screen Theme (Maroon Hero) -->
+    <!-- Splash Screen Theme (Warm Ivory Hero) -->
     <style name="Theme.CariKostKita.Splash" parent="Theme.CariKostKita">
         <item name="android:windowBackground">@drawable/bg_splash_window</item>
-        <item name="android:statusBarColor">@color/header_primary_start</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">@color/primary_dark</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 
     <!-- Thumbnail Rounded Corner ShapeAppearances -->

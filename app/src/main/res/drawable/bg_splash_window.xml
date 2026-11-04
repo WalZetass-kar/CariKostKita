@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Latar jendela splash (tampil sebelum layout dimuat) agar tidak ada layar putih -->
+<!-- Latar jendela splash (Warm Ivory Hero) untuk transisi mulus dengan Android 12+ API -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
             <gradient
-                android:angle="315"
-                android:startColor="@color/header_primary_start"
-                android:centerColor="@color/header_primary_mid"
-                android:endColor="@color/header_primary_end" />
+                android:angle="270"
+                android:startColor="#FAF8F2"
+                android:centerColor="#F4EFE0"
+                android:endColor="#EEEAD7" />
         </shape>
     </item>
 </layer-list>

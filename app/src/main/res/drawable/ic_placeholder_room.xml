@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ikon vektor arsitektural minimalis untuk placeholder properti -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <!-- Garis dinding ruangan arsitektural -->
+    <path
+        android:strokeColor="@color/primary_light"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M5,27 L5,11 L16,4 L27,11 L27,27 L5,27 Z" />
+    <!-- Pintu minimalis -->
+    <path
+        android:strokeColor="@color/primary_light"
+        android:strokeWidth="1.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12,27 L12,17 C12,16.4 12.4,16 13,16 L19,16 C19.6,16 20,16.4 20,17 L20,27" />
+    <!-- Jendela dengan aksen -->
+    <path
+        android:strokeColor="@color/accent_gold"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M14,10 L18,10 M16,8 L16,12" />
+</vector>

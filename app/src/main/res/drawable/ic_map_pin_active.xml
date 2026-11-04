@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Marker aktif Smart Map: ukuran 40dp dengan aksen emas yang menonjol -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Pin tubuh utama maroon cerah -->
+    <path
+        android:fillColor="@color/header_primary_start"
+        android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7z"/>
+    <!-- Lingkaran dalam emas menyala -->
+    <path
+        android:fillColor="@color/accent_gold"
+        android:pathData="M12,11.5c-1.38,0 -2.5,-1.12 -2.5,-2.5s1.12,-2.5 2.5,-2.5 2.5,1.12 2.5,2.5 -1.12,2.5 -2.5,2.5z"/>
+    <!-- Titik putih pusat untuk kontras maksimal -->
+    <path
+        android:fillColor="@color/white"
+        android:pathData="M12,10c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1 1,0.45 1,1 -0.45,1 -1,1z"/>
+</vector>

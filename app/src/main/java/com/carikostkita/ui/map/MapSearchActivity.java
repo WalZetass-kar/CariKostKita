@@ -54,8 +54,10 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class MapSearchActivity extends AppCompatActivity implements MapKostSheetAdapter.OnMapKostClickListener {
 
@@ -79,6 +81,8 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
     private MaterialButton btnPreviewDetail;
     private ImageButton btnPreviewClose;
     private Kost selectedPreviewKost;
+    private Marker activeMarker;
+    private final Map<String, Marker> markerMap = new HashMap<>();
 
     // Bottom Sheet
     private LinearLayout bottomSheetLayout;
@@ -315,7 +319,7 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
                 if (newState == BottomSheetBehavior.STATE_EXPANDED) {
                     fabToggleSheet.setImageResource(R.drawable.ic_close);
-                    if (cardPreview != null) cardPreview.setVisibility(View.GONE);
+                    hidePreviewCard();
                 } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
                     fabToggleSheet.setImageResource(R.drawable.ic_arrow_up);
                 }
@@ -569,6 +573,8 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
     private void applyAllFilters() {
         displayedKostItems.clear();
         mapView.getOverlays().clear();
+        markerMap.clear();
+        activeMarker = null;
 
         Drawable pinDrawable = ContextCompat.getDrawable(this, R.drawable.ic_map_pin_primary);
 
@@ -632,7 +638,10 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
                 marker.setTitle(k.getNamaKost());
                 marker.setSnippet(FormatUtil.formatRupiah(k.getHarga()));
 
+                markerMap.put(k.getIdKost(), marker);
+
                 marker.setOnMarkerClickListener((m, mapView1) -> {
+                    highlightMarker(marker);
                     showPreviewCard(k, calculateHaversineKm(currentAnchorLat, currentAnchorLng, k.getLatitude(), k.getLongitude()));
                     mapController.animateTo(marker.getPosition());
                     return true;
@@ -671,11 +680,48 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
         mapView.invalidate();
     }
 
-    private void showPreviewCard(Kost kost, double distanceKm) {
-        selectedPreviewKost = kost;
-        if (cardPreview == null) return;
+    private void highlightMarker(Marker marker) {
+        Drawable defaultPin = ContextCompat.getDrawable(this, R.drawable.ic_map_pin_primary);
+        Drawable activePin = ContextCompat.getDrawable(this, R.drawable.ic_map_pin_active);
+        if (activeMarker != null && activeMarker != marker) {
+            activeMarker.setIcon(defaultPin);
+        }
+        if (marker != null) {
+            marker.setIcon(activePin);
+            activeMarker = marker;
+        }
+        mapView.invalidate();
+    }
 
-        cardPreview.setVisibility(View.VISIBLE);
+    private void showPreviewCard(Kost kost, double distanceKm) {
+        if (kost == null || cardPreview == null) return;
+        boolean isSameKost = (selectedPreviewKost != null && java.util.Objects.equals(selectedPreviewKost.getIdKost(), kost.getIdKost()));
+        selectedPreviewKost = kost;
+
+        populatePreviewContent(kost, distanceKm);
+
+        if (cardPreview.getVisibility() != View.VISIBLE) {
+            cardPreview.setAlpha(0f);
+            cardPreview.setTranslationY(40f);
+            cardPreview.setVisibility(View.VISIBLE);
+            cardPreview.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(200)
+                    .setInterpolator(new androidx.interpolator.view.animation.FastOutSlowInInterpolator())
+                    .start();
+        } else if (!isSameKost) {
+            cardPreview.animate()
+                    .alpha(0.35f)
+                    .setDuration(80)
+                    .withEndAction(() -> {
+                        cardPreview.animate().alpha(1f).setDuration(120).start();
+                    })
+                    .start();
+        }
+    }
+
+    private void populatePreviewContent(Kost kost, double distanceKm) {
         tvPreviewTitle.setText(kost.getNamaKost());
         tvPreviewAddress.setText(kost.getFullLocation());
         tvPreviewPrice.setText(FormatUtil.formatRupiah(kost.getHarga()) + " / bln");
@@ -715,7 +761,23 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
     }
 
     private void hidePreviewCard() {
-        if (cardPreview != null) cardPreview.setVisibility(View.GONE);
+        if (cardPreview != null && cardPreview.getVisibility() == View.VISIBLE) {
+            cardPreview.animate()
+                    .alpha(0f)
+                    .translationY(30f)
+                    .setDuration(160)
+                    .withEndAction(() -> {
+                        cardPreview.setVisibility(View.GONE);
+                        cardPreview.setTranslationY(0f);
+                    })
+                    .start();
+        }
+        if (activeMarker != null) {
+            Drawable defaultPin = ContextCompat.getDrawable(this, R.drawable.ic_map_pin_primary);
+            activeMarker.setIcon(defaultPin);
+            activeMarker = null;
+            mapView.invalidate();
+        }
         selectedPreviewKost = null;
     }
 
@@ -724,6 +786,10 @@ public class MapSearchActivity extends AppCompatActivity implements MapKostSheet
         if (item.kost.getLatitude() != 0.0 && item.kost.getLongitude() != 0.0) {
             GeoPoint point = new GeoPoint(item.kost.getLatitude(), item.kost.getLongitude());
             mapController.animateTo(point);
+            Marker m = markerMap.get(item.kost.getIdKost());
+            if (m != null) {
+                highlightMarker(m);
+            }
             showPreviewCard(item.kost, item.distanceKm);
             if (sheetBehavior != null) {
                 sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);

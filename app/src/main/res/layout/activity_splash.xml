@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Splash: gradient maroon, ornamen, siluet kost yang "naik", logo ber-cincin emas -->
+<!-- Splash Screen: Warm Ivory Hero dengan simbol logo asli, tipografi maroon, aksen emas -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_splash_window">
 
+    <!-- Ornamen sudut atas kanan (watermark halus) -->
     <ImageView
         android:id="@+id/iv_splash_ornament"
         android:layout_width="220dp"
@@ -12,56 +14,64 @@
         android:layout_gravity="top|end"
         android:alpha="0"
         android:importantForAccessibility="no"
-        android:src="@drawable/il_header_ornament" />
+        android:src="@drawable/il_header_ornament"
+        app:tint="#186D0808" />
 
+    <!-- Siluet bangunan kost di bagian bawah (watermark halus) -->
     <ImageView
         android:id="@+id/iv_splash_skyline"
         android:layout_width="match_parent"
-        android:layout_height="140dp"
+        android:layout_height="130dp"
         android:layout_gravity="bottom"
         android:alpha="0"
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
-        android:src="@drawable/il_header_skyline" />
+        android:src="@drawable/il_header_skyline"
+        app:tint="#1F6D0808" />
 
+    <!-- Brand Identity Center Container -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="44dp"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingHorizontal="32dp">
 
+        <!-- Logo Container (Seamless branding: tanpa bingkai lingkaran kaku) -->
         <FrameLayout
             android:id="@+id/frame_splash_logo"
-            android:layout_width="104dp"
-            android:layout_height="104dp"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
             android:alpha="0"
-            android:background="@drawable/bg_splash_logo_ring"
-            android:scaleX="0.85"
-            android:scaleY="0.85">
+            android:scaleX="0.88"
+            android:scaleY="0.88">
 
             <ImageView
                 android:id="@+id/iv_splash_logo"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
                 android:layout_gravity="center"
                 android:contentDescription="Logo CariKostKita"
-                android:src="@mipmap/ic_launcher" />
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_launcher_foreground" />
         </FrameLayout>
 
+        <!-- Nama Brand (Deep Maroon Pekanbaru) -->
         <TextView
             android:id="@+id/tv_splash_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="20dp"
             android:alpha="0"
+            android:letterSpacing="-0.02"
             android:text="@string/app_name"
-            android:textColor="@color/white"
+            android:textColor="@color/primary"
             android:textSize="30sp"
             android:textStyle="bold" />
 
+        <!-- Aksen Garis Emas Khas -->
         <View
             android:id="@+id/view_splash_accent"
             android:layout_width="40dp"
@@ -70,6 +80,7 @@
             android:alpha="0"
             android:background="@drawable/bg_headline_accent" />
 
+        <!-- Tagline / Subtitle -->
         <TextView
             android:id="@+id/tv_splash_subtitle"
             android:layout_width="wrap_content"
@@ -78,17 +89,17 @@
             android:alpha="0"
             android:gravity="center"
             android:text="Cari kost terverifikasi di sekitarmu"
-            android:textColor="#E6FFFFFF"
-            android:textSize="15sp" />
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- Tiga titik pemuatan (dianimasikan) -->
+    <!-- Tiga titik pemuatan bernuansa emas (animasi denyut) -->
     <LinearLayout
         android:id="@+id/layout_splash_dots"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="164dp"
+        android:layout_marginBottom="160dp"
         android:alpha="0"
         android:orientation="horizontal">
 

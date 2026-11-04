@@ -9,9 +9,9 @@
     <dimen name="spacing_xl">24dp</dimen>
     <dimen name="spacing_xxl">32dp</dimen>
 
-    <!-- Component dimensions (User Specification) -->
-    <dimen name="card_corner_radius">18dp</dimen>
-    <dimen name="card_elevation">1dp</dimen>
+    <!-- Component dimensions (Standardized 16dp Card System) -->
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_elevation">0.5dp</dimen>
     <dimen name="button_corner_radius">14dp</dimen>
     <dimen name="chip_corner_radius">99dp</dimen>
     <dimen name="thumb_corner_radius">14dp</dimen>

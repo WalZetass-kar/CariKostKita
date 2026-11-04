@@ -32,7 +32,7 @@
                 android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.CariKostKita.ThumbRadius14" />
 
-            <!-- Placeholder Gradient Layout (when no image) -->
+            <!-- Placeholder Architectural Blueprint Layout (when no image) -->
             <LinearLayout
                 android:id="@+id/layout_thumb_placeholder"
                 android:layout_width="92dp"
@@ -44,20 +44,19 @@
                 android:visibility="gone">
 
                 <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
                     android:contentDescription="Placeholder"
-                    android:src="@drawable/ic_nav_home"
-                    app:tint="@color/placeholder_icon" />
+                    android:src="@drawable/ic_placeholder_room" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
+                    android:layout_marginTop="4dp"
                     android:gravity="center"
-                    android:text="Foto belum\ntersedia"
-                    android:textColor="@color/placeholder_text"
-                    android:textSize="11sp" />
+                    android:text="Foto sedang\ndisiapkan"
+                    android:textColor="@color/text_muted"
+                    android:textSize="10.5sp" />
             </LinearLayout>
 
             <!-- Category Badge Overlaid on Thumbnail Top-Left -->
@@ -102,7 +101,7 @@
                     android:maxLines="1"
                     android:text="Kost Melati Bukit Raya"
                     android:textColor="@color/text_primary"
-                    android:textSize="14sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <ImageButton
@@ -202,9 +201,10 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:letterSpacing="-0.01"
                     android:text="Rp750.000 /bulan"
                     android:textColor="@color/primary"
-                    android:textSize="13sp"
+                    android:textSize="14.5sp"
                     android:textStyle="bold" />
 
                 <!-- Single Availability Pill: "2 kamar" (Green) or "Penuh" (Soft Red) -->

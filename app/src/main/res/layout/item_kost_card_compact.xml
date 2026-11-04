@@ -30,7 +30,7 @@
                 android:scaleType="centerCrop"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.CariKostKita.ThumbRadius14" />
 
-            <!-- Placeholder Gradient Layout (when no image) -->
+            <!-- Placeholder Architectural Blueprint Layout (when no image) -->
             <LinearLayout
                 android:id="@+id/layout_compact_placeholder"
                 android:layout_width="match_parent"
@@ -44,15 +44,14 @@
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:contentDescription="Placeholder"
-                    android:src="@drawable/ic_nav_home"
-                    app:tint="@color/placeholder_icon" />
+                    android:src="@drawable/ic_placeholder_room" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Foto belum tersedia"
-                    android:textColor="@color/placeholder_text"
+                    android:text="Foto sedang disiapkan"
+                    android:textColor="@color/text_muted"
                     android:textSize="11sp" />
             </LinearLayout>
 
@@ -167,10 +166,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ellipsize="end"
+                    android:letterSpacing="-0.01"
                     android:maxLines="1"
                     android:text="Rp500.000 /bulan"
                     android:textColor="@color/primary"
-                    android:textSize="12sp"
+                    android:textSize="13.5sp"
                     android:textStyle="bold" />
 
                 <!-- Single Availability Pill -->
