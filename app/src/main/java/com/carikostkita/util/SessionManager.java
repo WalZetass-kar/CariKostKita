@@ -28,8 +28,10 @@ public class SessionManager {
 
     private final SharedPreferences pref;
     private final SharedPreferences.Editor editor;
+    private final Context context;
 
     public SessionManager(Context context) {
+        this.context = context.getApplicationContext();
         this.pref = context.getApplicationContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         this.editor = pref.edit();
 
@@ -374,35 +376,49 @@ public class SessionManager {
     private static final String KEY_FAVORITE_IDS = "key_local_favorite_ids";
 
     public java.util.Set<String> getFavoriteIds() {
-        java.util.Set<String> set = pref.getStringSet(KEY_FAVORITE_IDS, null);
-        return set != null ? new java.util.HashSet<>(set) : new java.util.HashSet<>();
+        java.util.Set<String> set = new java.util.HashSet<>();
+        if (context != null) {
+            set.addAll(com.carikostkita.data.local.FavoriteDiskCache.getFavoriteIds(context));
+        }
+        java.util.Set<String> prefSet = pref.getStringSet(KEY_FAVORITE_IDS, null);
+        if (prefSet != null) set.addAll(prefSet);
+        return set;
     }
 
     public boolean isFavorite(String kostId) {
         if (kostId == null || kostId.isEmpty()) return false;
+        if (context != null && com.carikostkita.data.local.FavoriteDiskCache.isFavorite(context, kostId)) {
+            return true;
+        }
         java.util.Set<String> set = pref.getStringSet(KEY_FAVORITE_IDS, null);
         return set != null && set.contains(kostId);
     }
 
     public void setFavorite(String kostId, boolean isFav) {
         if (kostId == null || kostId.isEmpty()) return;
+        if (!isFav && context != null) {
+            com.carikostkita.data.local.FavoriteDiskCache.removeFavorite(context, kostId);
+        }
         java.util.Set<String> current = getFavoriteIds();
         if (isFav) {
             current.add(kostId);
         } else {
             current.remove(kostId);
         }
-        editor.putStringSet(KEY_FAVORITE_IDS, current).apply();
+        pref.edit().remove(KEY_FAVORITE_IDS).putStringSet(KEY_FAVORITE_IDS, new java.util.HashSet<>(current)).apply();
     }
 
     public void addFavoriteIds(java.util.Collection<String> ids) {
         if (ids == null || ids.isEmpty()) return;
         java.util.Set<String> current = getFavoriteIds();
         current.addAll(ids);
-        editor.putStringSet(KEY_FAVORITE_IDS, current).apply();
+        pref.edit().remove(KEY_FAVORITE_IDS).putStringSet(KEY_FAVORITE_IDS, new java.util.HashSet<>(current)).apply();
     }
 
     public void clearFavorites() {
-        editor.remove(KEY_FAVORITE_IDS).apply();
+        if (context != null) {
+            com.carikostkita.data.local.FavoriteDiskCache.clearFavorites(context);
+        }
+        pref.edit().remove(KEY_FAVORITE_IDS).apply();
     }
 }

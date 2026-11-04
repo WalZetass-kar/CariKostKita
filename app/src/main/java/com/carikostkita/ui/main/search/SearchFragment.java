@@ -663,7 +663,7 @@ public class SearchFragment extends Fragment implements KostAdapter.OnKostClickL
     public void onFavoriteToggle(Kost kost, int position) {
         if (!AuthPrompt.require(requireContext(), "Masuk untuk menyimpan kost favorit dan membukanya lagi kapan saja.")) return;
 
-        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
+        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost, new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
                 if (!isAdded()) return;

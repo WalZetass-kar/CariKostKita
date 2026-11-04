@@ -868,22 +868,17 @@ public class KostRepository {
 
                             if (currentUserId != null && currentUserId.equals(sessionManager.getUserUid())) {
 
+                                kost.setFavorite(sessionManager.isFavorite(idKost));
                                 try {
-
                                     String token = activeAccessToken();
-
                                     if (token != null) {
-
                                         Response<com.carikostkita.data.remote.dto.FavoriteResponse> favRes =
-
                                                 favoriteService.readFavorite("Bearer " + token, idKost).execute();
-
-                                        kost.setFavorite(favRes.isSuccessful() && favRes.body() != null
-
-                                                && favRes.body().data != null);
-
+                                        if (favRes.isSuccessful() && favRes.body() != null && favRes.body().data != null) {
+                                            kost.setFavorite(true);
+                                            sessionManager.setFavorite(idKost, true);
+                                        }
                                     }
-
                                 } catch (Exception ignored) {}
 
                             }
@@ -912,26 +907,19 @@ public class KostRepository {
 
                     Kost kost = mapDtoToKost(res.body().get(0));
 
+                    kost.setFavorite(sessionManager.isFavorite(idKost));
                     if (currentUserId != null && currentUserId.equals(sessionManager.getUserUid())) {
-
                         try {
-
                             String token = activeAccessToken();
-
                             if (token != null) {
-
                                 Response<com.carikostkita.data.remote.dto.FavoriteResponse> favRes =
-
                                         favoriteService.readFavorite("Bearer " + token, idKost).execute();
-
-                                kost.setFavorite(favRes.isSuccessful() && favRes.body() != null
-
-                                        && favRes.body().data != null);
-
+                                if (favRes.isSuccessful() && favRes.body() != null && favRes.body().data != null) {
+                                    kost.setFavorite(true);
+                                    sessionManager.setFavorite(idKost, true);
+                                }
                             }
-
                         } catch (Exception ignored) {}
-
                     }
 
                     mainHandler.post(() -> callback.onSuccess(kost));
@@ -974,7 +962,12 @@ public class KostRepository {
 
 
 
-    public void toggleFavorite(String userId, String idKost, DataCallback<Boolean> callback) {
+    public void toggleFavorite(String userId, Kost kost, DataCallback<Boolean> callback) {
+        if (kost == null) {
+            postError(callback, "Data kost tidak valid.");
+            return;
+        }
+        String idKost = kost.getIdKost();
         executor.execute(() -> {
             try {
                 if (userId == null || userId.isEmpty()) {
@@ -986,14 +979,88 @@ public class KostRepository {
                     return;
                 }
 
-                // Status target (kebalikan dari state lokal saat ini)
                 boolean currentFav = sessionManager.isFavorite(idKost);
                 boolean targetFav = !currentFav;
 
-                // 1. Simpan seketika di penyimpanan lokal offline-first
-                sessionManager.setFavorite(idKost, targetFav);
+                // 1. Simpan seketika di penyimpanan persisten FavoriteDiskCache
+                if (targetFav) {
+                    kost.setFavorite(true);
+                    if (appContext != null) {
+                        com.carikostkita.data.local.FavoriteDiskCache.addFavorite(appContext, kost);
+                    }
+                    sessionManager.setFavorite(idKost, true);
+                } else {
+                    kost.setFavorite(false);
+                    if (appContext != null) {
+                        com.carikostkita.data.local.FavoriteDiskCache.removeFavorite(appContext, idKost);
+                    }
+                    sessionManager.setFavorite(idKost, false);
+                }
 
                 // 2. Sinkronkan ke server secara background (best-effort)
+                String token = activeAccessToken();
+                if (token != null) {
+                    String bearer = "Bearer " + token;
+                    try {
+                        if (targetFav) {
+                            favoriteService.addFavorite(bearer, idKost).execute();
+                        } else {
+                            favoriteService.removeFavorite(bearer, idKost).execute();
+                        }
+                    } catch (Exception syncEx) {
+                        Log.w(TAG, "Sync favorite to server failed (saved locally): " + syncEx.getMessage());
+                    }
+                }
+
+                mainHandler.post(() -> callback.onSuccess(targetFav));
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("toggleFavorite", e));
+            }
+        });
+    }
+
+    public void toggleFavorite(String userId, String idKost, DataCallback<Boolean> callback) {
+        Kost resolved = null;
+        if (appContext != null && idKost != null) {
+            for (Kost k : com.carikostkita.data.local.FavoriteDiskCache.loadFavorites(appContext)) {
+                if (k != null && idKost.equals(k.getIdKost())) {
+                    resolved = k;
+                    break;
+                }
+            }
+            if (resolved == null) {
+                for (Kost k : com.carikostkita.data.local.KostDiskCache.load(appContext)) {
+                    if (k != null && idKost.equals(k.getIdKost())) {
+                        resolved = k;
+                        break;
+                    }
+                }
+            }
+        }
+        if (resolved != null) {
+            toggleFavorite(userId, resolved, callback);
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                if (userId == null || userId.isEmpty()) {
+                    postError(callback, "Masuk terlebih dahulu untuk menyimpan favorit.");
+                    return;
+                }
+                if (!userId.equals(sessionManager.getUserUid())) {
+                    postError(callback, ErrorMessages.FORBIDDEN);
+                    return;
+                }
+
+                boolean currentFav = sessionManager.isFavorite(idKost);
+                boolean targetFav = !currentFav;
+
+                sessionManager.setFavorite(idKost, targetFav);
+                if (!targetFav && appContext != null) {
+                    com.carikostkita.data.local.FavoriteDiskCache.removeFavorite(appContext, idKost);
+                }
+
                 String token = activeAccessToken();
                 if (token != null) {
                     String bearer = "Bearer " + token;
@@ -1026,19 +1093,22 @@ public class KostRepository {
     public void getFavorites(String userId, DataCallback<List<Kost>> callback) {
         executor.execute(() -> {
             try {
-                if (userId == null || userId.isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
-                    return;
-                }
-                if (!userId.equals(sessionManager.getUserUid())) {
-                    postError(callback, ErrorMessages.FORBIDDEN);
-                    return;
-                }
-
                 List<Kost> list = new ArrayList<>();
                 Set<String> seenKostIds = new HashSet<>();
-                Set<String> localFavIds = sessionManager.getFavoriteIds();
 
+                // 1. Muat data seketika dari FavoriteDiskCache (persisten offline-first)
+                if (appContext != null) {
+                    List<Kost> localList = com.carikostkita.data.local.FavoriteDiskCache.loadFavorites(appContext);
+                    for (Kost k : localList) {
+                        if (k != null && k.getIdKost() != null && !seenKostIds.contains(k.getIdKost())) {
+                            k.setFavorite(true);
+                            seenKostIds.add(k.getIdKost());
+                            list.add(k);
+                        }
+                    }
+                }
+
+                // 2. Jika ada token aktif, sinkronkan dengan server di background
                 String token = activeAccessToken();
                 if (token != null) {
                     try {
@@ -1057,8 +1127,10 @@ public class KostRepository {
                                     if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
                                         k.setStatus(StatusKost.TIDAK_AKTIF);
                                     }
-                                    if (k.getId() != null) seenKostIds.add(k.getId());
-                                    list.add(k);
+                                    if (k.getId() != null && !seenKostIds.contains(k.getId())) {
+                                        seenKostIds.add(k.getId());
+                                        list.add(k);
+                                    }
                                 } else if (f.namaKost != null && !f.namaKost.isEmpty()) {
                                     Kost k = new Kost();
                                     k.setId(kid);
@@ -1077,8 +1149,10 @@ public class KostRepository {
                                         imgs.add(f.thumbnailUrl);
                                         k.setImageUrls(imgs);
                                     }
-                                    if (k.getId() != null) seenKostIds.add(k.getId());
-                                    list.add(k);
+                                    if (k.getId() != null && !seenKostIds.contains(k.getId())) {
+                                        seenKostIds.add(k.getId());
+                                        list.add(k);
+                                    }
                                 }
                             }
                             sessionManager.addFavoriteIds(serverFavIds);
@@ -1088,21 +1162,30 @@ public class KostRepository {
                     }
                 }
 
-                // Ambil detail kost untuk ID yang tersimpan di lokal tapi belum ada di list
+                // 3. Ambil detail kost untuk ID yang tersimpan tapi belum ada di list
                 Set<String> allFavIds = new HashSet<>(sessionManager.getFavoriteIds());
                 allFavIds.removeAll(seenKostIds);
 
                 for (String kid : allFavIds) {
                     if (kid == null || kid.isEmpty()) continue;
                     Kost resolvedKost = null;
-                    try {
-                        Response<com.carikostkita.data.remote.dto.KostDetailResponse> detailRes =
-                                kostService.readPublicKost(kid).execute();
-                        if (detailRes.isSuccessful() && detailRes.body() != null && detailRes.body().data != null) {
-                            resolvedKost = mapDtoToKost(detailRes.body().data);
+                    if (appContext != null) {
+                        for (Kost k : com.carikostkita.data.local.KostDiskCache.load(appContext)) {
+                            if (k != null && kid.equals(k.getIdKost())) {
+                                resolvedKost = k;
+                                break;
+                            }
                         }
-                    } catch (Exception ignored) {}
-
+                    }
+                    if (resolvedKost == null) {
+                        try {
+                            Response<com.carikostkita.data.remote.dto.KostDetailResponse> detailRes =
+                                    kostService.readPublicKost(kid).execute();
+                            if (detailRes.isSuccessful() && detailRes.body() != null && detailRes.body().data != null) {
+                                resolvedKost = mapDtoToKost(detailRes.body().data);
+                            }
+                        } catch (Exception ignored) {}
+                    }
                     if (resolvedKost == null) {
                         try {
                             Response<List<com.carikostkita.data.remote.dto.KostDto>> dbRes =
@@ -1118,8 +1201,16 @@ public class KostRepository {
                         if (resolvedKost.getVerificationStatus() != KostVerificationStatus.APPROVED) {
                             resolvedKost.setStatus(StatusKost.TIDAK_AKTIF);
                         }
-                        list.add(resolvedKost);
+                        if (!seenKostIds.contains(resolvedKost.getIdKost())) {
+                            seenKostIds.add(resolvedKost.getIdKost());
+                            list.add(resolvedKost);
+                        }
                     }
+                }
+
+                // Perbarui FavoriteDiskCache dengan list terbaru
+                if (appContext != null && !list.isEmpty()) {
+                    com.carikostkita.data.local.FavoriteDiskCache.saveFavorites(appContext, list);
                 }
 
                 mainHandler.post(() -> callback.onSuccess(list));
@@ -1134,14 +1225,18 @@ public class KostRepository {
     }
 
     private void populateFavorites(List<Kost> list, String currentUserId) {
-        if (currentUserId == null || !currentUserId.equals(sessionManager.getUserUid()) || list.isEmpty()) return;
+        if (list == null || list.isEmpty()) return;
         try {
-            Set<String> localFavs = sessionManager.getFavoriteIds();
+            Set<String> localFavs = appContext != null
+                    ? com.carikostkita.data.local.FavoriteDiskCache.getFavoriteIds(appContext)
+                    : sessionManager.getFavoriteIds();
             for (Kost k : list) {
                 if (k.getId() != null && localFavs.contains(k.getId())) {
                     k.setFavorite(true);
                 }
             }
+
+            if (currentUserId == null || !currentUserId.equals(sessionManager.getUserUid())) return;
 
             String token = activeAccessToken();
             if (token == null) return;

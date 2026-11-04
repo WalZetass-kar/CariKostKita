@@ -154,7 +154,7 @@ public class DetailKostActivity extends AppCompatActivity {
                                 .start())
                         .start();
 
-                kostRepository.toggleFavorite(sessionManager.getUserUid(), currentKost.getId(), new DataCallback<Boolean>() {
+                kostRepository.toggleFavorite(sessionManager.getUserUid(), currentKost, new DataCallback<Boolean>() {
                     @Override
                     public void onSuccess(Boolean isFavorite) {
                         currentKost.setFavorite(isFavorite);

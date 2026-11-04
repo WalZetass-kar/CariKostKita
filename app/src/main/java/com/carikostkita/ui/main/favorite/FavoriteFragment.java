@@ -98,7 +98,17 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
     }
 
     private void loadFavorites(boolean showSkeleton) {
-        if (!sessionManager.isLoggedIn()) {
+        // 1. Tampilkan data dari FavoriteDiskCache secara instan (0ms latency, selalu ada jika pernah di-love)
+        List<Kost> localFavorites = com.carikostkita.data.local.FavoriteDiskCache.loadFavorites(requireContext());
+        if (!localFavorites.isEmpty()) {
+            hasLoadedOnce = true;
+            if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
+            if (pbLoading != null) pbLoading.setVisibility(View.GONE);
+            swipeRefresh.setRefreshing(false);
+            currentList.clear();
+            currentList.addAll(localFavorites);
+            renderList();
+        } else if (!sessionManager.isLoggedIn()) {
             swipeRefresh.setRefreshing(false);
             if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
             showGuestState();
@@ -106,7 +116,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
         }
 
         long startTime = SkeletonHelper.markStart();
-        if (showSkeleton && !swipeRefresh.isRefreshing()) {
+        if (showSkeleton && currentList.isEmpty() && !swipeRefresh.isRefreshing()) {
             if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.VISIBLE);
             rvFavorites.setVisibility(View.GONE);
             layoutEmpty.setVisibility(View.GONE);
@@ -121,9 +131,15 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
                     if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
                     if (pbLoading != null) pbLoading.setVisibility(View.GONE);
                     swipeRefresh.setRefreshing(false);
-                    currentList.clear();
-                    if (data != null) currentList.addAll(data);
-                    renderList();
+                    if (data != null && !data.isEmpty()) {
+                        currentList.clear();
+                        currentList.addAll(data);
+                        com.carikostkita.data.local.FavoriteDiskCache.saveFavorites(requireContext(), currentList);
+                        renderList();
+                    } else if (localFavorites.isEmpty()) {
+                        currentList.clear();
+                        renderList();
+                    }
                 });
             }
 
@@ -206,7 +222,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
             @Override
             public void onFavoriteToggle(Kost kost, int position) {
                 if (!AuthPrompt.require(requireContext(), "Masuk untuk menyimpan kost favorit.")) return;
-                kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
+                kostRepository.toggleFavorite(sessionManager.getUserUid(), kost, new DataCallback<Boolean>() {
                     @Override
                     public void onSuccess(Boolean isFavorite) {
                         if (!isAdded()) return;
@@ -311,9 +327,10 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
         int index = currentList.indexOf(kost);
         if (index < 0) return;
         currentList.remove(index);
+        com.carikostkita.data.local.FavoriteDiskCache.removeFavorite(requireContext(), kost.getIdKost());
         renderList();
 
-        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
+        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost, new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
                 if (!isAdded() || getView() == null) return;
@@ -327,6 +344,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
             public void onError(String message) {
                 if (!isAdded()) return;
                 currentList.add(Math.min(index, currentList.size()), kost);
+                com.carikostkita.data.local.FavoriteDiskCache.addFavorite(requireContext(), kost);
                 renderList();
                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
             }
@@ -334,13 +352,15 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
     }
 
     private void restoreFavorite(Kost kost, int index) {
-        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost.getIdKost(), new DataCallback<Boolean>() {
+        kost.setFavorite(true);
+        currentList.add(Math.min(index, currentList.size()), kost);
+        com.carikostkita.data.local.FavoriteDiskCache.addFavorite(requireContext(), kost);
+        renderList();
+
+        kostRepository.toggleFavorite(sessionManager.getUserUid(), kost, new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
-                if (!isAdded()) return;
-                kost.setFavorite(true);
-                currentList.add(Math.min(index, currentList.size()), kost);
-                renderList();
+                // Berhasil dipulihkan
             }
 
             @Override
