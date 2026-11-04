@@ -418,14 +418,14 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             if (k.isAvailable()) availableKost++;
         }
 
-        chipSemua.setText("Semua " + masterKostList.size());
-        chipPutra.setText("Putra " + countPutra);
-        chipPutri.setText("Putri " + countPutri);
-        chipCampur.setText("Campur " + countCampur);
+        chipSemua.setText("Semua");
+        chipPutra.setText("Putra");
+        chipPutri.setText("Putri");
+        chipCampur.setText("Campur");
 
         if (tvBannerText != null) {
             tvBannerText.setText(availableKost > 0
-                    ? availableKost + " kost masih punya kamar kosong"
+                    ? "Kamar kosong tersedia minggu ini"
                     : "Semua kost sedang penuh. Simpan favorit untuk memantau.");
         }
 
@@ -611,11 +611,8 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         boolean hasLabel = loc != null && !loc.trim().isEmpty() && !loc.equalsIgnoreCase("Pilih Lokasi");
         String base = sortedByDistance
                 ? (hasLabel ? "Terdekat dari " + shortLocation(loc) : "Terdekat dari lokasimu")
-                : "Baru ditambahkan";
-        // Beranda adalah cuplikan: tampilkan "10 dari N" saat masih ada sisa.
-        int total = sortedKostList.size();
-        int shown = Math.min(HOME_PREVIEW_LIMIT, total);
-        tvSectionNewTitle.setText(total > shown ? base + " \u00b7 " + shown + " dari " + total : base);
+                : "Rekomendasi kost pilihan";
+        tvSectionNewTitle.setText(base);
     }
 
     private static String shortLocation(String display) {

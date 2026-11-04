@@ -1170,28 +1170,23 @@ public class KostRepository {
                     }
                 }
 
-                // Jika semua data favorit sudah terisi langsung dari endpoint FastAPI, segera kembalikan
-                if (missingKostIds.isEmpty() || !list.isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(list));
-                    return;
+                // Jika masih ada ID kost yang belum terisi detailnya, ambil via FastAPI readPublicKost
+                for (String kid : missingKostIds) {
+                    try {
+                        Response<com.carikostkita.data.remote.dto.KostDetailResponse> detailRes =
+                                kostService.readPublicKost(kid).execute();
+                        if (detailRes.isSuccessful() && detailRes.body() != null && detailRes.body().data != null) {
+                            Kost k = mapDtoToKost(detailRes.body().data);
+                            k.setFavorite(true);
+                            if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
+                                k.setStatus(StatusKost.TIDAK_AKTIF);
+                            }
+                            list.add(k);
+                        }
+                    } catch (Exception ignored) {}
                 }
 
-                // Fallback sekunder jika dan hanya jika data kost tidak ter-enrich sama sekali dari backend
-                Map<String, String> kostFilter = new HashMap<>();
-                kostFilter.put("id", "in.(" + android.text.TextUtils.join(",", missingKostIds) + ")");
-                Response<List<KostDto>> kostRes = dbService.getKosts(kostFilter, "*", "created_at.desc").execute();
-                if (kostRes.isSuccessful() && kostRes.body() != null) {
-                    List<Kost> fetchedList = mapDtoListToKost(kostRes.body());
-                    for (Kost k : fetchedList) {
-                        k.setFavorite(true);
-                        if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
-                            k.setStatus(StatusKost.TIDAK_AKTIF);
-                        }
-                    }
-                    mainHandler.post(() -> callback.onSuccess(fetchedList));
-                } else {
-                    mainHandler.post(() -> callback.onSuccess(list));
-                }
+                mainHandler.post(() -> callback.onSuccess(list));
 
             } catch (Exception e) {
 
