@@ -66,6 +66,7 @@ public class ProfileFragment extends Fragment {
     private String pendingDocType;
     private View pendingDocRow;
     private final java.util.Set<String> uploadedDocs = new java.util.HashSet<>();
+    private final java.util.Map<String, String> uploadedDocPaths = new java.util.HashMap<>();
     private String verificationCode;
 
     @Override
@@ -82,6 +83,9 @@ public class ProfileFragment extends Fragment {
                 public void onSuccess(String path) {
                     if (!isAdded()) return;
                     uploadedDocs.add(type);
+                    if (path != null && !path.isEmpty()) {
+                        uploadedDocPaths.put(type, path);
+                    }
                     if (status != null) {
                         status.setText("Terunggah");
                         status.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_tersedia));
@@ -441,6 +445,7 @@ public class ProfileFragment extends Fragment {
             behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
         });
         uploadedDocs.clear();
+        uploadedDocPaths.clear();
         bindDocRow(dialogView, R.id.doc_properti, R.id.doc_properti_status, com.carikostkita.data.repository.VerificationRepository.DOC_FACADE);
         bindDocRow(dialogView, R.id.doc_kode, R.id.doc_kode_status, com.carikostkita.data.repository.VerificationRepository.DOC_CODE);
         bindDocRow(dialogView, R.id.doc_kamar, R.id.doc_kamar_status, com.carikostkita.data.repository.VerificationRepository.DOC_ROOM);
@@ -496,6 +501,20 @@ public class ProfileFragment extends Fragment {
                     .append(" | WA: ").append(fullWa);
             if (!catatan.isEmpty()) {
                 noteBuilder.append(" | Catatan: ").append(catatan);
+            }
+
+            // Lampirkan link foto jika berupa URL publik
+            String fotoFasad = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_FACADE);
+            String fotoKode = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_CODE);
+            String fotoKamar = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_ROOM);
+            if (fotoFasad != null && fotoFasad.startsWith("http")) {
+                noteBuilder.append(" | Foto Properti: ").append(fotoFasad);
+            }
+            if (fotoKode != null && fotoKode.startsWith("http")) {
+                noteBuilder.append(" | Foto Kode: ").append(fotoKode);
+            }
+            if (fotoKamar != null && fotoKamar.startsWith("http")) {
+                noteBuilder.append(" | Foto Kamar: ").append(fotoKamar);
             }
 
             pbLoading.setVisibility(View.VISIBLE);

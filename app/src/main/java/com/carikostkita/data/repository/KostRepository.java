@@ -1129,53 +1129,68 @@ public class KostRepository {
                 }
 
                 if (favRes.body() == null || favRes.body().data == null || favRes.body().data.isEmpty()) {
-
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
-
                     return;
-
                 }
 
-
-
-                List<String> ids = new ArrayList<>();
+                List<Kost> list = new ArrayList<>();
+                List<String> missingKostIds = new ArrayList<>();
 
                 for (FavoriteDto f : favRes.body().data) {
-
-                    if (f.kostId != null) ids.add(f.kostId);
-
+                    if (f == null) continue;
+                    if (f.kost != null) {
+                        Kost k = mapDtoToKost(f.kost);
+                        k.setFavorite(true);
+                        if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
+                            k.setStatus(StatusKost.TIDAK_AKTIF);
+                        }
+                        list.add(k);
+                    } else if (f.namaKost != null && !f.namaKost.isEmpty()) {
+                        // Fallback mapping dari properti flat FavoriteDto jika objek kost tidak bersarang
+                        Kost k = new Kost();
+                        k.setId(f.kostId != null ? f.kostId : f.id);
+                        k.setNamaKost(f.namaKost);
+                        k.setAlamat(f.alamat != null ? f.alamat : "");
+                        k.setHarga(f.harga != null ? f.harga : 0);
+                        k.setPriceMin(f.harga != null ? f.harga : 0);
+                        k.setPriceMax(f.harga != null ? f.harga : 0);
+                        k.setTipeKost(TipeKost.fromString(f.tipeKost));
+                        k.setStatus(StatusKost.fromString(f.status));
+                        k.setVerificationStatus(KostVerificationStatus.fromString(f.verificationStatus));
+                        k.setFavorite(true);
+                        if (f.thumbnailUrl != null) {
+                            k.setThumbnailUrl(f.thumbnailUrl);
+                            List<String> imgs = new ArrayList<>();
+                            imgs.add(f.thumbnailUrl);
+                            k.setImageUrls(imgs);
+                        }
+                        list.add(k);
+                    } else if (f.kostId != null) {
+                        missingKostIds.add(f.kostId);
+                    }
                 }
 
-                Map<String, String> kostFilter = new HashMap<>();
-
-                kostFilter.put("id", "in.(" + android.text.TextUtils.join(",", ids) + ")");
-
-                Response<List<KostDto>> kostRes = dbService.getKosts(kostFilter, "*", "created_at.desc").execute();
-
-                if (kostRes.isSuccessful() && kostRes.body() != null) {
-
-                    List<Kost> list = mapDtoListToKost(kostRes.body());
-
-                    for (Kost k : list) {
-
-                        k.setFavorite(true);
-
-                        // Kost yang sudah tidak lolos moderasi tetap tampil, tapi ditandai nonaktif
-
-                        if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
-
-                            k.setStatus(StatusKost.TIDAK_AKTIF);
-
-                        }
-
-                    }
-
+                // Jika semua data favorit sudah terisi langsung dari endpoint FastAPI, segera kembalikan
+                if (missingKostIds.isEmpty() || !list.isEmpty()) {
                     mainHandler.post(() -> callback.onSuccess(list));
+                    return;
+                }
 
+                // Fallback sekunder jika dan hanya jika data kost tidak ter-enrich sama sekali dari backend
+                Map<String, String> kostFilter = new HashMap<>();
+                kostFilter.put("id", "in.(" + android.text.TextUtils.join(",", missingKostIds) + ")");
+                Response<List<KostDto>> kostRes = dbService.getKosts(kostFilter, "*", "created_at.desc").execute();
+                if (kostRes.isSuccessful() && kostRes.body() != null) {
+                    List<Kost> fetchedList = mapDtoListToKost(kostRes.body());
+                    for (Kost k : fetchedList) {
+                        k.setFavorite(true);
+                        if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
+                            k.setStatus(StatusKost.TIDAK_AKTIF);
+                        }
+                    }
+                    mainHandler.post(() -> callback.onSuccess(fetchedList));
                 } else {
-
-                    postError(callback, ErrorMessages.fromResponse("getFavoriteKosts", kostRes));
-
+                    mainHandler.post(() -> callback.onSuccess(list));
                 }
 
             } catch (Exception e) {

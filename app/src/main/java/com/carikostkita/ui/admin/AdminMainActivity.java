@@ -1944,9 +1944,28 @@ public class AdminMainActivity extends AppCompatActivity implements
                 List<String> names = new ArrayList<>();
                 List<String> available = new ArrayList<>();
                 for (int i = 0; i < paths.length; i++) {
-                    if (paths[i] != null) {
+                    if (paths[i] != null && !paths[i].isEmpty()) {
                         names.add(labels[i]);
                         available.add(paths[i]);
+                    }
+                }
+
+                // Cek apakah ada URL foto yang tersimpan di dalam catatan permohonan
+                if (note != null) {
+                    java.util.regex.Matcher mFasad = java.util.regex.Pattern.compile("Foto Properti:\\s*(https?://\\S+)").matcher(note);
+                    if (mFasad.find() && !available.contains(mFasad.group(1))) {
+                        names.add("Foto Properti (URL)");
+                        available.add(mFasad.group(1));
+                    }
+                    java.util.regex.Matcher mKode = java.util.regex.Pattern.compile("Foto Kode:\\s*(https?://\\S+)").matcher(note);
+                    if (mKode.find() && !available.contains(mKode.group(1))) {
+                        names.add("Foto Kode (URL)");
+                        available.add(mKode.group(1));
+                    }
+                    java.util.regex.Matcher mKamar = java.util.regex.Pattern.compile("Foto Kamar:\\s*(https?://\\S+)").matcher(note);
+                    if (mKamar.find() && !available.contains(mKamar.group(1))) {
+                        names.add("Foto Kamar (URL)");
+                        available.add(mKamar.group(1));
                     }
                 }
                 if (available.isEmpty()) {

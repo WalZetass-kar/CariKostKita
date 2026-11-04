@@ -263,7 +263,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
         if (tvEmptyTitle != null) tvEmptyTitle.setText(R.string.empty_favorite_title);
         if (tvEmptyDesc != null) tvEmptyDesc.setText(R.string.empty_favorite_desc);
         if (btnEmptyAction != null) {
-            btnEmptyAction.setText("Jelajahi Kost");
+            btnEmptyAction.setText("Cari Kost Sekarang");
             btnEmptyAction.setOnClickListener(v -> {
                 if (getActivity() instanceof MainActivity) {
                     ((MainActivity) getActivity()).navigateToSearch();

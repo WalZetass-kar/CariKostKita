@@ -6,28 +6,28 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_splash_window">
 
-    <!-- Ornamen sudut atas kanan (watermark halus) -->
+    <!-- Ornamen sudut atas kanan (motif khas terlihat jelas dan elegan) -->
     <ImageView
         android:id="@+id/iv_splash_ornament"
-        android:layout_width="220dp"
-        android:layout_height="190dp"
+        android:layout_width="240dp"
+        android:layout_height="200dp"
         android:layout_gravity="top|end"
         android:alpha="0"
         android:importantForAccessibility="no"
         android:src="@drawable/il_header_ornament"
-        app:tint="#186D0808" />
+        app:tint="#386D0808" />
 
-    <!-- Siluet bangunan kost di bagian bawah (watermark halus) -->
+    <!-- Siluet bangunan kost di bagian bawah (siluet kota tegas & artistik) -->
     <ImageView
         android:id="@+id/iv_splash_skyline"
         android:layout_width="match_parent"
-        android:layout_height="130dp"
+        android:layout_height="140dp"
         android:layout_gravity="bottom"
         android:alpha="0"
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
         android:src="@drawable/il_header_skyline"
-        app:tint="#1F6D0808" />
+        app:tint="#406D0808" />
 
     <!-- Brand Identity Center Container -->
     <LinearLayout
@@ -88,7 +88,7 @@
             android:layout_marginTop="12dp"
             android:alpha="0"
             android:gravity="center"
-            android:text="Cari kost terverifikasi di sekitarmu"
+            android:text="@string/splash_tagline"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
     </LinearLayout>
