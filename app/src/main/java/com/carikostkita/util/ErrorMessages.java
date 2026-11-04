@@ -46,7 +46,38 @@ public final class ErrorMessages {
 
     public static String fromCode(String context, int code, String errorBody) {
         Log.e(TAG, context + ": HTTP " + code + " " + errorBody);
-        if (errorBody != null && errorBody.contains("42501")) return FORBIDDEN;
+        if (errorBody != null) {
+            String lower = errorBody.toLowerCase();
+            if (lower.contains("application_active") || lower.contains("already active")) {
+                return "Pengajuan verifikasi kamu sudah terkirim sebelumnya dan sedang dalam antrean peninjauan.";
+            }
+            if (lower.contains("identity_link_required")) {
+                return "Akun sedang disinkronkan dengan server. Silakan coba sesaat lagi.";
+            }
+            if (lower.contains("42501") || lower.contains("application_forbidden")) {
+                return FORBIDDEN;
+            }
+            // Ekstrak pesan "detail" jika berupa JSON FastAPI
+            try {
+                if (errorBody.trim().startsWith("{")) {
+                    com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(errorBody).getAsJsonObject();
+                    if (obj.has("detail") && obj.get("detail").isJsonPrimitive()) {
+                        String detail = obj.get("detail").getAsString();
+                        if (detail != null && !detail.isEmpty() && !detail.contains("SQL") && !detail.contains("traceback")) {
+                            return detail;
+                        }
+                    } else if (obj.has("detail") && obj.get("detail").isJsonObject()) {
+                        com.google.gson.JsonObject inner = obj.getAsJsonObject("detail");
+                        if (inner.has("detail") && inner.get("detail").isJsonPrimitive()) {
+                            String innerDetail = inner.get("detail").getAsString();
+                            if (innerDetail != null && !innerDetail.isEmpty()) {
+                                return innerDetail;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
         if (code == 401) return SESSION_EXPIRED;
         if (code == 403) return FORBIDDEN;
         if (code == 408) return TIMEOUT;

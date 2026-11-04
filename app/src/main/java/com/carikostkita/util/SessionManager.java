@@ -367,4 +367,42 @@ public class SessionManager {
         }
         editor.apply();
     }
+
+    // =========================================================================
+    // FAVORITES LOCAL CACHE (Sinkronisasi offline-first untuk Tab Favorit)
+    // =========================================================================
+    private static final String KEY_FAVORITE_IDS = "key_local_favorite_ids";
+
+    public java.util.Set<String> getFavoriteIds() {
+        java.util.Set<String> set = pref.getStringSet(KEY_FAVORITE_IDS, null);
+        return set != null ? new java.util.HashSet<>(set) : new java.util.HashSet<>();
+    }
+
+    public boolean isFavorite(String kostId) {
+        if (kostId == null || kostId.isEmpty()) return false;
+        java.util.Set<String> set = pref.getStringSet(KEY_FAVORITE_IDS, null);
+        return set != null && set.contains(kostId);
+    }
+
+    public void setFavorite(String kostId, boolean isFav) {
+        if (kostId == null || kostId.isEmpty()) return;
+        java.util.Set<String> current = getFavoriteIds();
+        if (isFav) {
+            current.add(kostId);
+        } else {
+            current.remove(kostId);
+        }
+        editor.putStringSet(KEY_FAVORITE_IDS, current).apply();
+    }
+
+    public void addFavoriteIds(java.util.Collection<String> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        java.util.Set<String> current = getFavoriteIds();
+        current.addAll(ids);
+        editor.putStringSet(KEY_FAVORITE_IDS, current).apply();
+    }
+
+    public void clearFavorites() {
+        editor.remove(KEY_FAVORITE_IDS).apply();
+    }
 }

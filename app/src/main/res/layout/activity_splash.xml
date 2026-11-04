@@ -6,28 +6,28 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_splash_window">
 
-    <!-- Ornamen sudut atas kanan (motif khas terlihat jelas dan elegan) -->
+    <!-- Ornamen sudut atas kanan (motif Melayu khas terlihat tegas, tebal, dan elegan) -->
     <ImageView
         android:id="@+id/iv_splash_ornament"
-        android:layout_width="240dp"
-        android:layout_height="200dp"
+        android:layout_width="280dp"
+        android:layout_height="240dp"
         android:layout_gravity="top|end"
         android:alpha="0"
         android:importantForAccessibility="no"
         android:src="@drawable/il_header_ornament"
-        app:tint="#386D0808" />
+        app:tint="#A86D0808" />
 
-    <!-- Siluet bangunan kost di bagian bawah (siluet kota tegas & artistik) -->
+    <!-- Siluet bangunan kota di bagian bawah (siluet kota tegas, tebal & artistik) -->
     <ImageView
         android:id="@+id/iv_splash_skyline"
         android:layout_width="match_parent"
-        android:layout_height="140dp"
+        android:layout_height="165dp"
         android:layout_gravity="bottom"
         android:alpha="0"
         android:importantForAccessibility="no"
         android:scaleType="fitXY"
         android:src="@drawable/il_header_skyline"
-        app:tint="#406D0808" />
+        app:tint="#B86D0808" />
 
     <!-- Brand Identity Center Container -->
     <LinearLayout

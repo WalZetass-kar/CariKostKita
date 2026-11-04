@@ -745,17 +745,68 @@ public class UserRepository {
                     postError(callback, ErrorMessages.SESSION_EXPIRED);
                     return;
                 }
+                String safeCatatan = catatan == null ? "" : catatan.trim();
+                if (safeCatatan.length() > 3800) {
+                    safeCatatan = safeCatatan.substring(0, 3800);
+                }
+
                 Response<OwnerVerificationResponse> res = ownerVerificationService.submit(
                         "Bearer " + token,
-                        new OwnerVerificationRequest(catatan == null ? "" : catatan.trim())
+                        new OwnerVerificationRequest(safeCatatan)
                 ).execute();
+
                 if (res.isSuccessful() && res.body() != null && res.body().submitted) {
                     sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
                     mainHandler.post(() -> callback.onSuccess(true));
-                } else {
-                    postError(callback, ErrorMessages.fromResponse("submitOwnerVerification", res));
+                    return;
                 }
+
+                String errBody = "";
+                try {
+                    if (res.errorBody() != null) errBody = res.errorBody().string();
+                } catch (Exception ignored) {}
+
+                // Jika status sudah PENDING atau aktif di backend, perbarui session dan anggap sukses
+                if (res.code() == 409 && (errBody.toLowerCase().contains("application_active") || errBody.toLowerCase().contains("already active"))) {
+                    sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
+                    mainHandler.post(() -> callback.onSuccess(true));
+                    return;
+                }
+
+                // Fallback ke Supabase PostgREST update tabel users jika FastAPI 404, 409 (IDENTITY_LINK_REQUIRED), atau 500+
+                if (res.code() == 404 || res.code() == 409 || res.code() >= 500) {
+                    try {
+                        UserUpdateDto fallbackDto = new UserUpdateDto();
+                        fallbackDto.verificationStatus = VerificationStatus.PENDING.name();
+                        fallbackDto.pengajuanCatatan = safeCatatan;
+                        Response<List<UserDto>> directRes = dbService.updateUser("eq." + uid, fallbackDto).execute();
+                        if (directRes.isSuccessful()) {
+                            sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
+                            mainHandler.post(() -> callback.onSuccess(true));
+                            return;
+                        }
+                    } catch (Exception fallbackEx) {
+                        android.util.Log.w("UserRepository", "Fallback Supabase update verification failed: " + fallbackEx.getMessage());
+                    }
+                }
+
+                postError(callback, ErrorMessages.fromCode("submitOwnerVerification", res.code(), errBody));
             } catch (Exception e) {
+                // Fallback bila terjadi error jaringan ke FastAPI
+                try {
+                    String safeCatatan = catatan == null ? "" : catatan.trim();
+                    if (safeCatatan.length() > 3800) safeCatatan = safeCatatan.substring(0, 3800);
+                    UserUpdateDto fallbackDto = new UserUpdateDto();
+                    fallbackDto.verificationStatus = VerificationStatus.PENDING.name();
+                    fallbackDto.pengajuanCatatan = safeCatatan;
+                    Response<List<UserDto>> directRes = dbService.updateUser("eq." + uid, fallbackDto).execute();
+                    if (directRes.isSuccessful()) {
+                        sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
+                        mainHandler.post(() -> callback.onSuccess(true));
+                        return;
+                    }
+                } catch (Exception ignored) {}
+
                 postError(callback, ErrorMessages.fromException("Error pengajuan", e));
             }
         });

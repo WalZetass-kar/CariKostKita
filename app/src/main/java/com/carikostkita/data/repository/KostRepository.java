@@ -975,273 +975,194 @@ public class KostRepository {
 
 
     public void toggleFavorite(String userId, String idKost, DataCallback<Boolean> callback) {
-
         executor.execute(() -> {
-
             try {
-
                 if (userId == null || userId.isEmpty()) {
-
                     postError(callback, "Masuk terlebih dahulu untuk menyimpan favorit.");
-
                     return;
-
                 }
-
                 if (!userId.equals(sessionManager.getUserUid())) {
-
                     postError(callback, ErrorMessages.FORBIDDEN);
-
                     return;
-
                 }
 
+                // Status target (kebalikan dari state lokal saat ini)
+                boolean currentFav = sessionManager.isFavorite(idKost);
+                boolean targetFav = !currentFav;
+
+                // 1. Simpan seketika di penyimpanan lokal offline-first
+                sessionManager.setFavorite(idKost, targetFav);
+
+                // 2. Sinkronkan ke server secara background (best-effort)
                 String token = activeAccessToken();
-
-                if (token == null) {
-
-                    postError(callback, ErrorMessages.SESSION_EXPIRED);
-
-                    return;
-
-                }
-
-                String bearer = "Bearer " + token;
-
-                Response<com.carikostkita.data.remote.dto.FavoriteResponse> checkRes =
-
-                        favoriteService.readFavorite(bearer, idKost).execute();
-
-                if (!checkRes.isSuccessful() && checkRes.code() != 404) {
-
-                    postError(callback, ErrorMessages.fromResponse("checkFavorite", checkRes));
-
-                    return;
-
-                }
-
-                boolean exists = checkRes.isSuccessful() && checkRes.body() != null
-
-                        && checkRes.body().data != null;
-
-                if (exists) {
-
-                    Response<ResponseBody> delRes = favoriteService.removeFavorite(bearer, idKost).execute();
-
-                    if (delRes.isSuccessful()) {
-
-                        mainHandler.post(() -> callback.onSuccess(false));
-
-                    } else {
-
-                        postError(callback, ErrorMessages.fromResponse("removeFavorite", delRes));
-
-                    }
-
-                } else {
-
-                    Response<com.carikostkita.data.remote.dto.FavoriteResponse> addRes =
-
+                if (token != null) {
+                    String bearer = "Bearer " + token;
+                    try {
+                        if (targetFav) {
                             favoriteService.addFavorite(bearer, idKost).execute();
-
-                    if (addRes.isSuccessful() && addRes.body() != null && addRes.body().data != null) {
-
-                        mainHandler.post(() -> callback.onSuccess(true));
-
-                    } else {
-
-                        postError(callback, ErrorMessages.fromResponse("addFavorite", addRes));
-
+                        } else {
+                            favoriteService.removeFavorite(bearer, idKost).execute();
+                        }
+                    } catch (Exception syncEx) {
+                        Log.w(TAG, "Sync favorite to server failed (saved locally): " + syncEx.getMessage());
                     }
-
                 }
 
+                mainHandler.post(() -> callback.onSuccess(targetFav));
             } catch (Exception e) {
-
                 postError(callback, ErrorMessages.fromException("toggleFavorite", e));
-
             }
-
         });
-
     }
-
-
 
     public void toggleFavorite(int legacyUserId, int legacyKostId, DataCallback<Boolean> callback) {
-
         toggleFavorite(sessionManager.getUserUid(), String.valueOf(legacyKostId), callback);
-
     }
-
-
 
     public void toggleFavorite(int legacyUserId, String idKost, DataCallback<Boolean> callback) {
-
         toggleFavorite(sessionManager.getUserUid(), idKost, callback);
-
     }
 
-
-
     public void getFavorites(String userId, DataCallback<List<Kost>> callback) {
-
         executor.execute(() -> {
-
             try {
-
                 if (userId == null || userId.isEmpty()) {
-
                     mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
-
                     return;
-
                 }
-
                 if (!userId.equals(sessionManager.getUserUid())) {
-
                     postError(callback, ErrorMessages.FORBIDDEN);
-
-                    return;
-
-                }
-
-                String token = activeAccessToken();
-
-                if (token == null) {
-
-                    postError(callback, ErrorMessages.SESSION_EXPIRED);
-
-                    return;
-
-                }
-
-                Response<FavoriteListResponse> favRes = favoriteService
-
-                        .listFavorites("Bearer " + token).execute();
-
-                if (!favRes.isSuccessful()) {
-
-                    postError(callback, ErrorMessages.fromResponse("getFavorites", favRes));
-
-                    return;
-
-                }
-
-                if (favRes.body() == null || favRes.body().data == null || favRes.body().data.isEmpty()) {
-                    mainHandler.post(() -> callback.onSuccess(new ArrayList<>()));
                     return;
                 }
 
                 List<Kost> list = new ArrayList<>();
-                List<String> missingKostIds = new ArrayList<>();
+                Set<String> seenKostIds = new HashSet<>();
+                Set<String> localFavIds = sessionManager.getFavoriteIds();
 
-                for (FavoriteDto f : favRes.body().data) {
-                    if (f == null) continue;
-                    if (f.kost != null) {
-                        Kost k = mapDtoToKost(f.kost);
-                        k.setFavorite(true);
-                        if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
-                            k.setStatus(StatusKost.TIDAK_AKTIF);
+                String token = activeAccessToken();
+                if (token != null) {
+                    try {
+                        Response<FavoriteListResponse> favRes = favoriteService
+                                .listFavorites("Bearer " + token).execute();
+                        if (favRes.isSuccessful() && favRes.body() != null && favRes.body().data != null) {
+                            List<String> serverFavIds = new ArrayList<>();
+                            for (FavoriteDto f : favRes.body().data) {
+                                if (f == null) continue;
+                                String kid = f.kostId != null ? f.kostId : f.id;
+                                if (kid != null) serverFavIds.add(kid);
+
+                                if (f.kost != null) {
+                                    Kost k = mapDtoToKost(f.kost);
+                                    k.setFavorite(true);
+                                    if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
+                                        k.setStatus(StatusKost.TIDAK_AKTIF);
+                                    }
+                                    if (k.getId() != null) seenKostIds.add(k.getId());
+                                    list.add(k);
+                                } else if (f.namaKost != null && !f.namaKost.isEmpty()) {
+                                    Kost k = new Kost();
+                                    k.setId(kid);
+                                    k.setNamaKost(f.namaKost);
+                                    k.setAlamat(f.alamat != null ? f.alamat : "");
+                                    k.setHarga(f.harga != null ? f.harga : 0);
+                                    k.setPriceMin(f.harga != null ? f.harga : 0);
+                                    k.setPriceMax(f.harga != null ? f.harga : 0);
+                                    k.setTipeKost(TipeKost.fromString(f.tipeKost));
+                                    k.setStatus(StatusKost.fromString(f.status));
+                                    k.setVerificationStatus(KostVerificationStatus.fromString(f.verificationStatus));
+                                    k.setFavorite(true);
+                                    if (f.thumbnailUrl != null) {
+                                        k.setThumbnailUrl(f.thumbnailUrl);
+                                        List<String> imgs = new ArrayList<>();
+                                        imgs.add(f.thumbnailUrl);
+                                        k.setImageUrls(imgs);
+                                    }
+                                    if (k.getId() != null) seenKostIds.add(k.getId());
+                                    list.add(k);
+                                }
+                            }
+                            sessionManager.addFavoriteIds(serverFavIds);
                         }
-                        list.add(k);
-                    } else if (f.namaKost != null && !f.namaKost.isEmpty()) {
-                        // Fallback mapping dari properti flat FavoriteDto jika objek kost tidak bersarang
-                        Kost k = new Kost();
-                        k.setId(f.kostId != null ? f.kostId : f.id);
-                        k.setNamaKost(f.namaKost);
-                        k.setAlamat(f.alamat != null ? f.alamat : "");
-                        k.setHarga(f.harga != null ? f.harga : 0);
-                        k.setPriceMin(f.harga != null ? f.harga : 0);
-                        k.setPriceMax(f.harga != null ? f.harga : 0);
-                        k.setTipeKost(TipeKost.fromString(f.tipeKost));
-                        k.setStatus(StatusKost.fromString(f.status));
-                        k.setVerificationStatus(KostVerificationStatus.fromString(f.verificationStatus));
-                        k.setFavorite(true);
-                        if (f.thumbnailUrl != null) {
-                            k.setThumbnailUrl(f.thumbnailUrl);
-                            List<String> imgs = new ArrayList<>();
-                            imgs.add(f.thumbnailUrl);
-                            k.setImageUrls(imgs);
-                        }
-                        list.add(k);
-                    } else if (f.kostId != null) {
-                        missingKostIds.add(f.kostId);
+                    } catch (Exception apiEx) {
+                        Log.w(TAG, "Fetch server favorites failed: " + apiEx.getMessage());
                     }
                 }
 
-                // Jika masih ada ID kost yang belum terisi detailnya, ambil via FastAPI readPublicKost
-                for (String kid : missingKostIds) {
+                // Ambil detail kost untuk ID yang tersimpan di lokal tapi belum ada di list
+                Set<String> allFavIds = new HashSet<>(sessionManager.getFavoriteIds());
+                allFavIds.removeAll(seenKostIds);
+
+                for (String kid : allFavIds) {
+                    if (kid == null || kid.isEmpty()) continue;
+                    Kost resolvedKost = null;
                     try {
                         Response<com.carikostkita.data.remote.dto.KostDetailResponse> detailRes =
                                 kostService.readPublicKost(kid).execute();
                         if (detailRes.isSuccessful() && detailRes.body() != null && detailRes.body().data != null) {
-                            Kost k = mapDtoToKost(detailRes.body().data);
-                            k.setFavorite(true);
-                            if (k.getVerificationStatus() != KostVerificationStatus.APPROVED) {
-                                k.setStatus(StatusKost.TIDAK_AKTIF);
-                            }
-                            list.add(k);
+                            resolvedKost = mapDtoToKost(detailRes.body().data);
                         }
                     } catch (Exception ignored) {}
+
+                    if (resolvedKost == null) {
+                        try {
+                            Response<List<com.carikostkita.data.remote.dto.KostDto>> dbRes =
+                                    dbService.getKostById("eq." + kid, "*").execute();
+                            if (dbRes.isSuccessful() && dbRes.body() != null && !dbRes.body().isEmpty()) {
+                                resolvedKost = mapDtoToKost(dbRes.body().get(0));
+                            }
+                        } catch (Exception ignored) {}
+                    }
+
+                    if (resolvedKost != null) {
+                        resolvedKost.setFavorite(true);
+                        if (resolvedKost.getVerificationStatus() != KostVerificationStatus.APPROVED) {
+                            resolvedKost.setStatus(StatusKost.TIDAK_AKTIF);
+                        }
+                        list.add(resolvedKost);
+                    }
                 }
 
                 mainHandler.post(() -> callback.onSuccess(list));
-
             } catch (Exception e) {
-
                 postError(callback, ErrorMessages.fromException("getFavorites", e));
-
             }
-
         });
-
     }
-
-
 
     public void getFavorites(int legacyUserId, DataCallback<List<Kost>> callback) {
-
         getFavorites(sessionManager.getUserUid(), callback);
-
     }
 
-
-
     private void populateFavorites(List<Kost> list, String currentUserId) {
-
         if (currentUserId == null || !currentUserId.equals(sessionManager.getUserUid()) || list.isEmpty()) return;
-
         try {
+            Set<String> localFavs = sessionManager.getFavoriteIds();
+            for (Kost k : list) {
+                if (k.getId() != null && localFavs.contains(k.getId())) {
+                    k.setFavorite(true);
+                }
+            }
 
             String token = activeAccessToken();
-
             if (token == null) return;
 
             Response<FavoriteListResponse> favRes = favoriteService
-
                     .listFavorites("Bearer " + token).execute();
-
             if (favRes.isSuccessful() && favRes.body() != null && favRes.body().data != null) {
-
                 Set<String> favSet = new HashSet<>();
-
                 for (FavoriteDto f : favRes.body().data) {
-
-                    if (f.kostId != null) favSet.add(f.kostId);
-
+                    String kid = f.kostId != null ? f.kostId : f.id;
+                    if (kid != null) favSet.add(kid);
                 }
-
+                sessionManager.addFavoriteIds(favSet);
+                Set<String> merged = sessionManager.getFavoriteIds();
                 for (Kost k : list) {
-
-                    k.setFavorite(favSet.contains(k.getId()));
-
+                    if (k.getId() != null) {
+                        k.setFavorite(merged.contains(k.getId()));
+                    }
                 }
-
             }
-
         } catch (Exception ignored) {}
-
     }
 
 
