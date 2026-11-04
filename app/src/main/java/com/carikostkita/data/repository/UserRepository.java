@@ -843,7 +843,7 @@ public class UserRepository {
                 UserUpdateDto dto = new UserUpdateDto();
                 dto.role = "user";
                 dto.verificationStatus = VerificationStatus.REJECTED.name();
-                dto.pengajuanCatatan = alasan;
+                dto.catatanRevisi = alasan;
 
                 Response<List<UserDto>> res = dbService.updateUser("eq." + uid, dto).execute();
                 if (res.isSuccessful() && res.body() != null && !res.body().isEmpty()) {
