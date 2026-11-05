@@ -306,8 +306,10 @@ public class LoginActivity extends AppCompatActivity {
         } catch (ApiException e) {
             int statusCode = e.getStatusCode();
             if (statusCode == 12501) return;
-            android.util.Log.w("LoginActivity", "Google Play Services SignIn error (" + statusCode + "), falling back to Supabase OAuth browser");
-            launchCustomTabOAuth();
+            setLoading(false);
+            android.util.Log.w("LoginActivity", "Google Play Services SignIn error (" + statusCode + ")");
+            AppDialogHelper.showInfo(this, "Gunakan Email & Password",
+                    "Layanan Google Sign-In pada build ini memerlukan pendaftaran sertifikat SHA-1 di Google Cloud Console.\n\nSilakan masuk dengan mengetikkan Email & Password akun kamu.");
         }
     }
 
