@@ -38,7 +38,7 @@ import com.google.android.material.textfield.TextInputLayout;
 public class RegisterActivity extends AppCompatActivity {
 
     private static final int RC_GOOGLE_SIGN_UP = 9002;
-    private static final String GOOGLE_WEB_CLIENT_ID = "328759693822-gc05nlhkdpd4cp54t0miqm8u3mf6lqtk.apps.googleusercontent.com";
+    private static final String GOOGLE_WEB_CLIENT_ID = "264488638475-4qsbq178pve06t9pmm82np0asqnb0leu.apps.googleusercontent.com";
 
     private TextInputLayout tilNama;
     private TextInputLayout tilEmail;
@@ -297,8 +297,8 @@ public class RegisterActivity extends AppCompatActivity {
             if (statusCode == 12501) return;
             setLoading(false);
             android.util.Log.w("RegisterActivity", "Google Play Services SignUp error (" + statusCode + ")");
-            AppDialogHelper.showInfo(this, "Daftar dengan Email & Password",
-                    "Layanan Google Sign-In pada build ini memerlukan pendaftaran sertifikat SHA-1 di Google Cloud Console.\n\nSilakan isi formulir pendaftaran akun baru di bawah.");
+            AppDialogHelper.showError(this, "Daftar Google Gagal (" + statusCode + ")",
+                    "Gagal menghubungkan ke akun Google (kode status: " + statusCode + "). Silakan coba lagi atau daftar menggunakan formulir di bawah.");
         }
     }
 

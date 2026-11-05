@@ -44,7 +44,7 @@ import java.util.Map;
 public class LoginActivity extends AppCompatActivity {
 
     private static final int RC_GOOGLE_SIGN_IN = 9001;
-    private static final String GOOGLE_WEB_CLIENT_ID = "328759693822-gc05nlhkdpd4cp54t0miqm8u3mf6lqtk.apps.googleusercontent.com";
+    private static final String GOOGLE_WEB_CLIENT_ID = "264488638475-4qsbq178pve06t9pmm82np0asqnb0leu.apps.googleusercontent.com";
 
     private TextInputLayout tilEmail;
     private TextInputLayout tilPassword;
@@ -308,8 +308,8 @@ public class LoginActivity extends AppCompatActivity {
             if (statusCode == 12501) return;
             setLoading(false);
             android.util.Log.w("LoginActivity", "Google Play Services SignIn error (" + statusCode + ")");
-            AppDialogHelper.showInfo(this, "Gunakan Email & Password",
-                    "Layanan Google Sign-In pada build ini memerlukan pendaftaran sertifikat SHA-1 di Google Cloud Console.\n\nSilakan masuk dengan mengetikkan Email & Password akun kamu.");
+            AppDialogHelper.showError(this, "Login Google Gagal (" + statusCode + ")",
+                    "Gagal menghubungkan ke akun Google (kode status: " + statusCode + "). Silakan coba lagi atau masuk menggunakan Email & Password.");
         }
     }
 
