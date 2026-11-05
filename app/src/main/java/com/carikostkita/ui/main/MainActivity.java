@@ -53,6 +53,13 @@ public class MainActivity extends AppCompatActivity {
         setupViewPager();
         setupDoubleBackToExit();
         if (sessionManager.isLoggedIn()) com.carikostkita.notifications.AppNotifications.onAppOpened(this);
+
+        // Periksa dan tampilkan iklan pop-up resmi jika dikonfigurasi aktif dari Admin
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!isFinishing() && !isDestroyed()) {
+                com.carikostkita.util.AdPopupManager.checkAndShowPopupAd(MainActivity.this);
+            }
+        }, 800);
     }
 
     private void initViews() {

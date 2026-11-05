@@ -8,8 +8,8 @@ if (localPropertiesFile.exists()) {
     localProperties.load(new FileInputStream(localPropertiesFile))
 }
 
-String supabaseUrl = localProperties.getProperty('SUPABASE_URL') ?: (project.findProperty('SUPABASE_URL') ?: 'https://placeholder.supabase.co')
-String apiBaseUrl = localProperties.getProperty('API_BASE_URL') ?: (project.findProperty('API_BASE_URL') ?: 'https://carikostkitafastapi.vercel.app')
+String supabaseUrl = localProperties.getProperty('SUPABASE_URL') ?: (project.findProperty('SUPABASE_URL') ?: 'https://api.carikostkita.my.id')
+String apiBaseUrl = localProperties.getProperty('API_BASE_URL') ?: (project.findProperty('API_BASE_URL') ?: 'https://api.carikostkita.my.id')
 // Kunci rilis dibaca dari keystore.properties (tidak di-commit). Contoh isi:
 //   storeFile=/path/ke/carikostkita-release.jks
 //   storePassword=...
@@ -22,7 +22,7 @@ if (hasReleaseKeystore) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-String supabaseAnonKey = localProperties.getProperty('SUPABASE_ANON_KEY') ?: (project.findProperty('SUPABASE_ANON_KEY') ?: 'placeholder-anon-key')
+String supabaseAnonKey = localProperties.getProperty('SUPABASE_ANON_KEY') ?: (project.findProperty('SUPABASE_ANON_KEY') ?: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImNhcmlrb3N0a2l0YSIsImlhdCI6MTc5MzgxMzY2NiwiZXhwIjoyMTA5MTczNjY2fQ.NM7EAt0fAVjyU57ue9KFk6_goEcWRkXt1IkcOc41ckg')
 
 android {
     namespace 'com.carikostkita'

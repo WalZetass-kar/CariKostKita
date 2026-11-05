@@ -354,14 +354,27 @@ public class ProfileFragment extends Fragment {
         applyAvatar(sessionManager.getUserAvatar());
 
         // Role Badge: Netral (Bukan Hijau)
-        tvRole.setText("Pencari Kost");
+        tvRole.setText(sessionManager.isPemilikKost() ? "Pemilik Kost Terverifikasi" : "Pencari Kost");
         tvRole.setBackgroundResource(R.drawable.bg_badge_role_neutral);
         tvRole.setTextColor(ContextCompat.getColor(requireContext(), R.color.role_neutral_text));
 
         // Pengajuan Pemilik Kost
         cardOwnerVerification.setVisibility(View.VISIBLE);
         VerificationStatus status = sessionManager.getVerificationStatus();
-        if (status == VerificationStatus.PENDING) {
+        if (status == VerificationStatus.APPROVED || sessionManager.isPemilikKost()) {
+            ivVerificationIcon.setImageResource(R.drawable.ic_verified);
+            ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.status_tersedia));
+            tvVerificationTitle.setText("Akun Pemilik Kost Disetujui");
+            tvVerificationDesc.setText("Selamat! Pengajuan pemilik kost Anda telah disetujui oleh admin. Anda kini dapat memasang dan mengelola properti kost.");
+            btnApplyOwner.setText("Buka Dashboard Pemilik Kost");
+            btnApplyOwner.setEnabled(true);
+            btnApplyOwner.setOnClickListener(v -> {
+                Intent intent = new Intent(requireContext(), com.carikostkita.ui.admin.PemilikMainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                requireActivity().finish();
+            });
+        } else if (status == VerificationStatus.PENDING) {
             ivVerificationIcon.setImageResource(R.drawable.ic_warning);
             ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.primary));
             tvVerificationTitle.setText("Menunggu Verifikasi Admin");
@@ -384,7 +397,11 @@ public class ProfileFragment extends Fragment {
             ivVerificationIcon.setImageResource(R.drawable.ic_warning);
             ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.status_penuh));
             tvVerificationTitle.setText("Pengajuan Pemilik Ditolak");
-            tvVerificationDesc.setText("Pengajuan akun Anda sebagai pemilik kost belum dapat disetujui. Anda dapat mengajukan ulang data properti kost Anda.");
+            String rejectReason = sessionManager.getCatatanRevisi();
+            String rejectDesc = (rejectReason != null && !rejectReason.trim().isEmpty())
+                    ? "Alasan Penolakan Admin:\n\"" + rejectReason.trim() + "\"\n\nAnda dapat memperbaiki data properti kost lalu mengajukan ulang."
+                    : "Pengajuan akun Anda sebagai pemilik kost belum dapat disetujui. Anda dapat mengajukan ulang data properti kost Anda.";
+            tvVerificationDesc.setText(rejectDesc);
             btnApplyOwner.setText("Ajukan Verifikasi Ulang");
             btnApplyOwner.setEnabled(true);
             btnApplyOwner.setOnClickListener(v -> showOwnerApplicationDialog());

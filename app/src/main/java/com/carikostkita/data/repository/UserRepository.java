@@ -78,7 +78,7 @@ public class UserRepository {
     private final ExecutorService executor;
     private final Handler mainHandler;
     private final Context context;
-    private final Map<String, String> pendingOwnerApplicationIds = new ConcurrentHashMap<>();
+    private static final Map<String, String> pendingOwnerApplicationIds = new ConcurrentHashMap<>();
 
     public static class UserStats {
         public final int totalUsers;
@@ -745,6 +745,10 @@ public class UserRepository {
                     return;
                 }
                 String safeCatatan = catatan == null ? "" : catatan.trim();
+                if (safeCatatan.isEmpty()) {
+                    postError(callback, "Detail pengajuan pemilik kost wajib diisi.");
+                    return;
+                }
                 if (safeCatatan.length() > 3800) {
                     safeCatatan = safeCatatan.substring(0, 3800);
                 }
@@ -765,43 +769,26 @@ public class UserRepository {
                     if (res.errorBody() != null) errBody = res.errorBody().string();
                 } catch (Exception ignored) {}
 
-                // Jika status sudah PENDING atau aktif di backend, perbarui session dan anggap sukses
+                // Jika server melaporkan aplikasi sudah aktif (409 APPLICATION_ACTIVE),
+                // sinkronkan status aktual dari profil server dan beri tahu pengguna agar tidak terjadi duplikasi.
                 if (res.code() == 409 && (errBody.toLowerCase().contains("application_active") || errBody.toLowerCase().contains("already active"))) {
-                    sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
-                    mainHandler.post(() -> callback.onSuccess(true));
-                    return;
-                }
-
-                // Fallback ke Supabase PostgREST update tabel users jika FastAPI 404, 409 (IDENTITY_LINK_REQUIRED), atau 500+
-                if (res.code() == 404 || res.code() == 409 || res.code() >= 500) {
                     try {
-                        UserUpdateDto fallbackDto = new UserUpdateDto();
-                        fallbackDto.verificationStatus = VerificationStatus.PENDING.name();
-                        Response<List<UserDto>> directRes = dbService.updateUser("eq." + uid, fallbackDto).execute();
-                        if (directRes.isSuccessful()) {
-                            sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
-                            mainHandler.post(() -> callback.onSuccess(true));
-                            return;
+                        Response<UserProfileResponse> profileRes = profileService.readMyProfile("Bearer " + token).execute();
+                        if (profileRes.isSuccessful() && profileRes.body() != null && profileRes.body().data != null) {
+                            User serverUser = mapDtoToUser(profileRes.body().data);
+                            sessionManager.updateVerificationStatus(
+                                    serverUser.getVerificationStatus(),
+                                    serverUser.getRole(),
+                                    serverUser.getCatatanRevisi()
+                            );
                         }
-                    } catch (Exception fallbackEx) {
-                        android.util.Log.w("UserRepository", "Fallback Supabase update verification failed: " + fallbackEx.getMessage());
-                    }
+                    } catch (Exception ignored) {}
+                    postError(callback, "Pengajuan verifikasi pemilik kost kamu sudah aktif dan sedang menunggu peninjauan admin.");
+                    return;
                 }
 
                 postError(callback, ErrorMessages.fromCode("submitOwnerVerification", res.code(), errBody));
             } catch (Exception e) {
-                // Fallback bila terjadi error jaringan ke FastAPI
-                try {
-                    UserUpdateDto fallbackDto = new UserUpdateDto();
-                    fallbackDto.verificationStatus = VerificationStatus.PENDING.name();
-                    Response<List<UserDto>> directRes = dbService.updateUser("eq." + uid, fallbackDto).execute();
-                    if (directRes.isSuccessful()) {
-                        sessionManager.updateVerificationStatus(VerificationStatus.PENDING, null, null);
-                        mainHandler.post(() -> callback.onSuccess(true));
-                        return;
-                    }
-                } catch (Exception ignored) {}
-
                 postError(callback, ErrorMessages.fromException("Error pengajuan", e));
             }
         });
@@ -1187,8 +1174,24 @@ public class UserRepository {
     private boolean reviewOwnerVerificationWithApi(
             String userId, String status, String note, DataCallback<Boolean> callback
     ) {
+        if (userId == null || userId.isEmpty()) return false;
         String applicationId = pendingOwnerApplicationIds.get(userId);
-        if (applicationId == null) return false;
+        if (applicationId == null) {
+            try {
+                List<OwnerVerificationQueueResponse.Application> apps = fetchPendingOwnerApplications();
+                if (apps != null) {
+                    for (OwnerVerificationQueueResponse.Application app : apps) {
+                        if (app.owner != null && app.owner.id != null && app.id != null) {
+                            pendingOwnerApplicationIds.put(app.owner.id, app.id);
+                        }
+                    }
+                    applicationId = pendingOwnerApplicationIds.get(userId);
+                }
+            } catch (Exception ignored) {}
+        }
+        if (applicationId == null) {
+            applicationId = userId;
+        }
         String token = getActiveAccessToken();
         if (token == null || token.isEmpty()) {
             postError(callback, ErrorMessages.SESSION_EXPIRED);
@@ -1204,6 +1207,9 @@ public class UserRepository {
                 pendingOwnerApplicationIds.remove(userId);
                 mainHandler.post(() -> callback.onSuccess(true));
                 return true;
+            }
+            if (response.code() == 404) {
+                return false;
             }
             String message = ErrorMessages.fromResponse("reviewOwnerVerification", response);
             if (response.errorBody() != null) response.errorBody().close();
@@ -1256,8 +1262,14 @@ public class UserRepository {
         u.setNoHp(dto.noHp);
         u.setAvatarUrl(dto.avatarUrl);
         u.setBio(dto.bio);
-        u.setVerificationStatus(VerificationStatus.fromString(dto.verificationStatus));
-        u.setPengajuanCatatan(dto.pengajuanCatatan);
+        String resolvedVerif = dto.verificationStatus;
+        if ("pending_owner".equalsIgnoreCase(dto.status)) {
+            resolvedVerif = "PENDING";
+        } else if ("unverified".equalsIgnoreCase(resolvedVerif)) {
+            resolvedVerif = null;
+        }
+        u.setVerificationStatus(VerificationStatus.fromString(resolvedVerif));
+        u.setPengajuanCatatan(dto.pengajuanCatatan != null ? dto.pengajuanCatatan : dto.ktpPath);
         u.setCatatanRevisi(dto.catatanRevisi);
         u.setActive(dto.isActive != null ? dto.isActive : true);
         u.setAuthProvider(dto.authProvider != null ? dto.authProvider : "EMAIL");

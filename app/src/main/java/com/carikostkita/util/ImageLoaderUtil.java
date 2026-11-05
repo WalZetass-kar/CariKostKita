@@ -30,7 +30,7 @@ import java.io.File;
 public final class ImageLoaderUtil {
 
     private static final String TAG = "ImageLoaderUtil";
-    private static final String DEFAULT_BASE_URL = "https://carikostkitafastapi.vercel.app";
+    private static final String DEFAULT_BASE_URL = "https://api.carikostkita.my.id";
 
     private ImageLoaderUtil() {}
 
@@ -91,6 +91,13 @@ public final class ImageLoaderUtil {
             base = base.substring(0, base.length() - 1);
         }
         return base + "/" + s;
+    }
+
+    /**
+     * Memuat gambar umum (misal banner, promo, ad) dengan resolusi aman
+     */
+    public static void loadImage(@NonNull ImageView imageView, @Nullable String rawSource) {
+        loadKostImage(imageView, rawSource, 800, 600, null, null);
     }
 
     /**

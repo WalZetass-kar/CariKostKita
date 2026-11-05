@@ -231,7 +231,7 @@ BEGIN
        OR public.is_app_staff() THEN
         RAISE EXCEPTION 'account cannot submit an owner application' USING ERRCODE = '55000';
     END IF;
-    IF COALESCE(current_status, 'NONE') NOT IN ('NONE', 'REJECTED', 'REVISION_REQUIRED') THEN
+    IF COALESCE(current_status, 'NONE') NOT IN ('NONE', 'unverified', 'REJECTED', 'REVISION_REQUIRED') THEN
         RAISE EXCEPTION 'owner application already active' USING ERRCODE = '23505';
     END IF;
 
@@ -306,8 +306,8 @@ BEGIN
     END IF;
     UPDATE public.users
     SET verification_status = p_status,
-        role = CASE WHEN p_status = 'APPROVED' THEN 'owner' ELSE role END,
-        catatan_revisi = CASE WHEN p_status = 'REVISION_REQUIRED' THEN note ELSE NULL END
+        role = CASE WHEN p_status = 'APPROVED' THEN 'owner' ELSE 'user' END,
+        catatan_revisi = CASE WHEN p_status IN ('REJECTED', 'REVISION_REQUIRED') THEN note ELSE NULL END
     WHERE id = review_target_user_id;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'applicant profile not found' USING ERRCODE = 'P0002';

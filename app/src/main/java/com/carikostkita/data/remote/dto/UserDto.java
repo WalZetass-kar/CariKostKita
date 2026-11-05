@@ -8,7 +8,7 @@ public class UserDto {
     @SerializedName("id")
     public String id;
 
-    @SerializedName("nama")
+    @SerializedName(value = "nama", alternate = {"name"})
     public String nama;
 
     @SerializedName("email")
@@ -28,6 +28,12 @@ public class UserDto {
 
     @SerializedName("verification_status")
     public String verificationStatus;
+
+    @SerializedName("status")
+    public String status;
+
+    @SerializedName("ktp_path")
+    public String ktpPath;
 
     @SerializedName("pengajuan_at")
     public String pengajuanAt;
