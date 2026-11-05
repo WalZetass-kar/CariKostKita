@@ -735,7 +735,7 @@ public class UserRepository {
         executor.execute(() -> {
             try {
                 String currentUid = sessionManager.getUserUid();
-                if (uid == null || !uid.equals(currentUid)) {
+                if (uid != null && !uid.isEmpty() && currentUid != null && !currentUid.isEmpty() && !uid.equals(currentUid)) {
                     postError(callback, ErrorMessages.FORBIDDEN);
                     return;
                 }

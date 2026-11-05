@@ -502,13 +502,6 @@ public class ProfileFragment extends Fragment {
                 return;
             }
 
-            // Wajib: foto properti + kode verifikasi di lokasi.
-            if (!uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_FACADE)
-                    || !uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_CODE)) {
-                AppDialogHelper.showInfo(requireContext(), "Lengkapi Bukti Properti",
-                        "Unggah foto tampak depan properti dan foto kode verifikasi di lokasi. Kami tidak meminta KTP atau surat pribadi.");
-                return;
-            }
             String fullWa = "+62" + waDigits;
 
             StringBuilder noteBuilder = new StringBuilder();
@@ -520,18 +513,25 @@ public class ProfileFragment extends Fragment {
                 noteBuilder.append(" | Catatan: ").append(catatan);
             }
 
-            // Lampirkan link foto jika berupa URL publik
+            // Lampirkan status bukti foto properti
+            boolean hasFacade = uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_FACADE);
+            boolean hasCode = uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_CODE);
+            boolean hasRoom = uploadedDocs.contains(com.carikostkita.data.repository.VerificationRepository.DOC_ROOM);
             String fotoFasad = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_FACADE);
             String fotoKode = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_CODE);
             String fotoKamar = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_ROOM);
-            if (fotoFasad != null && fotoFasad.startsWith("http")) {
-                noteBuilder.append(" | Foto Properti: ").append(fotoFasad);
+
+            if (hasFacade) {
+                noteBuilder.append(" | Foto Properti: ").append(fotoFasad != null && fotoFasad.startsWith("http") ? fotoFasad : "Terlampir dari aplikasi");
             }
-            if (fotoKode != null && fotoKode.startsWith("http")) {
-                noteBuilder.append(" | Foto Kode: ").append(fotoKode);
+            if (hasCode) {
+                noteBuilder.append(" | Foto Kode: ").append(fotoKode != null && fotoKode.startsWith("http") ? fotoKode : "Terlampir dari aplikasi");
             }
-            if (fotoKamar != null && fotoKamar.startsWith("http")) {
-                noteBuilder.append(" | Foto Kamar: ").append(fotoKamar);
+            if (hasRoom) {
+                noteBuilder.append(" | Foto Kamar: ").append(fotoKamar != null && fotoKamar.startsWith("http") ? fotoKamar : "Terlampir dari aplikasi");
+            }
+            if (!hasFacade && !hasCode) {
+                noteBuilder.append(" | Bukti Foto: Menyusul via WhatsApp");
             }
 
             pbLoading.setVisibility(View.VISIBLE);

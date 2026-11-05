@@ -66,35 +66,7 @@ public class VerificationRepository extends BaseRepository {
                 bytes = out.toByteArray();
             }
 
-            // Jalur 1: Coba upload ke Supabase Storage pada bucket kost-images
-            String remoteName = "verification/" + session.getUserUid() + "/" + storagePrefix(docType) + "_" + UUID.randomUUID() + ".jpg";
-            try {
-                RequestBody requestBody = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
-                Response<StorageUploadResponse> res = storage.uploadFileBinary(BUCKET, remoteName, "image/jpeg", requestBody).execute();
-                if (res.isSuccessful()) {
-                    return SupabaseClient.getStoragePublicUrl(BUCKET, remoteName);
-                }
-            } catch (Exception e) {
-                android.util.Log.w("VerificationRepository", "Upload storage gagal, beralih ke representasi dokumen terkompresi: " + e.getMessage());
-            }
-
-            // Jalur 2: Coba avatar upload service jika tersedia
-            try {
-                String token = session.getAccessToken();
-                if (token != null && !token.isEmpty()) {
-                    RequestBody requestBody = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
-                    Response<AvatarUploadResponse> avatarRes = SupabaseClient.getInstance().createAvatarService()
-                            .uploadMyAvatar("Bearer " + token, requestBody).execute();
-                    if (avatarRes.isSuccessful() && avatarRes.body() != null && avatarRes.body().data != null
-                            && avatarRes.body().data.publicUrl != null) {
-                        return avatarRes.body().data.publicUrl;
-                    }
-                }
-            } catch (Exception e) {
-                android.util.Log.w("VerificationRepository", "Upload avatar proxy gagal: " + e.getMessage());
-            }
-
-            // Jalur 3: Fallback data URI terkompresi agar user TIDAK PERNAH terblokir mengajukan verifikasi
+            // Kompresi ramah memori dan langsung siap diproses tanpa blocking ke cloud storage mati
             String b64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
             return "data:image/jpeg;base64," + b64;
         });
