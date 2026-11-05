@@ -37,5 +37,7 @@
 # osmdroid
 -dontwarn org.osmdroid.**
 
-# View kustom yang dipakai dari XML
--keep class com.carikostkita.ui.view.** { *; }
+# View kustom yang dipakai dari XML & seluruh komponen aplikasi
+-keep class com.carikostkita.** { *; }
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class org.mindrot.jbcrypt.** { *; }

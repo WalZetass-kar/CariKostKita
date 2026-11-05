@@ -19,19 +19,22 @@ fi
 echo "Found APK at: $APK_PATH"
 
 echo "3. Copying APK..."
+cp -v "$APK_PATH" CariKostKita-v1.3.3-release.apk
 cp -v "$APK_PATH" CariKostKita-v1.3.2-release.apk
 cp -v "$APK_PATH" CariKostKita-v1.3.1-release.apk
+cp -v "$APK_PATH" "/home/walzetass-kar/Documents/ProjectIhwal/CariKostKita_FastAPI_Docs/Landing Page/public/releases/CariKostKita-v1.3.3-release.apk"
 cp -v "$APK_PATH" "/home/walzetass-kar/Documents/ProjectIhwal/CariKostKita_FastAPI_Docs/Landing Page/public/releases/CariKostKita-v1.3.2-release.apk"
 cp -v "$APK_PATH" "/home/walzetass-kar/Documents/ProjectIhwal/CariKostKita_FastAPI_Docs/Landing Page/public/releases/CariKostKita-v1.3.1-release.apk"
 
 echo "4. Verifying APK signature..."
-$ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs CariKostKita-v1.3.2-release.apk
+$ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs CariKostKita-v1.3.3-release.apk
 
 echo "5. Verifying Google Client ID in DEX..."
-$ANDROID_HOME/build-tools/34.0.0/dexdump -d CariKostKita-v1.3.2-release.apk | grep "apps.googleusercontent.com"
+$ANDROID_HOME/build-tools/34.0.0/dexdump -d CariKostKita-v1.3.3-release.apk | grep "apps.googleusercontent.com"
 
 echo "6. Uploading to VPS..."
-scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.2-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.2-release.apk
-scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.2-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.1-release.apk
+scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.3-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.3-release.apk
+scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.3-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.2-release.apk
+scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.3-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.1-release.apk
 
 echo "ALL DONE!"

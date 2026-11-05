@@ -51,46 +51,53 @@ public final class CrashReporter {
                 int nl = content.indexOf('\n');
                 String message = nl > 0 ? content.substring(0, Math.min(nl, 1000)) : content;
                 JsonObject body = new JsonObject();
-                body.addProperty("message", message);
-                body.addProperty("stacktrace", content);
+                body.addProperty("error_message", message);
+                body.addProperty("stack_trace", content.length() > 20000 ? content.substring(0, 20000) : content);
                 body.addProperty("app_version", BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
-                body.addProperty("device", Build.MANUFACTURER + " " + Build.MODEL);
-                body.addProperty("android_version", Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+                body.addProperty("platform", "android");
+                JsonObject devInfo = new JsonObject();
+                devInfo.addProperty("manufacturer", Build.MANUFACTURER != null ? Build.MANUFACTURER : "Unknown");
+                devInfo.addProperty("model", Build.MODEL != null ? Build.MODEL : "Unknown");
+                devInfo.addProperty("os_version", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "Unknown");
+                body.add("device_info", devInfo);
+
                 SessionManager session = new SessionManager(app);
-                if (session.isLoggedIn()) body.addProperty("user_id", session.getUserUid());
                 if (session.isLoggedIn()) {
                     String token = session.getAccessToken();
                     if (session.isTokenExpired()) token = SupabaseClient.getInstance().refreshTokenBlocking(token);
-                    if (token == null || token.isEmpty()) return;
-                    JsonObject apiPayload = new JsonObject();
-                    apiPayload.addProperty("app_version", BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
-                    apiPayload.addProperty("platform", "android");
-                    apiPayload.addProperty("error_message", message);
-                    apiPayload.addProperty("stack_trace", content.length() > 20000 ? content.substring(0, 20000) : content);
-                    JsonObject deviceInfo = new JsonObject();
-                    deviceInfo.addProperty("manufacturer", Build.MANUFACTURER);
-                    deviceInfo.addProperty("model", Build.MODEL);
-                    deviceInfo.addProperty("os_version", Build.VERSION.RELEASE);
-                    apiPayload.add("device_info", deviceInfo);
+                    if (token != null && !token.isEmpty()) {
+                        FastApiCrashReportService fastApi = SupabaseClient.getInstance().createCrashReportService();
+                        Response<okhttp3.ResponseBody> response = fastApi.submit("Bearer " + token, body).execute();
+                        try {
+                            if (response.isSuccessful()) {
+                                file.delete();
+                                return;
+                            }
+                        } finally {
+                            if (response.body() != null) response.body().close();
+                            if (response.errorBody() != null) response.errorBody().close();
+                        }
+                    }
+                }
+
+                // Public endpoint fallback
+                try {
                     FastApiCrashReportService fastApi = SupabaseClient.getInstance().createCrashReportService();
-                    Response<okhttp3.ResponseBody> response = fastApi.submit("Bearer " + token, apiPayload).execute();
+                    Response<okhttp3.ResponseBody> pubResp = fastApi.submitPublic(body).execute();
                     try {
-                        if (response.isSuccessful()) {
-                            //noinspection ResultOfMethodCallIgnored
+                        if (pubResp.isSuccessful()) {
                             file.delete();
                             return;
                         }
-                        if (response.code() != 404) return;
                     } finally {
-                        if (response.body() != null) response.body().close();
-                        if (response.errorBody() != null) response.errorBody().close();
+                        if (pubResp.body() != null) pubResp.body().close();
+                        if (pubResp.errorBody() != null) pubResp.errorBody().close();
                     }
-                }
-                // Compatibility path is used only when FastAPI has not deployed the route,
-                // or for an already-logged-out crash that cannot carry a user JWT.
+                } catch (Exception ignored) {}
+
+                // PostgREST fallback
                 SupabaseDbService db = SupabaseClient.getInstance().createService(SupabaseDbService.class);
                 if (db.insert("crash_reports", body).execute().isSuccessful()) {
-                    //noinspection ResultOfMethodCallIgnored
                     file.delete();
                 }
             } catch (Exception ignored) {}

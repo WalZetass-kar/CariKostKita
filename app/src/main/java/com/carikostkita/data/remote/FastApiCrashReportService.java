@@ -14,4 +14,9 @@ public interface FastApiCrashReportService {
             @Header("Authorization") String bearerToken,
             @Body JsonObject report
     );
+
+    @POST("api/v1/public/crash-reports")
+    Call<ResponseBody> submitPublic(
+            @Body JsonObject report
+    );
 }
