@@ -34,7 +34,6 @@ $ANDROID_HOME/build-tools/34.0.0/dexdump -d CariKostKita-v1.3.3-release.apk | gr
 
 echo "6. Uploading to VPS..."
 scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.3-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.3-release.apk
-scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.3-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.2-release.apk
-scp -i ~/.ssh/id_ed25519 CariKostKita-v1.3.3-release.apk root@194.62.248.20:/var/lib/docker/volumes/carikostkita_media_data/_data/releases/CariKostKita-v1.3.1-release.apk
+ssh -i ~/.ssh/id_ed25519 root@194.62.248.20 "cd /var/lib/docker/volumes/carikostkita_media_data/_data/releases/ && cp -v CariKostKita-v1.3.3-release.apk CariKostKita-v1.3.2-release.apk && cp -v CariKostKita-v1.3.3-release.apk CariKostKita-v1.3.1-release.apk"
 
 echo "ALL DONE!"

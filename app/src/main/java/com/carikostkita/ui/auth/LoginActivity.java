@@ -308,8 +308,16 @@ public class LoginActivity extends AppCompatActivity {
             if (statusCode == 12501) return;
             setLoading(false);
             android.util.Log.w("LoginActivity", "Google Play Services SignIn error (" + statusCode + ")");
-            AppDialogHelper.showError(this, "Login Google Gagal (" + statusCode + ")",
-                    "Gagal menghubungkan ke akun Google (kode status: " + statusCode + "). Silakan coba lagi atau masuk menggunakan Email & Password.");
+            String title = "Login Google Gagal (" + statusCode + ")";
+            String msg = "Gagal menghubungkan ke akun Google (kode status: " + statusCode + "). Silakan coba lagi atau masuk menggunakan Email & Password.";
+            if (statusCode == 12500) {
+                msg = "Google Play Services menolak otentikasi (Status 12500).\n\nHal ini terjadi jika:\n• Sidik jari SHA-1 aplikasi belum terdaftar di Google Cloud Console pada project yang sama.\n• Atau layar persetujuan OAuth masih berstatus 'Testing' (belum Publikasi).\n\nAnda dapat langsung masuk memakai Email & Password.";
+            } else if (statusCode == 10) {
+                msg = "Kesalahan konfigurasi aplikasi (Developer Error 10). Pastikan SHA-1 terdaftar di Google Cloud Console.\n\nSilakan masuk memakai Email & Password.";
+            } else if (statusCode == 7) {
+                msg = "Koneksi jaringan terputus ke server Google (Status 7). Silakan periksa koneksi internet Anda.";
+            }
+            AppDialogHelper.showError(this, title, msg);
         }
     }
 
