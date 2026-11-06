@@ -15,9 +15,14 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.RequestBody;
-import retrofit2.Response;
+import okhttp3.Response;
+import com.carikostkita.BuildConfig;
 
 /**
  * Bukti verifikasi PROPERTI pemilik.
@@ -66,7 +71,40 @@ public class VerificationRepository extends BaseRepository {
                 bytes = out.toByteArray();
             }
 
-            // Kompresi ramah memori dan langsung siap diproses tanpa blocking ke cloud storage mati
+            // Upload langsung ke server backend FastAPI
+            RequestBody fileBody = RequestBody.create(MediaType.parse("image/jpeg"), bytes);
+            String filename = "verif_" + docType + "_" + UUID.randomUUID().toString().substring(0, 8) + ".jpg";
+            MultipartBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", filename, fileBody)
+                    .build();
+
+            String uploadUrl = BuildConfig.API_BASE_URL.replaceAll("/+$", "") + "/api/v1/upload-image";
+            Request request = new Request.Builder()
+                    .url(uploadUrl)
+                    .post(requestBody)
+                    .build();
+
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(60, TimeUnit.SECONDS)
+                    .writeTimeout(60, TimeUnit.SECONDS)
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String respStr = response.body().string();
+                    JsonObject json = new com.google.gson.Gson().fromJson(respStr, JsonObject.class);
+                    if (json != null && json.has("url")) {
+                        return json.get("url").getAsString();
+                    }
+                }
+                android.util.Log.w("VerificationRepository", "Upload response error HTTP " + response.code());
+            } catch (Exception e) {
+                android.util.Log.e("VerificationRepository", "Gagal upload gambar ke server: " + e.getMessage());
+            }
+
+            // Fallback ke data URI jika server gagal
             String b64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
             return "data:image/jpeg;base64," + b64;
         });

@@ -522,13 +522,13 @@ public class ProfileFragment extends Fragment {
             String fotoKamar = uploadedDocPaths.get(com.carikostkita.data.repository.VerificationRepository.DOC_ROOM);
 
             if (hasFacade) {
-                noteBuilder.append(" | Foto Properti: ").append(fotoFasad != null && fotoFasad.startsWith("http") ? fotoFasad : "Terlampir dari aplikasi");
+                noteBuilder.append(" | Foto Properti: ").append(fotoFasad != null && !fotoFasad.isEmpty() ? fotoFasad : "Terlampir dari aplikasi");
             }
             if (hasCode) {
-                noteBuilder.append(" | Foto Kode: ").append(fotoKode != null && fotoKode.startsWith("http") ? fotoKode : "Terlampir dari aplikasi");
+                noteBuilder.append(" | Foto Kode: ").append(fotoKode != null && !fotoKode.isEmpty() ? fotoKode : "Terlampir dari aplikasi");
             }
             if (hasRoom) {
-                noteBuilder.append(" | Foto Kamar: ").append(fotoKamar != null && fotoKamar.startsWith("http") ? fotoKamar : "Terlampir dari aplikasi");
+                noteBuilder.append(" | Foto Kamar: ").append(fotoKamar != null && !fotoKamar.isEmpty() ? fotoKamar : "Terlampir dari aplikasi");
             }
             if (!hasFacade && !hasCode) {
                 noteBuilder.append(" | Bukti Foto: Menyusul via WhatsApp");
