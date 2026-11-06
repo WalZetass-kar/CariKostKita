@@ -1314,6 +1314,29 @@ public class PemilikMainActivity extends AppCompatActivity implements
                 });
     }
 
+    @Override
+    public void onDeleteClick(Kost kost, int position) {
+        AppDialogHelper.showConfirm(this,
+                "Hapus Properti Kost?",
+                "Apakah kamu yakin ingin menghapus properti \"" + kost.getNamaKost() + "\"? Data yang dihapus tidak dapat dipulihkan.",
+                "Hapus Kost",
+                () -> {
+                    kostRepository.deleteKost(kost.getIdKost(), new DataCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(Boolean success) {
+                            Toast.makeText(PemilikMainActivity.this, "Properti \"" + kost.getNamaKost() + "\" berhasil dihapus", Toast.LENGTH_SHORT).show();
+                            loadOwnerKosts();
+                            loadDashboardStats();
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            AppDialogHelper.showError(PemilikMainActivity.this, "Gagal Menghapus Kost", message);
+                        }
+                    });
+                });
+    }
+
     private void showEditProfileDialog() {
         Intent intent = new Intent(this, com.carikostkita.ui.profile.EditProfileActivity.class);
         startActivity(intent);

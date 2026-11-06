@@ -107,10 +107,20 @@
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_admin_delete_kost"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hapus"
+                android:textColor="#D32F2F"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_admin_toggle_status"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
                 android:text="Ubah Status"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />

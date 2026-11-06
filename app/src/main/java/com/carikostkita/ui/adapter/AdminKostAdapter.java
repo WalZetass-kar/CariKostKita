@@ -20,6 +20,7 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
         void onToggleStatusClick(Kost kost, int position);
         /** Kost ditolak / perlu revisi diajukan ulang ke antrean moderasi. */
         default void onResubmitClick(Kost kost, int position) {}
+        default void onDeleteClick(Kost kost, int position) {}
     }
 
     private final List<Kost> kostList;
@@ -65,6 +66,7 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
         private final TextView tvRevisiNote;
         private final Button btnToggleStatus;
         private final Button btnEdit;
+        private final Button btnDelete;
 
         public AdminKostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -76,6 +78,7 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
             tvRevisiNote = itemView.findViewById(R.id.tv_admin_kost_revisi_note);
             btnToggleStatus = itemView.findViewById(R.id.btn_admin_toggle_status);
             btnEdit = itemView.findViewById(R.id.btn_admin_edit_kost);
+            btnDelete = itemView.findViewById(R.id.btn_admin_delete_kost);
         }
 
         public void bind(Kost kost, OnAdminKostClickListener listener, int position) {
@@ -140,6 +143,12 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
             btnEdit.setOnClickListener(v -> {
                 if (listener != null) listener.onEditClick(kost);
             });
+
+            if (btnDelete != null) {
+                btnDelete.setOnClickListener(v -> {
+                    if (listener != null) listener.onDeleteClick(kost, position);
+                });
+            }
 
             boolean ownerMode = itemView.getContext() instanceof com.carikostkita.ui.admin.PemilikMainActivity;
             boolean needsResubmit = ownerMode && kost.getVerificationStatus() == com.carikostkita.data.model.KostVerificationStatus.REJECTED

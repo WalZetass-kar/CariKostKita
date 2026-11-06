@@ -1740,6 +1740,31 @@ public class AdminMainActivity extends AppCompatActivity implements
                 });
     }
 
+    @Override
+    public void onDeleteClick(Kost kost, int position) {
+        AppDialogHelper.showConfirm(this,
+                "Hapus Listing Kost?",
+                "Apakah kamu yakin ingin menghapus properti \"" + kost.getNamaKost() + "\" sebagai Admin? Data akan dihapus permanen.",
+                "Hapus Listing",
+                () -> {
+                    kostRepository.deleteKost(kost.getIdKost(), new DataCallback<Boolean>() {
+                        @Override
+                        public void onSuccess(Boolean success) {
+                            activityLogRepository.logActivity(sessionManager.getUserUid(), "DELETE_KOST",
+                                    "Admin menghapus kost '" + kost.getNamaKost() + "'", "kost", kost.getIdKost());
+                            Toast.makeText(AdminMainActivity.this, "Properti \"" + kost.getNamaKost() + "\" berhasil dihapus", Toast.LENGTH_SHORT).show();
+                            loadDataMasterContent();
+                            loadAllStats();
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            AppDialogHelper.showError(AdminMainActivity.this, "Gagal Menghapus Kost", message);
+                        }
+                    });
+                });
+    }
+
     /**
      * Deteksi kemungkinan listing duplikat: foto sampul sama, nama + kota sama,
      * atau titik peta berjarak < 30 m dari kost lain milik pemilik berbeda.

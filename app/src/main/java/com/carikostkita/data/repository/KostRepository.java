@@ -96,7 +96,17 @@ import java.util.concurrent.ExecutorService;
 
 import java.util.concurrent.Executors;
 
+import java.util.concurrent.TimeUnit;
+
+import com.carikostkita.BuildConfig;
+
 import okhttp3.MediaType;
+
+import okhttp3.MultipartBody;
+
+import okhttp3.OkHttpClient;
+
+import okhttp3.Request;
 
 import okhttp3.RequestBody;
 
@@ -1484,7 +1494,24 @@ public class KostRepository {
 
     }
 
+    public void deleteKost(String idKost, DataCallback<Boolean> callback) {
+        executor.execute(() -> {
+            try {
+                Response<ResponseBody> res = dbService.deleteKost("eq." + idKost).execute();
+                if (res.isSuccessful()) {
+                    mainHandler.post(() -> callback.onSuccess(true));
+                } else {
+                    postError(callback, ErrorMessages.fromResponse("deleteKost", res));
+                }
+            } catch (Exception e) {
+                postError(callback, ErrorMessages.fromException("deleteKost", e));
+            }
+        });
+    }
 
+    public void deleteKost(int idKost, DataCallback<Boolean> callback) {
+        deleteKost(String.valueOf(idKost), callback);
+    }
 
     private void applyFasilitas(Kost kost, List<Integer> fasilitasIds) {
 
@@ -1606,31 +1633,46 @@ public class KostRepository {
 
                 }
 
-                String remoteName = folder + "/" + UUID.randomUUID() + ".jpg";
+                String filename = "kost_" + System.currentTimeMillis() + "_" + i + ".jpg";
 
-                RequestBody body = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
+                RequestBody fileBody = RequestBody.create(bytes, MediaType.parse("image/jpeg"));
 
-                Response<StorageUploadResponse> uploadRes = storageService.uploadFileBinary(BUCKET, remoteName, "image/jpeg", body).execute();
+                RequestBody requestBody = new MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart("file", filename, fileBody)
+                        .build();
 
-                if (uploadRes.isSuccessful()) {
+                String uploadUrl = BuildConfig.API_BASE_URL.replaceAll("/+$", "") + "/api/v1/upload-image";
 
-                    String url = SupabaseClient.getStoragePublicUrl(BUCKET, remoteName);
+                Request request = new Request.Builder()
+                        .url(uploadUrl)
+                        .post(requestBody)
+                        .build();
 
-                    result.urls.add(url);
+                OkHttpClient client = new OkHttpClient.Builder()
+                        .connectTimeout(30, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(60, TimeUnit.SECONDS)
+                        .build();
 
-                    result.urlByIndex.put(i, url);
-
-                } else {
-
-                    ErrorMessages.fromResponse("uploadFoto", uploadRes);
-
+                try (okhttp3.Response response = client.newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String respStr = response.body().string();
+                        JsonObject json = new com.google.gson.Gson().fromJson(respStr, JsonObject.class);
+                        if (json != null && json.has("url")) {
+                            String url = json.get("url").getAsString();
+                            result.urls.add(url);
+                            result.urlByIndex.put(i, url);
+                            continue;
+                        }
+                    }
+                    Log.w(TAG, "uploadFoto server error HTTP " + response.code());
                     result.failed++;
-
                 }
 
             } catch (Exception e) {
 
-                ErrorMessages.fromException("uploadFoto", e);
+                Log.e(TAG, "uploadFoto exception: " + e.getMessage());
 
                 result.failed++;
 
