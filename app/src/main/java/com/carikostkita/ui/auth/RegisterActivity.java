@@ -38,7 +38,7 @@ import com.google.android.material.textfield.TextInputLayout;
 public class RegisterActivity extends AppCompatActivity {
 
     private static final int RC_GOOGLE_SIGN_UP = 9002;
-    private static final String GOOGLE_WEB_CLIENT_ID = "264488638475-4qsbq178pve06t9pmm82np0asqnb0leu.apps.googleusercontent.com";
+    private static final String GOOGLE_WEB_CLIENT_ID = "881527103595-jd9kcllcm52cvo34qqj739vmr5270q8a.apps.googleusercontent.com";
 
     private TextInputLayout tilNama;
     private TextInputLayout tilEmail;
