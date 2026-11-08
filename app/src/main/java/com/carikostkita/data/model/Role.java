@@ -17,6 +17,8 @@ public enum Role {
                 return PEMILIK_KOST;
             case "developer":
             case "admin":
+            case "super_admin":
+            case "superadmin":
                 return ADMIN;
             case "moderator":
                 return MODERATOR;
