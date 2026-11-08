@@ -217,6 +217,10 @@ public class SupabaseClient {
         return apiRetrofit.create(FastApiSettingsService.class);
     }
 
+    public FastApiAdminBulkImportService createAdminBulkImportService() {
+        return apiRetrofit.create(FastApiAdminBulkImportService.class);
+    }
+
     /** Helper: bangun URL publik file di Supabase Storage */
     public static String getStoragePublicUrl(String bucket, String path) {
         return BuildConfig.SUPABASE_URL + "/storage/v1/object/public/" + bucket + "/" + path;

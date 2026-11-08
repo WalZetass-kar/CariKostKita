@@ -108,10 +108,14 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
             currentList.clear();
             currentList.addAll(localFavorites);
             renderList();
-        } else if (!sessionManager.isLoggedIn()) {
+        }
+
+        if (!sessionManager.isLoggedIn()) {
             swipeRefresh.setRefreshing(false);
             if (layoutSkeleton != null) layoutSkeleton.setVisibility(View.GONE);
-            showGuestState();
+            if (currentList.isEmpty()) {
+                showGuestState();
+            }
             return;
         }
 
@@ -138,6 +142,10 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
                         renderList();
                     } else if (localFavorites.isEmpty()) {
                         currentList.clear();
+                        renderList();
+                    } else {
+                        currentList.clear();
+                        currentList.addAll(localFavorites);
                         renderList();
                     }
                 });
@@ -221,12 +229,12 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
 
             @Override
             public void onFavoriteToggle(Kost kost, int position) {
-                if (!AuthPrompt.require(requireContext(), "Masuk untuk menyimpan kost favorit.")) return;
                 kostRepository.toggleFavorite(sessionManager.getUserUid(), kost, new DataCallback<Boolean>() {
                     @Override
                     public void onSuccess(Boolean isFavorite) {
                         if (!isAdded()) return;
                         suggestionsLoaded = false;
+                        Toast.makeText(requireContext(), isFavorite ? "Ditambahkan ke Favorit" : "Dihapus dari Favorit", Toast.LENGTH_SHORT).show();
                         loadFavorites(false);
                     }
 
@@ -241,7 +249,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
         rv.setAdapter(suggestionAdapter);
     }
 
-    /** "Mungkin kamu suka": kost terdekat (bila lokasi ada) atau termurah, maksimal 6. */
+    /** "Mungkin kamu suka": rekomendasi pilihan kost terdekat / populer. */
     private void loadSuggestions() {
         if (suggestionAdapter == null || suggestionsLoaded) return;
         suggestionsLoaded = true;
@@ -250,7 +258,12 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
             public void onSuccess(List<Kost> data) {
                 if (!isAdded() || data == null || data.isEmpty()) return;
                 List<Kost> list = new ArrayList<>();
-                for (Kost k : data) if (!k.isFavorite() && k.isAvailable()) list.add(k);
+                for (Kost k : data) {
+                    if (k != null && !k.isFavorite()) list.add(k);
+                }
+                if (list.isEmpty()) {
+                    list.addAll(data);
+                }
                 double lat = sessionManager.getUserSelectedLat();
                 double lng = sessionManager.getUserSelectedLng();
                 if (lat != 0 && lng != 0) {
@@ -261,7 +274,7 @@ public class FavoriteFragment extends Fragment implements KostAdapter.OnKostClic
                     java.util.Collections.sort(list, (a, b) -> Double.compare(a.getHarga(), b.getHarga()));
                 }
                 if (list.isEmpty()) return;
-                suggestionAdapter.submitList(new ArrayList<>(list.subList(0, Math.min(6, list.size()))));
+                suggestionAdapter.submitList(new ArrayList<>(list.subList(0, Math.min(8, list.size()))));
                 if (layoutSuggestions != null) layoutSuggestions.setVisibility(View.VISIBLE);
             }
 

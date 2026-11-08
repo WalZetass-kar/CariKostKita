@@ -640,14 +640,15 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
 
     @Override
     public void onFavoriteToggle(Kost kost, int position) {
-        if (!AuthPrompt.require(requireContext(), "Masuk untuk menyimpan kost favorit dan membukanya lagi kapan saja.")) return;
-
         kostRepository.toggleFavorite(sessionManager.getUserUid(), kost, new DataCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean isFavorite) {
                 kost.setFavorite(isFavorite);
                 kostAdapter.notifyItemChanged(position);
                 carouselAdapter.notifyDataSetChanged();
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), isFavorite ? "Ditambahkan ke Favorit" : "Dihapus dari Favorit", Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override

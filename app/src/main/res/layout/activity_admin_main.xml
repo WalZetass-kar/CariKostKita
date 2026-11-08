@@ -968,9 +968,9 @@
                         android:layout_marginTop="8dp"
                         android:orientation="horizontal">
 
-                        <!-- Action 3: Tambah Kost -->
+                        <!-- Action 3: Import Excel / CSV -->
                         <com.google.android.material.card.MaterialCardView
-                            android:id="@+id/btn_admin_quick_add_kost"
+                            android:id="@+id/btn_admin_quick_bulk_import"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="6dp"
@@ -995,14 +995,14 @@
                                     android:layout_height="36dp"
                                     android:background="@drawable/bg_circle_icon_peach"
                                     android:padding="8dp"
-                                    android:src="@drawable/ic_nav_home"
+                                    android:src="@drawable/ic_verified"
                                     app:tint="@color/primary" />
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="10dp"
-                                    android:text="Tambah Kost"
+                                    android:text="Import Berkas"
                                     android:textColor="@color/text_primary"
                                     android:textSize="13sp"
                                     android:textStyle="bold" />
@@ -1011,7 +1011,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="2dp"
-                                    android:text="Terbitkan listing langsung"
+                                    android:text="Excel / CSV massal"
                                     android:textColor="@color/text_secondary"
                                     android:textSize="11sp" />
                             </LinearLayout>

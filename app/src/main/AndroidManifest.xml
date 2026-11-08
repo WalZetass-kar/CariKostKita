@@ -111,6 +111,9 @@
             android:name=".ui.admin.AdminFasilitasActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.admin.AdminBulkImportActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.admin.OwnerKatalogPublikActivity"
             android:exported="false" />
 

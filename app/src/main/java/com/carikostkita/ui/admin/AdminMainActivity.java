@@ -307,7 +307,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         View btnAdminHeroVerif = findViewById(R.id.btn_admin_hero_verif);
         View btnQuickVerif = findViewById(R.id.btn_admin_quick_verif);
         View btnGotoFasilitas = findViewById(R.id.btn_admin_goto_fasilitas);
-        View btnQuickAddKost = findViewById(R.id.btn_admin_quick_add_kost);
+        View btnQuickBulkImport = findViewById(R.id.btn_admin_quick_bulk_import);
         View btnQuickData = findViewById(R.id.btn_admin_quick_data);
         tvAdminRecentLog1Title = findViewById(R.id.tv_admin_recent_log_1_title);
         tvAdminRecentLog1Time = findViewById(R.id.tv_admin_recent_log_1_time);
@@ -327,11 +327,9 @@ public class AdminMainActivity extends AppCompatActivity implements
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
-        if (btnQuickAddKost != null) {
-            // Developer memoderasi, bukan memiliki listing (kost harus dimiliki pemilik terverifikasi)
-            btnQuickAddKost.setVisibility(View.GONE);
-            btnQuickAddKost.setOnClickListener(v -> {
-                startActivity(new Intent(this, AdminKostFormActivity.class));
+        if (btnQuickBulkImport != null) {
+            btnQuickBulkImport.setOnClickListener(v -> {
+                startActivity(new Intent(this, AdminBulkImportActivity.class));
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
@@ -436,6 +434,14 @@ public class AdminMainActivity extends AppCompatActivity implements
             itemFasilitas.setOnClickListener(v -> {
                 drawerLayout.closeDrawer(GravityCompat.START);
                 startActivity(new Intent(this, AdminFasilitasActivity.class));
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            });
+        }
+        View itemBulkImport = findViewById(R.id.item_drawer_admin_bulk_import);
+        if (itemBulkImport != null) {
+            itemBulkImport.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                startActivity(new Intent(this, AdminBulkImportActivity.class));
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }

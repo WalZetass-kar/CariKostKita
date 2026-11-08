@@ -127,6 +127,36 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
+            <!-- Import Berkas Excel / CSV -->
+            <LinearLayout
+                android:id="@+id/item_drawer_admin_bulk_import"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="2dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="Import Berkas"
+                    android:src="@drawable/ic_verified"
+                    app:tint="@color/primary" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif"
+                    android:text="Import Kost (Excel / CSV)"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
             <LinearLayout
                 android:id="@+id/item_drawer_admin_users"
                 android:layout_width="match_parent"

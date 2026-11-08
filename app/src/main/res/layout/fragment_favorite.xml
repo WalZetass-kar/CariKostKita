@@ -18,15 +18,11 @@
         <include
             android:id="@+id/header_fav"
             layout="@layout/view_page_header"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <View
-            android:id="@+id/divider_fav"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            app:layout_constraintTop_toBottomOf="@+id/header_fav" />
 
         <ProgressBar
             android:id="@+id/pb_fav_loading"
@@ -37,7 +33,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/divider_fav" />
+            app:layout_constraintTop_toBottomOf="@+id/header_fav" />
 
         <!-- Empty state hidup: ilustrasi + rekomendasi + tips (bisa digulir) -->
         <androidx.core.widget.NestedScrollView
@@ -45,12 +41,13 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="false"
+            android:fillViewport="true"
             android:paddingBottom="104dp"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/divider_fav">
+            app:layout_constraintTop_toBottomOf="@+id/header_fav">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -61,8 +58,8 @@
 
                 <ImageView
                     android:id="@+id/iv_fav_empty_illustration"
-                    android:layout_width="160dp"
-                    android:layout_height="140dp"
+                    android:layout_width="100dp"
+                    android:layout_height="90dp"
                     android:importantForAccessibility="no"
                     android:src="@drawable/il_empty_favorite" />
 
@@ -237,7 +234,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/divider_fav" />
+            app:layout_constraintTop_toBottomOf="@+id/header_fav" />
 
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/btn_fav_compare"

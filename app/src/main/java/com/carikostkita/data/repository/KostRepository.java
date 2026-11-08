@@ -980,11 +980,8 @@ public class KostRepository {
         String idKost = kost.getIdKost();
         executor.execute(() -> {
             try {
-                if (userId == null || userId.isEmpty()) {
-                    postError(callback, "Masuk terlebih dahulu untuk menyimpan favorit.");
-                    return;
-                }
-                if (!userId.equals(sessionManager.getUserUid())) {
+                boolean isGuest = (userId == null || userId.isEmpty() || !sessionManager.isLoggedIn());
+                if (!isGuest && !userId.equals(sessionManager.getUserUid())) {
                     postError(callback, ErrorMessages.FORBIDDEN);
                     return;
                 }
@@ -1007,18 +1004,20 @@ public class KostRepository {
                     sessionManager.setFavorite(idKost, false);
                 }
 
-                // 2. Sinkronkan ke server secara background (best-effort)
-                String token = activeAccessToken();
-                if (token != null) {
-                    String bearer = "Bearer " + token;
-                    try {
-                        if (targetFav) {
-                            favoriteService.addFavorite(bearer, idKost).execute();
-                        } else {
-                            favoriteService.removeFavorite(bearer, idKost).execute();
+                // 2. Sinkronkan ke server jika sudah login (best-effort)
+                if (!isGuest) {
+                    String token = activeAccessToken();
+                    if (token != null) {
+                        String bearer = "Bearer " + token;
+                        try {
+                            if (targetFav) {
+                                favoriteService.addFavorite(bearer, idKost).execute();
+                            } else {
+                                favoriteService.removeFavorite(bearer, idKost).execute();
+                            }
+                        } catch (Exception syncEx) {
+                            Log.w(TAG, "Sync favorite to server failed (saved locally): " + syncEx.getMessage());
                         }
-                    } catch (Exception syncEx) {
-                        Log.w(TAG, "Sync favorite to server failed (saved locally): " + syncEx.getMessage());
                     }
                 }
 
@@ -1054,11 +1053,8 @@ public class KostRepository {
 
         executor.execute(() -> {
             try {
-                if (userId == null || userId.isEmpty()) {
-                    postError(callback, "Masuk terlebih dahulu untuk menyimpan favorit.");
-                    return;
-                }
-                if (!userId.equals(sessionManager.getUserUid())) {
+                boolean isGuest = (userId == null || userId.isEmpty() || !sessionManager.isLoggedIn());
+                if (!isGuest && !userId.equals(sessionManager.getUserUid())) {
                     postError(callback, ErrorMessages.FORBIDDEN);
                     return;
                 }
@@ -1071,17 +1067,19 @@ public class KostRepository {
                     com.carikostkita.data.local.FavoriteDiskCache.removeFavorite(appContext, idKost);
                 }
 
-                String token = activeAccessToken();
-                if (token != null) {
-                    String bearer = "Bearer " + token;
-                    try {
-                        if (targetFav) {
-                            favoriteService.addFavorite(bearer, idKost).execute();
-                        } else {
-                            favoriteService.removeFavorite(bearer, idKost).execute();
+                if (!isGuest) {
+                    String token = activeAccessToken();
+                    if (token != null) {
+                        String bearer = "Bearer " + token;
+                        try {
+                            if (targetFav) {
+                                favoriteService.addFavorite(bearer, idKost).execute();
+                            } else {
+                                favoriteService.removeFavorite(bearer, idKost).execute();
+                            }
+                        } catch (Exception syncEx) {
+                            Log.w(TAG, "Sync favorite to server failed (saved locally): " + syncEx.getMessage());
                         }
-                    } catch (Exception syncEx) {
-                        Log.w(TAG, "Sync favorite to server failed (saved locally): " + syncEx.getMessage());
                     }
                 }
 
