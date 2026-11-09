@@ -193,6 +193,10 @@ public class OwnerRoomActivity extends AppCompatActivity implements OwnerRoomAda
     }
 
     private void createRoomRequest(String name, String type, double price) {
+        if (kostId <= 0) {
+            Toast.makeText(this, "ID kost tidak valid. Silakan pilih kost terlebih dahulu.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         pbLoading.setVisibility(View.VISIBLE);
         JsonObject body = new JsonObject();
         body.addProperty("name", name);

@@ -292,9 +292,13 @@ public class OwnerTenantActivity extends AppCompatActivity
     }
 
     private void createTenantRequest(String name, String phone, int dueDate, double price) {
+        if (kostId <= 0) {
+            Toast.makeText(this, "Pilih properti kost terlebih dahulu untuk mencatat penghuni.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         pbLoading.setVisibility(View.VISIBLE);
         JsonObject body = new JsonObject();
-        body.addProperty("kost_id", kostId > 0 ? kostId : 1);
+        body.addProperty("kost_id", kostId);
         body.addProperty("name", name);
         body.addProperty("phone", phone);
         body.addProperty("due_date", dueDate);
@@ -352,9 +356,13 @@ public class OwnerTenantActivity extends AppCompatActivity
     }
 
     private void createTicketRequest(String tenant, String cat, String title, String desc) {
+        if (kostId <= 0) {
+            Toast.makeText(this, "Pilih properti kost terlebih dahulu untuk mencatat komplain.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         pbLoading.setVisibility(View.VISIBLE);
         JsonObject body = new JsonObject();
-        body.addProperty("kost_id", kostId > 0 ? kostId : 1);
+        body.addProperty("kost_id", kostId);
         body.addProperty("tenant_name", tenant);
         body.addProperty("category", cat);
         body.addProperty("title", title);

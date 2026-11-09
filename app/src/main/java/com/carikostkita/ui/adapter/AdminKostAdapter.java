@@ -21,6 +21,7 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
         /** Kost ditolak / perlu revisi diajukan ulang ke antrean moderasi. */
         default void onResubmitClick(Kost kost, int position) {}
         default void onDeleteClick(Kost kost, int position) {}
+        default void onKostManageClick(Kost kost) {}
     }
 
     private final List<Kost> kostList;
@@ -139,6 +140,10 @@ public class AdminKostAdapter extends RecyclerView.Adapter<AdminKostAdapter.Admi
                     if (tvRevisiNote != null) tvRevisiNote.setVisibility(View.GONE);
                 }
             }
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onKostManageClick(kost);
+            });
 
             btnEdit.setOnClickListener(v -> {
                 if (listener != null) listener.onEditClick(kost);

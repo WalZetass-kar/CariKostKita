@@ -166,17 +166,16 @@ public class PemilikMainActivity extends AppCompatActivity implements
         chatRepository = new ChatRepository(this);
         userRepository = new UserRepository(this);
 
-        // Strict Role-Based Access Control: HANYA Pemilik Kost
-        if (!sessionManager.isLoggedIn() || !sessionManager.isPemilikKost()) {
+        // Access Control: Pemilik Kost ATAU Developer/Admin yang beralih ke mode Pemilik
+        boolean canAccess = sessionManager.isPemilikKost() || sessionManager.isDeveloper();
+        if (!sessionManager.isLoggedIn() || !canAccess) {
             Toast.makeText(this, "Akses ditolak: Halaman ini khusus Pemilik Kost", Toast.LENGTH_SHORT).show();
-            if (sessionManager.isDeveloper()) {
-                startActivity(new Intent(this, AdminMainActivity.class));
-            } else {
-                startActivity(new Intent(this, MainActivity.class));
-            }
+            sessionManager.setActiveRoleMode("PENCARI");
+            startActivity(new Intent(this, MainActivity.class));
             finish();
             return;
         }
+        sessionManager.setActiveRoleMode("PEMILIK");
 
         setContentView(R.layout.activity_pemilik_main);
 
@@ -270,28 +269,12 @@ public class PemilikMainActivity extends AppCompatActivity implements
 
         View btnQuickRooms = findViewById(R.id.btn_pemilik_quick_rooms);
         if (btnQuickRooms != null) {
-            btnQuickRooms.setOnClickListener(v -> {
-                long targetKostId = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? parseLongSafe(allOwnerKosts.get(0).getId()) : 1;
-                String targetName = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? allOwnerKosts.get(0).getNamaKost() : "Kost Saya";
-                Intent i = new Intent(this, OwnerRoomActivity.class);
-                i.putExtra("EXTRA_KOST_ID", targetKostId);
-                i.putExtra("EXTRA_KOST_NAME", targetName);
-                startActivity(i);
-                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
-            });
+            btnQuickRooms.setOnClickListener(v -> openRoomManagement());
         }
 
         View btnQuickTenants = findViewById(R.id.btn_pemilik_quick_tenants);
         if (btnQuickTenants != null) {
-            btnQuickTenants.setOnClickListener(v -> {
-                long targetKostId = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? parseLongSafe(allOwnerKosts.get(0).getId()) : 1;
-                String targetName = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? allOwnerKosts.get(0).getNamaKost() : "Kost Saya";
-                Intent i = new Intent(this, OwnerTenantActivity.class);
-                i.putExtra("EXTRA_KOST_ID", targetKostId);
-                i.putExtra("EXTRA_KOST_NAME", targetName);
-                startActivity(i);
-                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
-            });
+            btnQuickTenants.setOnClickListener(v -> openTenantManagement());
         }
 
         // Kost Saya
@@ -409,12 +392,102 @@ public class PemilikMainActivity extends AppCompatActivity implements
         }
     }
 
+    private void openRoomManagement() {
+        if (allOwnerKosts == null || allOwnerKosts.isEmpty()) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Belum Ada Properti Kost")
+                    .setMessage("Anda belum memiliki properti kost yang terdaftar. Silakan tambahkan kost terlebih dahulu.")
+                    .setPositiveButton("Tambah Kost", (d, w) -> {
+                        startActivity(new Intent(this, AdminKostFormActivity.class));
+                    })
+                    .setNegativeButton("Tutup", null)
+                    .show();
+            return;
+        }
+
+        if (allOwnerKosts.size() == 1) {
+            Kost k = allOwnerKosts.get(0);
+            launchOwnerRoomActivity(parseLongSafe(k.getId()), k.getNamaKost());
+            return;
+        }
+
+        String[] names = new String[allOwnerKosts.size()];
+        for (int i = 0; i < allOwnerKosts.size(); i++) {
+            names[i] = allOwnerKosts.get(i).getNamaKost();
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Pilih Kost untuk Kelola Kamar")
+                .setItems(names, (dialog, which) -> {
+                    Kost selected = allOwnerKosts.get(which);
+                    launchOwnerRoomActivity(parseLongSafe(selected.getId()), selected.getNamaKost());
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void launchOwnerRoomActivity(long kostId, String kostName) {
+        if (kostId <= 0) {
+            Toast.makeText(this, "ID kost tidak valid.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent i = new Intent(this, OwnerRoomActivity.class);
+        i.putExtra("EXTRA_KOST_ID", kostId);
+        i.putExtra("EXTRA_KOST_NAME", kostName);
+        startActivity(i);
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+    }
+
+    private void openTenantManagement() {
+        if (allOwnerKosts == null || allOwnerKosts.isEmpty()) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Belum Ada Properti Kost")
+                    .setMessage("Anda belum memiliki properti kost yang terdaftar. Silakan tambahkan kost terlebih dahulu.")
+                    .setPositiveButton("Tambah Kost", (d, w) -> {
+                        startActivity(new Intent(this, AdminKostFormActivity.class));
+                    })
+                    .setNegativeButton("Tutup", null)
+                    .show();
+            return;
+        }
+
+        if (allOwnerKosts.size() == 1) {
+            Kost k = allOwnerKosts.get(0);
+            launchOwnerTenantActivity(parseLongSafe(k.getId()), k.getNamaKost());
+            return;
+        }
+
+        String[] names = new String[allOwnerKosts.size()];
+        for (int i = 0; i < allOwnerKosts.size(); i++) {
+            names[i] = allOwnerKosts.get(i).getNamaKost();
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Pilih Kost untuk Penghuni & Komplain")
+                .setItems(names, (dialog, which) -> {
+                    Kost selected = allOwnerKosts.get(which);
+                    launchOwnerTenantActivity(parseLongSafe(selected.getId()), selected.getNamaKost());
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void launchOwnerTenantActivity(long kostId, String kostName) {
+        if (kostId <= 0) {
+            Toast.makeText(this, "ID kost tidak valid.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent i = new Intent(this, OwnerTenantActivity.class);
+        i.putExtra("EXTRA_KOST_ID", kostId);
+        i.putExtra("EXTRA_KOST_NAME", kostName);
+        startActivity(i);
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+    }
+
     private long parseLongSafe(String s) {
-        if (s == null) return 1;
+        if (s == null) return -1;
         try {
             return Long.parseLong(s.trim());
         } catch (Exception e) {
-            return 1;
+            return -1;
         }
     }
 
@@ -1075,15 +1148,51 @@ public class PemilikMainActivity extends AppCompatActivity implements
         kostRepository.getKostByPemilik(ownerId, new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> data) {
-                pbLoading.setVisibility(View.GONE);
-                allOwnerKosts = data;
-                applyKostFilter(currentKostFilter);
+                if ((data == null || data.isEmpty()) && sessionManager.isDeveloper()) {
+                    kostRepository.getAllKostForAdmin(new DataCallback<List<Kost>>() {
+                        @Override
+                        public void onSuccess(List<Kost> allAdminKosts) {
+                            pbLoading.setVisibility(View.GONE);
+                            allOwnerKosts = allAdminKosts != null ? allAdminKosts : new ArrayList<>();
+                            applyKostFilter(currentKostFilter);
+                        }
+
+                        @Override
+                        public void onError(String msg) {
+                            pbLoading.setVisibility(View.GONE);
+                            allOwnerKosts = new ArrayList<>();
+                            applyKostFilter(currentKostFilter);
+                        }
+                    });
+                } else {
+                    pbLoading.setVisibility(View.GONE);
+                    allOwnerKosts = data != null ? data : new ArrayList<>();
+                    applyKostFilter(currentKostFilter);
+                }
             }
 
             @Override
             public void onError(String message) {
-                pbLoading.setVisibility(View.GONE);
-                Toast.makeText(PemilikMainActivity.this, message, Toast.LENGTH_SHORT).show();
+                if (sessionManager.isDeveloper()) {
+                    kostRepository.getAllKostForAdmin(new DataCallback<List<Kost>>() {
+                        @Override
+                        public void onSuccess(List<Kost> allAdminKosts) {
+                            pbLoading.setVisibility(View.GONE);
+                            allOwnerKosts = allAdminKosts != null ? allAdminKosts : new ArrayList<>();
+                            applyKostFilter(currentKostFilter);
+                        }
+
+                        @Override
+                        public void onError(String msg) {
+                            pbLoading.setVisibility(View.GONE);
+                            allOwnerKosts = new ArrayList<>();
+                            applyKostFilter(currentKostFilter);
+                        }
+                    });
+                } else {
+                    pbLoading.setVisibility(View.GONE);
+                    Toast.makeText(PemilikMainActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -1308,6 +1417,38 @@ public class PemilikMainActivity extends AppCompatActivity implements
         intent.putExtra("nama_counterpart", conversation.getNamaPencari());
         intent.putExtra("avatar_counterpart", conversation.getAvatarLawan());
         startActivity(intent);
+    }
+
+    @Override
+    public void onKostManageClick(Kost kost) {
+        if (kost == null) return;
+        long targetId = parseLongSafe(kost.getId());
+        String[] options = {
+                "🛏️ Kelola Unit Kamar & Ketersediaan",
+                "👥 Penghuni Kost & Tiket Komplain",
+                "✏️ Edit Detail Kost",
+                "🔄 Ubah Status (Tersedia / Penuh)"
+        };
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(kost.getNamaKost())
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            launchOwnerRoomActivity(targetId, kost.getNamaKost());
+                            break;
+                        case 1:
+                            launchOwnerTenantActivity(targetId, kost.getNamaKost());
+                            break;
+                        case 2:
+                            onEditClick(kost);
+                            break;
+                        case 3:
+                            onToggleStatusClick(kost, -1);
+                            break;
+                    }
+                })
+                .setNegativeButton("Tutup", null)
+                .show();
     }
 
     @Override

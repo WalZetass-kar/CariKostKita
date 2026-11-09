@@ -47,6 +47,11 @@ public class NotificationActivity extends AppCompatActivity implements Notificat
         setContentView(R.layout.activity_notification);
 
         sessionManager = new SessionManager(this);
+        if (!sessionManager.isLoggedIn()) {
+            Toast.makeText(this, "Silakan masuk terlebih dahulu untuk melihat notifikasi.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         notifService = SupabaseClient.getInstance().createNotificationService();
 
         initViews();

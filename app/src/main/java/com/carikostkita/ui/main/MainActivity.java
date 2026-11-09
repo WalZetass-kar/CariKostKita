@@ -33,17 +33,31 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Role Guard: MainActivity hanya untuk Pencari Kost (User) & Tamu
+        // Role Guard: MainActivity untuk Pencari Kost (User), Tamu, atau Role Switcher mode PENCARI
         SessionManager sessionManager = new SessionManager(this);
         if (sessionManager.isLoggedIn()) {
-            if (sessionManager.isDeveloper()) {
-                startActivity(new Intent(this, AdminMainActivity.class));
-                finish();
-                return;
-            } else if (sessionManager.isPemilikKost()) {
-                startActivity(new Intent(this, PemilikMainActivity.class));
-                finish();
-                return;
+            String activeMode = sessionManager.getActiveRoleMode();
+            if (activeMode != null) {
+                if ("ADMIN".equalsIgnoreCase(activeMode) && sessionManager.isDeveloper()) {
+                    startActivity(new Intent(this, AdminMainActivity.class));
+                    finish();
+                    return;
+                } else if ("PEMILIK".equalsIgnoreCase(activeMode) && (sessionManager.isPemilikKost() || sessionManager.isDeveloper())) {
+                    startActivity(new Intent(this, PemilikMainActivity.class));
+                    finish();
+                    return;
+                }
+                // Mode PENCARI: tetap di MainActivity
+            } else {
+                if (sessionManager.isDeveloper()) {
+                    startActivity(new Intent(this, AdminMainActivity.class));
+                    finish();
+                    return;
+                } else if (sessionManager.isPemilikKost()) {
+                    startActivity(new Intent(this, PemilikMainActivity.class));
+                    finish();
+                    return;
+                }
             }
         }
 

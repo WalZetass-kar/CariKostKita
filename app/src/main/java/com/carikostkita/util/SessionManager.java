@@ -25,6 +25,7 @@ public class SessionManager {
     private static final String KEY_AUTH_PROVIDER = "auth_provider";
     private static final String KEY_IS_FIRST_TIME_LAUNCH = "is_first_time_launch";
     public static final String KEY_ONBOARDING_COMPLETED = "onboarding_completed";
+    private static final String KEY_ACTIVE_ROLE_MODE = "active_role_mode";
 
     private final SharedPreferences pref;
     private final SharedPreferences.Editor editor;
@@ -216,6 +217,15 @@ public class SessionManager {
 
     public boolean isPencariKost() {
         return getUserRole() == Role.USER;
+    }
+
+    public String getActiveRoleMode() {
+        return pref.getString(KEY_ACTIVE_ROLE_MODE, null);
+    }
+
+    public void setActiveRoleMode(String mode) {
+        editor.putString(KEY_ACTIVE_ROLE_MODE, mode);
+        editor.apply();
     }
 
     public boolean isFirstTimeLaunch() {

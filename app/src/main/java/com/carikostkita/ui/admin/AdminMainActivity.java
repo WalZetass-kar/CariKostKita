@@ -207,13 +207,16 @@ public class AdminMainActivity extends AppCompatActivity implements
         if (!sessionManager.isLoggedIn() || !sessionManager.isDeveloper()) {
             Toast.makeText(this, "Akses ditolak: Halaman ini khusus Developer / Super Admin", Toast.LENGTH_SHORT).show();
             if (sessionManager.isPemilikKost()) {
+                sessionManager.setActiveRoleMode("PEMILIK");
                 startActivity(new Intent(this, PemilikMainActivity.class));
             } else {
+                sessionManager.setActiveRoleMode("PENCARI");
                 startActivity(new Intent(this, MainActivity.class));
             }
             finish();
             return;
         }
+        sessionManager.setActiveRoleMode("ADMIN");
 
         setContentView(R.layout.activity_admin_main);
 

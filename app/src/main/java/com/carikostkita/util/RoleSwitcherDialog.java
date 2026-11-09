@@ -40,6 +40,7 @@ public class RoleSwitcherDialog {
         if (itemPencari != null) {
             itemPencari.setOnClickListener(v -> {
                 dialog.dismiss();
+                session.setActiveRoleMode("PENCARI");
                 if (!(activity instanceof MainActivity)) {
                     Intent intent = new Intent(activity, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -56,6 +57,7 @@ public class RoleSwitcherDialog {
                 itemPemilik.setVisibility(View.VISIBLE);
                 itemPemilik.setOnClickListener(v -> {
                     dialog.dismiss();
+                    session.setActiveRoleMode("PEMILIK");
                     if (!(activity instanceof PemilikMainActivity)) {
                         Intent intent = new Intent(activity, PemilikMainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -75,6 +77,7 @@ public class RoleSwitcherDialog {
                 itemAdmin.setVisibility(View.VISIBLE);
                 itemAdmin.setOnClickListener(v -> {
                     dialog.dismiss();
+                    session.setActiveRoleMode("ADMIN");
                     if (!(activity instanceof AdminMainActivity)) {
                         Intent intent = new Intent(activity, AdminMainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
