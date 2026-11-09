@@ -113,8 +113,18 @@ public class SplashActivity extends AppCompatActivity {
         SessionManager session = new SessionManager(this);
         Class<?> target = MainActivity.class;
         if (session.isLoggedIn()) {
-            if (session.isDeveloper()) target = AdminMainActivity.class;
-            else if (session.isPemilikKost()) target = PemilikMainActivity.class;
+            String activeMode = session.getActiveRoleMode();
+            if ("PENCARI".equalsIgnoreCase(activeMode)) {
+                target = MainActivity.class;
+            } else if ("ADMIN".equalsIgnoreCase(activeMode) && session.isDeveloper()) {
+                target = AdminMainActivity.class;
+            } else if ("PEMILIK".equalsIgnoreCase(activeMode) && (session.isPemilikKost() || session.isDeveloper())) {
+                target = PemilikMainActivity.class;
+            } else {
+                if (session.isDeveloper()) target = AdminMainActivity.class;
+                else if (session.isPemilikKost()) target = PemilikMainActivity.class;
+                else target = MainActivity.class;
+            }
         }
         startActivity(new Intent(this, target));
     }

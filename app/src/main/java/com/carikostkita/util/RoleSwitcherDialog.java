@@ -41,6 +41,7 @@ public class RoleSwitcherDialog {
             itemPencari.setOnClickListener(v -> {
                 dialog.dismiss();
                 session.setActiveRoleMode("PENCARI");
+                android.widget.Toast.makeText(activity, "Beralih ke Mode Pencari Kost", android.widget.Toast.LENGTH_SHORT).show();
                 if (!(activity instanceof MainActivity)) {
                     Intent intent = new Intent(activity, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -58,6 +59,7 @@ public class RoleSwitcherDialog {
                 itemPemilik.setOnClickListener(v -> {
                     dialog.dismiss();
                     session.setActiveRoleMode("PEMILIK");
+                    android.widget.Toast.makeText(activity, "Beralih ke Dashboard Pemilik", android.widget.Toast.LENGTH_SHORT).show();
                     if (!(activity instanceof PemilikMainActivity)) {
                         Intent intent = new Intent(activity, PemilikMainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -78,6 +80,7 @@ public class RoleSwitcherDialog {
                 itemAdmin.setOnClickListener(v -> {
                     dialog.dismiss();
                     session.setActiveRoleMode("ADMIN");
+                    android.widget.Toast.makeText(activity, "Beralih ke Panel Developer / Super Admin", android.widget.Toast.LENGTH_SHORT).show();
                     if (!(activity instanceof AdminMainActivity)) {
                         Intent intent = new Intent(activity, AdminMainActivity.class);
                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

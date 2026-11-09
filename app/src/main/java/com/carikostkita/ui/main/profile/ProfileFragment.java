@@ -368,23 +368,44 @@ public class ProfileFragment extends Fragment {
         applyAvatar(sessionManager.getUserAvatar());
 
         // Role Badge: Netral (Bukan Hijau)
-        tvRole.setText(sessionManager.isPemilikKost() ? "Pemilik Kost Terverifikasi" : "Pencari Kost");
+        String roleLabel = "Pencari Kost";
+        if (sessionManager.isDeveloper()) {
+            roleLabel = "Developer (Mode Pencari)";
+        } else if (sessionManager.isPemilikKost()) {
+            roleLabel = "Pemilik Kost (Mode Pencari)";
+        }
+        tvRole.setText(roleLabel);
         tvRole.setBackgroundResource(R.drawable.bg_badge_role_neutral);
         tvRole.setTextColor(ContextCompat.getColor(requireContext(), R.color.role_neutral_text));
 
-        // Pengajuan Pemilik Kost
+        // Pengajuan Pemilik Kost / Mode Switcher
         cardOwnerVerification.setVisibility(View.VISIBLE);
         VerificationStatus status = sessionManager.getVerificationStatus();
-        if (status == VerificationStatus.APPROVED || sessionManager.isPemilikKost()) {
+        if (sessionManager.isDeveloper()) {
             ivVerificationIcon.setImageResource(R.drawable.ic_verified);
             ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.status_tersedia));
-            tvVerificationTitle.setText("Akun Pemilik Kost Disetujui");
-            tvVerificationDesc.setText("Selamat! Pengajuan pemilik kost Anda telah disetujui oleh admin. Anda kini dapat memasang dan mengelola properti kost.");
-            btnApplyOwner.setText("Buka Dashboard Pemilik Kost");
+            tvVerificationTitle.setText("Akun Developer / Super Admin");
+            tvVerificationDesc.setText("Anda memiliki hak akses penuh developer & super admin. Anda sedang berada dalam mode tampilan Pencari Kost.");
+            btnApplyOwner.setText("Kembali ke Panel Developer");
             btnApplyOwner.setEnabled(true);
             btnApplyOwner.setOnClickListener(v -> {
+                sessionManager.setActiveRoleMode("ADMIN");
+                Intent intent = new Intent(requireContext(), com.carikostkita.ui.admin.AdminMainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+                requireActivity().finish();
+            });
+        } else if (status == VerificationStatus.APPROVED || sessionManager.isPemilikKost()) {
+            ivVerificationIcon.setImageResource(R.drawable.ic_verified);
+            ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.status_tersedia));
+            tvVerificationTitle.setText("Akun Pemilik Kost Terverifikasi");
+            tvVerificationDesc.setText("Anda sedang berada dalam mode tampilan Pencari Kost. Anda dapat kembali ke Dashboard Pemilik kapan saja untuk mengelola kost & kamar Anda.");
+            btnApplyOwner.setText("Kembali ke Dashboard Pemilik");
+            btnApplyOwner.setEnabled(true);
+            btnApplyOwner.setOnClickListener(v -> {
+                sessionManager.setActiveRoleMode("PEMILIK");
                 Intent intent = new Intent(requireContext(), com.carikostkita.ui.admin.PemilikMainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
                 requireActivity().finish();
             });

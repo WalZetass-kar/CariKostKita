@@ -152,14 +152,28 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         SessionManager sessionManager = new SessionManager(this);
         if (sessionManager.isLoggedIn()) {
-            if (sessionManager.isDeveloper()) {
-                startActivity(new Intent(this, AdminMainActivity.class));
-                finish();
-                return;
-            } else if (sessionManager.isPemilikKost()) {
-                startActivity(new Intent(this, PemilikMainActivity.class));
-                finish();
-                return;
+            String activeMode = sessionManager.getActiveRoleMode();
+            if (activeMode != null) {
+                if ("ADMIN".equalsIgnoreCase(activeMode) && sessionManager.isDeveloper()) {
+                    startActivity(new Intent(this, AdminMainActivity.class));
+                    finish();
+                    return;
+                } else if ("PEMILIK".equalsIgnoreCase(activeMode) && (sessionManager.isPemilikKost() || sessionManager.isDeveloper())) {
+                    startActivity(new Intent(this, PemilikMainActivity.class));
+                    finish();
+                    return;
+                }
+                // Mode PENCARI: tetap di MainActivity
+            } else {
+                if (sessionManager.isDeveloper()) {
+                    startActivity(new Intent(this, AdminMainActivity.class));
+                    finish();
+                    return;
+                } else if (sessionManager.isPemilikKost()) {
+                    startActivity(new Intent(this, PemilikMainActivity.class));
+                    finish();
+                    return;
+                }
             }
             checkForUnreadNotifications();
         }

@@ -3,11 +3,13 @@ package com.carikostkita.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.carikostkita.R;
 import com.carikostkita.data.model.Advertisement;
+import com.carikostkita.util.ImageLoaderUtil;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import java.util.ArrayList;
@@ -50,6 +52,13 @@ public class AdminAdsAdapter extends RecyclerView.Adapter<AdminAdsAdapter.ViewHo
         holder.tvTarget.setText("Link: " + (ad.getTargetUrl().isEmpty() ? "-" : ad.getTargetUrl()));
         holder.tvStats.setText("Tayang: " + ad.getImpressions() + "x | Klik: " + ad.getClicks() + "x");
 
+        if (ad.getImageUrl() != null && !ad.getImageUrl().trim().isEmpty()) {
+            holder.ivThumbnail.setVisibility(View.VISIBLE);
+            ImageLoaderUtil.loadImage(holder.ivThumbnail, ad.getImageUrl());
+        } else {
+            holder.ivThumbnail.setVisibility(View.GONE);
+        }
+
         holder.switchActive.setOnCheckedChangeListener(null);
         holder.switchActive.setChecked(ad.isActive());
         holder.switchActive.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -67,6 +76,7 @@ public class AdminAdsAdapter extends RecyclerView.Adapter<AdminAdsAdapter.ViewHo
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivThumbnail;
         TextView tvTitle;
         TextView tvTarget;
         TextView tvStats;
@@ -75,6 +85,7 @@ public class AdminAdsAdapter extends RecyclerView.Adapter<AdminAdsAdapter.ViewHo
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivThumbnail = itemView.findViewById(R.id.iv_ad_thumbnail);
             tvTitle = itemView.findViewById(R.id.tv_ad_title);
             tvTarget = itemView.findViewById(R.id.tv_ad_target);
             tvStats = itemView.findViewById(R.id.tv_ad_stats);

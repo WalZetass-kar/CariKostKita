@@ -39,6 +39,14 @@ import com.carikostkita.util.SessionManager;
 import com.carikostkita.util.SkeletonHelper;
 import com.carikostkita.util.TouchFeedbackUtil;
 import com.carikostkita.util.UserAvatarHelper;
+import com.carikostkita.util.ImageLoaderUtil;
+import com.carikostkita.data.remote.SupabaseClient;
+import com.carikostkita.data.remote.dto.AdDto;
+import com.carikostkita.data.remote.dto.AdListResponse;
+import android.net.Uri;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -69,6 +77,9 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
     private static final double LAT_UIN = 0.4578, LNG_UIN = 101.3655;
     private static final double LAT_SUDIRMAN = 0.5255, LNG_SUDIRMAN = 101.4475;
     private static final double CAMPUS_RADIUS_KM = 3.5;
+    private View cardDynamicBannerAd;
+    private ImageView ivDynamicBannerAd;
+    private TextView tvAdBadgeLabel;
     private View bannerKamarKosong;
     private TextView tvBannerText;
     private View badgeNotification;
@@ -166,6 +177,10 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         chipCampusUir = view.findViewById(R.id.chip_campus_uir);
         chipCampusUin = view.findViewById(R.id.chip_campus_uin);
         chipCampusSudirman = view.findViewById(R.id.chip_campus_sudirman);
+
+        cardDynamicBannerAd = view.findViewById(R.id.card_dynamic_banner_ad);
+        ivDynamicBannerAd = view.findViewById(R.id.iv_dynamic_banner_ad);
+        tvAdBadgeLabel = view.findViewById(R.id.tv_ad_badge_label);
 
         bannerKamarKosong = view.findViewById(R.id.banner_kamar_kosong);
         tvBannerText = view.findViewById(R.id.tv_banner_text);
@@ -372,6 +387,8 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
             if (layoutHomeContent != null) layoutHomeContent.setVisibility(View.GONE);
         }
 
+        loadDynamicPromoBanner();
+
         kostRepository.getAllActiveKost(sessionManager.getUserUid(), new DataCallback<List<Kost>>() {
             @Override
             public void onSuccess(List<Kost> allKost) {
@@ -383,6 +400,71 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
                 SkeletonHelper.complete(startTime, () -> onErrorLoaded(message));
             }
         });
+    }
+
+    private void loadDynamicPromoBanner() {
+        if (cardDynamicBannerAd == null) return;
+        try {
+            SupabaseClient.getInstance().createSettingsService().getActiveAds().enqueue(new Callback<AdListResponse>() {
+                @Override
+                public void onResponse(Call<AdListResponse> call, Response<AdListResponse> response) {
+                    if (!isAdded() || getContext() == null) return;
+                    if (response.isSuccessful() && response.body() != null && response.body().data != null) {
+                        AdDto targetBanner = null;
+                        for (AdDto ad : response.body().data) {
+                            if (ad == null || ad.imageUrl == null || ad.imageUrl.trim().isEmpty()) continue;
+                            String type = ad.adType != null ? ad.adType.toLowerCase() : "";
+                            boolean isPopup = type.contains("popup") || (ad.position != null && ad.position.equalsIgnoreCase("Popup"));
+                            String plat = ad.platform != null ? ad.platform.toLowerCase() : "";
+                            boolean forMobile = plat.isEmpty() || plat.contains("mobile") || plat.contains("semua") || plat.contains("all");
+
+                            if (!isPopup && forMobile) {
+                                targetBanner = ad;
+                                break;
+                            }
+                        }
+
+                        if (targetBanner != null) {
+                            final AdDto finalAd = targetBanner;
+                            cardDynamicBannerAd.setVisibility(View.VISIBLE);
+                            ImageLoaderUtil.loadImage(ivDynamicBannerAd, finalAd.imageUrl);
+                            if (tvAdBadgeLabel != null) {
+                                String label = (finalAd.title != null && !finalAd.title.trim().isEmpty()) ? finalAd.title : "Promosi";
+                                if (label.length() > 24) label = label.substring(0, 24) + "...";
+                                tvAdBadgeLabel.setText(label);
+                            }
+                            cardDynamicBannerAd.setOnClickListener(v -> {
+                                if (finalAd.targetUrl != null && !finalAd.targetUrl.trim().isEmpty()) {
+                                    String url = finalAd.targetUrl.trim();
+                                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                                        url = "https://" + url;
+                                    }
+                                    try {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                        startActivity(intent);
+                                    } catch (Exception e) {
+                                        Toast.makeText(getContext(), "Tidak dapat membuka tautan promo", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
+                        } else {
+                            cardDynamicBannerAd.setVisibility(View.GONE);
+                        }
+                    } else {
+                        cardDynamicBannerAd.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<AdListResponse> call, Throwable t) {
+                    if (isAdded() && cardDynamicBannerAd != null) {
+                        cardDynamicBannerAd.setVisibility(View.GONE);
+                    }
+                }
+            });
+        } catch (Exception ignored) {
+            if (cardDynamicBannerAd != null) cardDynamicBannerAd.setVisibility(View.GONE);
+        }
     }
 
     private void showContent() {

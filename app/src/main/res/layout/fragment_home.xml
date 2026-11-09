@@ -474,6 +474,46 @@
                     </LinearLayout>
                 </HorizontalScrollView>
 
+                <!-- Dynamic Promo / Official Advertisement Banner -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_dynamic_banner_ad"
+                    android:layout_width="match_parent"
+                    android:layout_height="140dp"
+                    android:layout_marginHorizontal="20dp"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/border"
+                    app:strokeWidth="1dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:id="@+id/iv_dynamic_banner_ad"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:contentDescription="Banner Iklan Promosi" />
+
+                        <TextView
+                            android:id="@+id/tv_ad_badge_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top|end"
+                            android:layout_margin="10dp"
+                            android:background="@drawable/bg_badge_role_neutral"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp"
+                            android:text="Promosi"
+                            android:textColor="@color/role_neutral_text"
+                            android:textSize="10.5sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- Informational Banner: "8 kamar kosong baru minggu ini" -->
                 <LinearLayout
                     android:id="@+id/banner_kamar_kosong"
