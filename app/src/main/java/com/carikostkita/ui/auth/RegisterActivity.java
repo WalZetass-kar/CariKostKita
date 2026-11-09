@@ -297,13 +297,20 @@ public class RegisterActivity extends AppCompatActivity {
             if (statusCode == 12501) return;
             setLoading(false);
             android.util.Log.w("RegisterActivity", "Google Play Services SignUp error (" + statusCode + ")");
+            
+            if (statusCode == 10 || statusCode == 12500) {
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle("Daftar Akun Google")
+                        .setMessage("Layanan Google Play di perangkat memerlukan verifikasi lanjutan (Kode " + statusCode + "). Anda dapat langsung mendaftar dengan Akun Google lewat browser web aman.")
+                        .setPositiveButton("Buka Google via Browser", (dialog, which) -> launchCustomTabOAuth())
+                        .setNegativeButton("Gunakan Formulir Email", null)
+                        .show();
+                return;
+            }
+
             String title = "Daftar Google Gagal (" + statusCode + ")";
             String msg = "Gagal menghubungkan ke akun Google (kode status: " + statusCode + "). Silakan coba lagi atau daftar menggunakan formulir di bawah.";
-            if (statusCode == 12500) {
-                msg = "Google Play Services menolak otentikasi (Status 12500).\n\nHal ini terjadi jika:\n• Sidik jari SHA-1 aplikasi belum terdaftar di Google Cloud Console pada project yang sama.\n• Atau layar persetujuan OAuth masih berstatus 'Testing' (belum Publikasi).\n\nSilakan daftar langsung menggunakan formulir Email & Password di bawah.";
-            } else if (statusCode == 10) {
-                msg = "Kesalahan konfigurasi aplikasi (Developer Error 10). Pastikan SHA-1 terdaftar di Google Cloud Console.\n\nSilakan daftar menggunakan formulir di bawah.";
-            } else if (statusCode == 7) {
+            if (statusCode == 7) {
                 msg = "Koneksi jaringan terputus ke server Google (Status 7). Silakan periksa koneksi internet Anda.";
             }
             AppDialogHelper.showError(this, title, msg);
