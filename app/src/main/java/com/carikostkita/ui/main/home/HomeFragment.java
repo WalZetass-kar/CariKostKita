@@ -210,10 +210,9 @@ public class HomeFragment extends Fragment implements KostAdapter.OnKostClickLis
         View btnNotification = view.findViewById(R.id.btn_home_notification);
         if (btnNotification != null) {
             btnNotification.setOnClickListener(v -> {
-                if (!AuthPrompt.require(requireContext(), "Masuk untuk melihat pesan dari pemilik kost.")) return;
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToChat();
-                }
+                if (!AuthPrompt.require(requireContext(), "Masuk untuk melihat pusat notifikasi.")) return;
+                startActivity(new Intent(requireContext(), com.carikostkita.ui.main.NotificationActivity.class));
+                requireActivity().overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
             TouchFeedbackUtil.attachPress(btnNotification);
         }

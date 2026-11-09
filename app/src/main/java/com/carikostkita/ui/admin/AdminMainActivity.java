@@ -445,6 +445,42 @@ public class AdminMainActivity extends AppCompatActivity implements
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             });
         }
+        View itemAds = findViewById(R.id.item_drawer_admin_ads);
+        if (itemAds != null) {
+            itemAds.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                startActivity(new Intent(this, AdminAdsActivity.class));
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            });
+        }
+        View itemNotif = findViewById(R.id.item_drawer_admin_notif);
+        if (itemNotif != null) {
+            itemNotif.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                startActivity(new Intent(this, com.carikostkita.ui.main.NotificationActivity.class));
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            });
+        }
+        View itemSwitchPencari = findViewById(R.id.item_drawer_admin_switch_pencari);
+        if (itemSwitchPencari != null) {
+            itemSwitchPencari.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                Intent intent = new Intent(this, com.carikostkita.ui.main.MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
+        View itemSwitchPemilik = findViewById(R.id.item_drawer_admin_switch_pemilik);
+        if (itemSwitchPemilik != null) {
+            itemSwitchPemilik.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                Intent intent = new Intent(this, PemilikMainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
         View itemUsers = findViewById(R.id.item_drawer_admin_users);
         View itemOwners = findViewById(R.id.item_drawer_admin_owners);
         if (itemUsers != null) {

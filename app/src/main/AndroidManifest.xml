@@ -157,6 +157,26 @@
             android:name=".ui.compare.CompareKostActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.admin.OwnerRoomActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.admin.OwnerTenantActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.admin.AdminAdsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.main.NotificationActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

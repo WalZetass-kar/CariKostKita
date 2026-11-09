@@ -268,6 +268,32 @@ public class PemilikMainActivity extends AppCompatActivity implements
             cardHighlight.setOnClickListener(v -> switchTab(TabPemilik.KOST_SAYA));
         }
 
+        View btnQuickRooms = findViewById(R.id.btn_pemilik_quick_rooms);
+        if (btnQuickRooms != null) {
+            btnQuickRooms.setOnClickListener(v -> {
+                long targetKostId = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? parseLongSafe(allOwnerKosts.get(0).getId()) : 1;
+                String targetName = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? allOwnerKosts.get(0).getNamaKost() : "Kost Saya";
+                Intent i = new Intent(this, OwnerRoomActivity.class);
+                i.putExtra("EXTRA_KOST_ID", targetKostId);
+                i.putExtra("EXTRA_KOST_NAME", targetName);
+                startActivity(i);
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            });
+        }
+
+        View btnQuickTenants = findViewById(R.id.btn_pemilik_quick_tenants);
+        if (btnQuickTenants != null) {
+            btnQuickTenants.setOnClickListener(v -> {
+                long targetKostId = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? parseLongSafe(allOwnerKosts.get(0).getId()) : 1;
+                String targetName = (allOwnerKosts != null && !allOwnerKosts.isEmpty()) ? allOwnerKosts.get(0).getNamaKost() : "Kost Saya";
+                Intent i = new Intent(this, OwnerTenantActivity.class);
+                i.putExtra("EXTRA_KOST_ID", targetKostId);
+                i.putExtra("EXTRA_KOST_NAME", targetName);
+                startActivity(i);
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            });
+        }
+
         // Kost Saya
         tvKostCount = findViewById(R.id.tv_pemilik_count);
         rvKost = findViewById(R.id.rv_pemilik_kost);
@@ -368,6 +394,28 @@ public class PemilikMainActivity extends AppCompatActivity implements
         if (itemBantuan != null) itemBantuan.setOnClickListener(v -> showBantuanDialog());
         if (itemTentang != null) itemTentang.setOnClickListener(v -> showAboutDialog());
         if (btnLogoutProfile != null) btnLogoutProfile.setOnClickListener(v -> performLogout());
+
+        View btnSwitchRole = findViewById(R.id.btn_pemilik_switch_role);
+        if (btnSwitchRole != null) {
+            btnSwitchRole.setOnClickListener(v -> com.carikostkita.util.RoleSwitcherDialog.show(this));
+        }
+
+        View btnOpenNotif = findViewById(R.id.btn_pemilik_open_notif);
+        if (btnOpenNotif != null) {
+            btnOpenNotif.setOnClickListener(v -> {
+                startActivity(new Intent(this, com.carikostkita.ui.main.NotificationActivity.class));
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            });
+        }
+    }
+
+    private long parseLongSafe(String s) {
+        if (s == null) return 1;
+        try {
+            return Long.parseLong(s.trim());
+        } catch (Exception e) {
+            return 1;
+        }
     }
 
     private static class TipSlideItem {

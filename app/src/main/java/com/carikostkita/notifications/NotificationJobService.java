@@ -13,6 +13,7 @@ import com.carikostkita.data.remote.FastApiProfileService;
 import com.carikostkita.data.remote.FastApiOwnerKostService;
 import com.carikostkita.data.remote.FastApiUnreadMessagesService;
 import com.carikostkita.data.remote.FastApiSurveyService;
+import com.carikostkita.data.remote.FastApiNotificationService;
 import com.carikostkita.data.remote.dto.UserProfileResponse;
 import com.carikostkita.data.remote.dto.SurveyDto;
 import com.carikostkita.data.remote.dto.SurveyListResponse;
@@ -179,6 +180,37 @@ public class NotificationJobService extends JobService {
                 ed.putBoolean(key, available);
             }
         }
+
+        // 5. Notifikasi Sistem & Server dari /api/v1/notifications
+        try {
+            String token = session.getAccessToken();
+            if (token != null && !token.isEmpty()) {
+                if (session.isTokenExpired()) token = SupabaseClient.getInstance().refreshTokenBlocking(token);
+                if (token != null && !token.isEmpty()) {
+                    FastApiNotificationService ns = SupabaseClient.getInstance().createNotificationService();
+                    Response<JsonObject> nRes = ns.listNotifications("Bearer " + token, 1, 10).execute();
+                    if (nRes.isSuccessful() && nRes.body() != null) {
+                        com.google.gson.JsonArray nArr = nRes.body().getAsJsonArray("data");
+                        if (nArr != null) {
+                            for (com.google.gson.JsonElement el : nArr) {
+                                if (el.isJsonObject()) {
+                                    JsonObject no = el.getAsJsonObject();
+                                    long nid = no.has("id") && !no.get("id").isJsonNull() ? no.get("id").getAsLong() : 0;
+                                    boolean isRead = no.has("is_read") && !no.get("is_read").isJsonNull() && no.get("is_read").getAsBoolean();
+                                    String nkey = "srv_notif_" + nid;
+                                    if (!isRead && !prefs.getBoolean(nkey, false)) {
+                                        String nTitle = no.has("title") && !no.get("title").isJsonNull() ? no.get("title").getAsString() : "Notifikasi";
+                                        String nMsg = no.has("message") && !no.get("message").isJsonNull() ? no.get("message").getAsString() : "";
+                                        AppNotifications.post(context, (int) nid, AppNotifications.CHANNEL_STATUS, nTitle, nMsg);
+                                        ed.putBoolean(nkey, true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
 
         ed.putBoolean("initialized_" + me, true);
         ed.apply();

@@ -233,6 +233,20 @@ public class ProfileFragment extends Fragment {
         });
 
         // Baris menu seragam; notifikasi memakai toggle sungguhan yang tersimpan
+        View itemSwitchRole = requireView().findViewById(R.id.item_switch_role);
+        if (itemSwitchRole != null) {
+            com.carikostkita.util.SettingRowBinder.bind(itemSwitchRole, R.drawable.ic_nav_home,
+                    "Beralih Mode Tampilan", "Pencari, Pemilik, atau Developer",
+                    v -> com.carikostkita.util.RoleSwitcherDialog.show(requireActivity()));
+        }
+
+        View itemNotifCenter = requireView().findViewById(R.id.item_notification_center);
+        if (itemNotifCenter != null) {
+            com.carikostkita.util.SettingRowBinder.bind(itemNotifCenter, R.drawable.ic_bell,
+                    "Pusat Notifikasi", "Lihat riwayat pemberitahuan & info",
+                    v -> startActivity(new Intent(requireContext(), com.carikostkita.ui.main.NotificationActivity.class)));
+        }
+
         com.carikostkita.util.SettingRowBinder.bind(itemMyFavorites, R.drawable.ic_nav_favorite,
                 "Kost Favorit", "Lihat kost yang kamu simpan", null);
         com.carikostkita.util.SettingRowBinder.bind(requireView().findViewById(R.id.item_my_surveys), R.drawable.ic_clock,

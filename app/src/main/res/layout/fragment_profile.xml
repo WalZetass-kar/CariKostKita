@@ -258,6 +258,26 @@
                     android:orientation="vertical">
 
                     <include
+                        android:id="@+id/item_switch_role"
+                        layout="@layout/item_setting_row" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="72dp"
+                        android:background="@color/border_subtle" />
+
+                    <include
+                        android:id="@+id/item_notification_center"
+                        layout="@layout/item_setting_row" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="72dp"
+                        android:background="@color/border_subtle" />
+
+                    <include
                         android:id="@+id/item_my_favorites"
                         layout="@layout/item_setting_row" />
 

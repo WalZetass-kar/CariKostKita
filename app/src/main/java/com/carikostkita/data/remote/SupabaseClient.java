@@ -185,6 +185,22 @@ public class SupabaseClient {
         return apiRetrofit.create(FastApiBlockService.class);
     }
 
+    public FastApiOwnerRoomService createOwnerRoomService() {
+        return apiRetrofit.create(FastApiOwnerRoomService.class);
+    }
+
+    public FastApiOwnerKmsService createOwnerKmsService() {
+        return apiRetrofit.create(FastApiOwnerKmsService.class);
+    }
+
+    public FastApiNotificationService createNotificationService() {
+        return apiRetrofit.create(FastApiNotificationService.class);
+    }
+
+    public FastApiAdminAdsService createAdminAdsService() {
+        return apiRetrofit.create(FastApiAdminAdsService.class);
+    }
+
     public FastApiSafetyService createSafetyService() {
         return apiRetrofit.create(FastApiSafetyService.class);
     }
