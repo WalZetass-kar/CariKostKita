@@ -413,17 +413,23 @@ public class ProfileFragment extends Fragment {
             ivVerificationIcon.setImageResource(R.drawable.ic_warning);
             ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.primary));
             tvVerificationTitle.setText("Menunggu Verifikasi Admin");
-            tvVerificationDesc.setText("Pengajuan akun Anda sebagai pemilik kost sedang ditinjau developer/admin. Anda tetap dapat menggunakan akun untuk mencari & menyimpan kost.");
+            String rawPendingNote = sessionManager.getCatatanRevisi();
+            com.carikostkita.ui.adapter.VerificationAdapter.ParsedSubmission parsedPending =
+                    com.carikostkita.ui.adapter.VerificationAdapter.parseSubmissionNote(rawPendingNote);
+            String pendingDesc = !parsedPending.namaKost.isEmpty()
+                    ? "Pengajuan verifikasi untuk properti \"" + parsedPending.namaKost + "\" sedang ditinjau oleh tim Admin. Anda tetap dapat mencari & menyimpan kost."
+                    : "Pengajuan akun Anda sebagai pemilik kost sedang ditinjau oleh tim Admin. Anda tetap dapat menggunakan akun untuk mencari & menyimpan kost.";
+            tvVerificationDesc.setText(pendingDesc);
             btnApplyOwner.setText("Status: Sedang Ditinjau");
             btnApplyOwner.setEnabled(false);
         } else if (status == VerificationStatus.REVISION_REQUIRED) {
             ivVerificationIcon.setImageResource(R.drawable.ic_warning);
             ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.badge_campur));
             tvVerificationTitle.setText("Pengajuan Perlu Perbaikan");
-            String revNote = sessionManager.getCatatanRevisi();
-            String desc = (revNote != null && !revNote.trim().isEmpty())
-                    ? "Catatan Developer/Admin:\n\"" + revNote.trim() + "\"\n\nSilakan perbaiki data lalu ajukan kembali."
-                    : "Pengajuan Anda memerlukan perbaikan informasi. Silakan periksa kembali data properti kost Anda.";
+            String revNote = sanitizeAdminFeedbackNote(sessionManager.getCatatanRevisi());
+            String desc = !revNote.isEmpty()
+                    ? "Catatan Tim Verifikasi:\n\"" + revNote + "\"\n\nSilakan perbaiki data properti lalu ajukan kembali."
+                    : "Pengajuan Anda memerlukan perbaikan informasi. Silakan periksa kembali data dan foto bukti properti kost Anda.";
             tvVerificationDesc.setText(desc);
             btnApplyOwner.setText("Perbaiki & Ajukan Ulang");
             btnApplyOwner.setEnabled(true);
@@ -432,9 +438,9 @@ public class ProfileFragment extends Fragment {
             ivVerificationIcon.setImageResource(R.drawable.ic_warning);
             ivVerificationIcon.setColorFilter(ContextCompat.getColor(requireContext(), R.color.status_penuh));
             tvVerificationTitle.setText("Pengajuan Pemilik Ditolak");
-            String rejectReason = sessionManager.getCatatanRevisi();
-            String rejectDesc = (rejectReason != null && !rejectReason.trim().isEmpty())
-                    ? "Alasan Penolakan Admin:\n\"" + rejectReason.trim() + "\"\n\nAnda dapat memperbaiki data properti kost lalu mengajukan ulang."
+            String rejectReason = sanitizeAdminFeedbackNote(sessionManager.getCatatanRevisi());
+            String rejectDesc = !rejectReason.isEmpty()
+                    ? "Alasan Penolakan Admin:\n\"" + rejectReason + "\"\n\nAnda dapat memperbaiki data properti kost lalu mengajukan ulang."
                     : "Pengajuan akun Anda sebagai pemilik kost belum dapat disetujui. Anda dapat mengajukan ulang data properti kost Anda.";
             tvVerificationDesc.setText(rejectDesc);
             btnApplyOwner.setText("Ajukan Verifikasi Ulang");
@@ -449,6 +455,15 @@ public class ProfileFragment extends Fragment {
             btnApplyOwner.setEnabled(true);
             btnApplyOwner.setOnClickListener(v -> showOwnerApplicationDialog());
         }
+    }
+
+    private String sanitizeAdminFeedbackNote(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return "";
+        String trimmed = raw.trim();
+        if (trimmed.toLowerCase().startsWith("[verifikasi-properti]") || trimmed.contains("Foto Properti:") || trimmed.contains("Kode: CKK-")) {
+            return "";
+        }
+        return trimmed.replaceAll("https?://\\S+", "").replaceAll("\\s{2,}", " ").trim();
     }
 
     private void showOwnerApplicationDialog() {

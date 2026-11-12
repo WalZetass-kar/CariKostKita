@@ -955,7 +955,10 @@ public class UserRepository {
                         if (application.owner == null || application.owner.id == null) continue;
                         pendingOwnerApplicationIds.put(application.owner.id, application.id);
                         User user = mapAdminDtoToUser(application.owner);
-                        user.setPengajuanCatatan(application.submissionNote);
+                        String subNote = (application.submissionNote != null && !application.submissionNote.trim().isEmpty())
+                                ? application.submissionNote
+                                : application.owner.catatanRevisi;
+                        user.setPengajuanCatatan(subNote);
                         user.setPengajuanAt(application.createdAt);
                         users.add(user);
                     }
@@ -1232,6 +1235,9 @@ public class UserRepository {
         user.setBio(dto.bio);
         user.setVerificationStatus(VerificationStatus.fromString(dto.verificationStatus));
         user.setCatatanRevisi(dto.catatanRevisi);
+        if (dto.catatanRevisi != null && !dto.catatanRevisi.trim().isEmpty()) {
+            user.setPengajuanCatatan(dto.catatanRevisi);
+        }
         user.setActive(dto.isActive != null ? dto.isActive : true);
         user.setCreatedAt(dto.createdAt);
         return user;

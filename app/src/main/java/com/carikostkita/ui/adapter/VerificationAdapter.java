@@ -91,23 +91,24 @@ public class VerificationAdapter extends RecyclerView.Adapter<VerificationAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User user = userList.get(position);
-        holder.tvNama.setText(user.getNama());
-        holder.tvEmail.setText(user.getEmail());
-        holder.tvPhone.setText(user.getNoHp() != null && !user.getNoHp().isEmpty() ? user.getNoHp() : "No HP tidak diisi");
+        holder.tvNama.setText(user.getNama() != null && !user.getNama().isEmpty() ? user.getNama() : "Pemohon Pemilik");
+        holder.tvEmail.setText(user.getEmail() != null && !user.getEmail().isEmpty() ? user.getEmail() : "-");
 
         UserAvatarHelper.loadAvatar(holder.ivAvatar, user.getAvatarUrl());
 
-        String catatan = user.getPengajuanCatatan();
-        if (catatan != null && !catatan.isEmpty()) {
-            // Penanda internal tidak perlu terlihat admin; kode tetap ditampilkan.
-            catatan = catatan.replaceFirst("^\\[verifikasi-properti\\]\\s*", "");
-            if (catatan.isEmpty()) catatan = "Pengajuan verifikasi properti.";
-            holder.tvCatatan.setText("Info Pengajuan: " + catatan);
-            holder.tvCatatan.setVisibility(View.VISIBLE);
-        } else {
-            holder.tvCatatan.setText("Info Pengajuan: Ingin mendaftar sebagai Pemilik Kost.");
-            holder.tvCatatan.setVisibility(View.VISIBLE);
+        String rawNote = user.getPengajuanCatatan();
+        if (rawNote == null || rawNote.trim().isEmpty()) {
+            rawNote = user.getCatatanRevisi();
         }
+
+        ParsedSubmission parsed = parseSubmissionNote(rawNote);
+        String phoneDisplay = (user.getNoHp() != null && !user.getNoHp().trim().isEmpty())
+                ? user.getNoHp().trim()
+                : (!parsed.whatsapp.isEmpty() ? parsed.whatsapp : "Nomor WhatsApp belum diisi");
+        holder.tvPhone.setText(phoneDisplay);
+
+        holder.tvCatatan.setText(parsed.formattedSummary);
+        holder.tvCatatan.setVisibility(View.VISIBLE);
 
         // Umur antrean untuk SLA moderasi (target maks. 24 jam)
         String since = user.getPengajuanAt() != null ? user.getPengajuanAt() : user.getCreatedAt();
@@ -156,6 +157,108 @@ public class VerificationAdapter extends RecyclerView.Adapter<VerificationAdapte
                 listener.onReject(user, holder.getAdapterPosition());
             }
         });
+    }
+
+    public static class ParsedSubmission {
+        public String kode = "";
+        public String namaKost = "";
+        public String alamat = "";
+        public String whatsapp = "";
+        public String catatan = "";
+        public int photoCount = 0;
+        public String formattedSummary = "";
+    }
+
+    public static ParsedSubmission parseSubmissionNote(String rawNote) {
+        ParsedSubmission res = new ParsedSubmission();
+        if (rawNote == null || rawNote.trim().isEmpty()) {
+            res.formattedSummary = "Permohonan verifikasi akun sebagai Mitra Pemilik Kost.";
+            return res;
+        }
+
+        String cleaned = rawNote.trim().replaceFirst("(?i)^\\[verifikasi-properti\\]\\s*", "");
+        if (cleaned.contains("|") || cleaned.toLowerCase().startsWith("kode:") || cleaned.toLowerCase().contains("nama kost:")) {
+            String[] segments = cleaned.split("\\|");
+            String buktiStatus = "";
+            for (String seg : segments) {
+                String part = seg.trim();
+                int colon = part.indexOf(':');
+                if (colon <= 0) continue;
+                String key = part.substring(0, colon).trim().toLowerCase();
+                String val = part.substring(colon + 1).trim();
+                if (val.isEmpty()) continue;
+
+                switch (key) {
+                    case "kode":
+                    case "kode verifikasi":
+                        res.kode = val;
+                        break;
+                    case "nama kost":
+                    case "nama properti":
+                    case "properti":
+                        res.namaKost = val;
+                        break;
+                    case "alamat":
+                    case "alamat kost":
+                        res.alamat = val;
+                        break;
+                    case "wa":
+                    case "whatsapp":
+                    case "no hp":
+                        res.whatsapp = val;
+                        break;
+                    case "catatan":
+                    case "keterangan":
+                        res.catatan = val;
+                        break;
+                    case "foto properti":
+                    case "foto kode":
+                    case "foto kamar":
+                        res.photoCount++;
+                        break;
+                    case "bukti foto":
+                        buktiStatus = val;
+                        break;
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            if (!res.namaKost.isEmpty()) {
+                sb.append("Properti Kost: ").append(res.namaKost);
+            }
+            if (!res.alamat.isEmpty()) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append("Alamat Lokasi: ").append(res.alamat);
+            }
+            if (!res.kode.isEmpty()) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append("Kode Verifikasi: ").append(res.kode);
+            }
+            if (res.photoCount > 0) {
+                if (sb.length() > 0) sb.append(" • ");
+                sb.append(res.photoCount).append(" Foto Bukti Terlampir");
+            } else if (!buktiStatus.isEmpty()) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append("Status Dokumen: ").append(buktiStatus);
+            }
+            if (!res.catatan.isEmpty()) {
+                if (sb.length() > 0) sb.append("\n");
+                sb.append("Catatan Pemohon: ").append(res.catatan);
+            }
+
+            res.formattedSummary = sb.length() > 0
+                    ? sb.toString()
+                    : "Permohonan verifikasi properti kost menunggu peninjauan.";
+            return res;
+        }
+
+        // Plain note fallback: strip any raw URLs so raw links never leak into text summary
+        String plain = cleaned.replaceAll("https?://\\S+", "").replaceAll("\\s{2,}", " ").trim();
+        res.catatan = plain;
+        res.formattedSummary = plain.isEmpty()
+                ? "Permohonan verifikasi akun sebagai Mitra Pemilik Kost."
+                : "Catatan Pengajuan: " + plain;
+        return res;
     }
 
     /** Jam sejak waktu ISO (UTC), atau -1 bila tidak terbaca. */

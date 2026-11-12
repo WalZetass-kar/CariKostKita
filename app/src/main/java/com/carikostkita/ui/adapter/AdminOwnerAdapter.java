@@ -74,8 +74,12 @@ public class AdminOwnerAdapter extends RecyclerView.Adapter<AdminOwnerAdapter.Ow
         holder.tvEmail.setText(user.getEmail() != null ? user.getEmail() : "-");
 
         String phone = user.getNoHp();
-        if (phone != null && !phone.isEmpty()) {
-            holder.tvPhone.setText("WA: " + phone);
+        if (phone == null || phone.trim().isEmpty()) {
+            VerificationAdapter.ParsedSubmission parsed = VerificationAdapter.parseSubmissionNote(user.getCatatanRevisi());
+            phone = parsed.whatsapp;
+        }
+        if (phone != null && !phone.trim().isEmpty()) {
+            holder.tvPhone.setText("WA: " + phone.trim());
         } else {
             holder.tvPhone.setText("WA: Belum diatur");
         }
@@ -86,9 +90,17 @@ public class AdminOwnerAdapter extends RecyclerView.Adapter<AdminOwnerAdapter.Ow
             holder.tvVerifBadge.setBackgroundResource(R.drawable.bg_badge_tersedia);
             holder.tvVerifBadge.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.status_tersedia));
         } else if (user.getVerificationStatus() == VerificationStatus.PENDING) {
-            holder.tvVerifBadge.setText("Pending");
+            holder.tvVerifBadge.setText("Menunggu");
             holder.tvVerifBadge.setBackgroundResource(R.drawable.bg_badge_campur);
             holder.tvVerifBadge.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.primary_dark));
+        } else if (user.getVerificationStatus() == VerificationStatus.REVISION_REQUIRED) {
+            holder.tvVerifBadge.setText("Perlu Revisi");
+            holder.tvVerifBadge.setBackgroundResource(R.drawable.bg_badge_campur);
+            holder.tvVerifBadge.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.primary_dark));
+        } else if (user.getVerificationStatus() == VerificationStatus.REJECTED) {
+            holder.tvVerifBadge.setText("Ditolak");
+            holder.tvVerifBadge.setBackgroundResource(R.drawable.bg_badge_penuh);
+            holder.tvVerifBadge.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.status_penuh));
         } else {
             holder.tvVerifBadge.setText("Non-Aktif");
             holder.tvVerifBadge.setBackgroundResource(R.drawable.bg_badge_penuh);

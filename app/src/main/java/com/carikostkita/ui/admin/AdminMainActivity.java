@@ -1999,7 +1999,7 @@ public class AdminMainActivity extends AppCompatActivity implements
         }
     }
 
-    /** Bukti verifikasi dibuka lewat URL bertanda tangan (berlaku 10 menit). */
+    /** Bukti verifikasi dibuka lewat URL bertanda tangan atau URL publik yang terlampir. */
     @Override
     public void onViewDocuments(User user) {
         com.carikostkita.data.repository.VerificationRepository repo = new com.carikostkita.data.repository.VerificationRepository(this);
@@ -2007,10 +2007,13 @@ public class AdminMainActivity extends AppCompatActivity implements
             @Override
             public void onSuccess(String[] paths) {
                 String note = user.getPengajuanCatatan();
-                boolean propertyFlow = note != null && note.contains("[verifikasi-properti]");
+                if (note == null || note.trim().isEmpty()) {
+                    note = user.getCatatanRevisi();
+                }
+                boolean propertyFlow = note != null && (note.contains("[verifikasi-properti]") || note.contains("Nama Kost:"));
                 String[] labels = propertyFlow
-                        ? new String[]{"Foto properti", "Foto kode verifikasi", "Foto kamar"}
-                        : new String[]{"Foto KTP", "Selfie dengan KTP", "Bukti kepemilikan / kuasa"};
+                        ? new String[]{"Foto Tampak Depan Properti", "Foto Kode Verifikasi Lokasi", "Foto Kamar / Area Kost"}
+                        : new String[]{"Foto Identitas / Properti", "Foto Verifikasi Lokasi", "Bukti Kepemilikan Properti"};
                 List<String> names = new ArrayList<>();
                 List<String> available = new ArrayList<>();
                 for (int i = 0; i < paths.length; i++) {
@@ -2020,31 +2023,33 @@ public class AdminMainActivity extends AppCompatActivity implements
                     }
                 }
 
-                // Cek apakah ada URL foto yang tersimpan di dalam catatan permohonan
+                // Cek apakah ada URL atau data URI foto yang tersimpan di dalam catatan permohonan
                 if (note != null) {
-                    java.util.regex.Matcher mFasad = java.util.regex.Pattern.compile("Foto Properti:\\s*(https?://\\S+)").matcher(note);
+                    java.util.regex.Matcher mFasad = java.util.regex.Pattern.compile("Foto Properti:\\s*((?:https?://|data:image/)[^\\s|]+)").matcher(note);
                     if (mFasad.find() && !available.contains(mFasad.group(1))) {
-                        names.add("Foto Properti (URL)");
+                        names.add("Foto Tampak Depan Properti");
                         available.add(mFasad.group(1));
                     }
-                    java.util.regex.Matcher mKode = java.util.regex.Pattern.compile("Foto Kode:\\s*(https?://\\S+)").matcher(note);
+                    java.util.regex.Matcher mKode = java.util.regex.Pattern.compile("Foto Kode:\\s*((?:https?://|data:image/)[^\\s|]+)").matcher(note);
                     if (mKode.find() && !available.contains(mKode.group(1))) {
-                        names.add("Foto Kode (URL)");
+                        names.add("Foto Kode Verifikasi Lokasi");
                         available.add(mKode.group(1));
                     }
-                    java.util.regex.Matcher mKamar = java.util.regex.Pattern.compile("Foto Kamar:\\s*(https?://\\S+)").matcher(note);
+                    java.util.regex.Matcher mKamar = java.util.regex.Pattern.compile("Foto Kamar:\\s*((?:https?://|data:image/)[^\\s|]+)").matcher(note);
                     if (mKamar.find() && !available.contains(mKamar.group(1))) {
-                        names.add("Foto Kamar (URL)");
+                        names.add("Foto Kamar / Area Kost");
                         available.add(mKamar.group(1));
                     }
                 }
                 if (available.isEmpty()) {
-                    AppDialogHelper.showInfo(AdminMainActivity.this, "Belum Ada Dokumen",
-                            user.getNama() + " belum mengunggah dokumen verifikasi. Minta perbaikan agar dokumen dilengkapi.");
+                    com.carikostkita.ui.adapter.VerificationAdapter.ParsedSubmission parsed =
+                            com.carikostkita.ui.adapter.VerificationAdapter.parseSubmissionNote(note);
+                    AppDialogHelper.showInfo(AdminMainActivity.this, "Detail Pengajuan & Dokumen",
+                            parsed.formattedSummary + "\n\nPemohon belum melampirkan file foto bukti properti secara langsung.");
                     return;
                 }
                 new MaterialAlertDialogBuilder(AdminMainActivity.this)
-                        .setTitle("Dokumen " + user.getNama())
+                        .setTitle("Bukti Properti • " + user.getNama())
                         .setItems(names.toArray(new String[0]), (d, which) -> repo.signedUrl(available.get(which), new DataCallback<String>() {
                             @Override
                             public void onSuccess(String url) {
